@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Gradle
+.gradle
+build
+
+# IDE
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs
+
+# macOS
+.DS_Store
+
+# Docs
+*.md
+docs
+
+# Claude
+.claude

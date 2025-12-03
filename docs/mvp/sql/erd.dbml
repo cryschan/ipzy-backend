@@ -1,0 +1,207 @@
+// ===========================================
+// IPZY MVP ERD
+// https://dbdiagram.io/d 에 붙여넣기
+// ===========================================
+
+// -------------------------------------------
+// 사용자
+// -------------------------------------------
+Table users {
+  id bigint [pk, increment]
+  email varchar [unique, not null]
+  name varchar [not null]
+  profile_image_url varchar
+  provider varchar [not null, note: 'KAKAO / NAVER / GOOGLE']
+  provider_id varchar [not null]
+  role varchar [default: 'USER']
+  last_login_at timestamp
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// -------------------------------------------
+// 퀴즈
+// -------------------------------------------
+Table quizzes {
+  id bigint [pk, increment]
+  title varchar [not null]
+  description text
+  is_active boolean [default: true]
+  display_order int [default: 0]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+Table quiz_questions {
+  id bigint [pk, increment]
+  quiz_id bigint [not null]
+  text varchar [not null]
+  type varchar [not null, note: 'SINGLE / MULTIPLE']
+  display_order int [default: 0]
+  required boolean [default: true]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+Table quiz_options {
+  id bigint [pk, increment]
+  question_id bigint [not null]
+  text varchar [not null]
+  value varchar [not null, note: 'casual, formal 등']
+  image_url varchar
+  display_order int [default: 0]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// -------------------------------------------
+// 퀴즈 진행
+// -------------------------------------------
+Table quiz_sessions {
+  id bigint [pk, increment]
+  quiz_id bigint [not null]
+  user_id bigint [not null]
+  status varchar [default: 'IN_PROGRESS', note: 'IN_PROGRESS / COMPLETED / ABANDONED']
+  started_at timestamp [default: `now()`]
+  completed_at timestamp
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+Table quiz_answers {
+  id bigint [pk, increment]
+  session_id bigint [not null]
+  question_id bigint [not null]
+  selected_options text [not null, note: 'Array']
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// -------------------------------------------
+// 상품
+// -------------------------------------------
+Table brands {
+  id bigint [pk, increment]
+  name varchar [unique, not null]
+  logo_url varchar
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+Table products {
+  id bigint [pk, increment]
+  brand_id bigint [not null]
+  name varchar [not null]
+  category varchar [not null, note: 'TOP / BOTTOM / OUTER / SHOES / ACCESSORY']
+  sub_category varchar
+  price int [not null]
+  original_price int
+  discount_percent int
+  image_url varchar [not null]
+  images text [note: 'Array']
+  description text
+  sizes text [note: 'Array']
+  colors text [note: 'Array']
+  tags text [note: 'Array']
+  purchase_url varchar [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// -------------------------------------------
+// AI 추천
+// -------------------------------------------
+Table recommendations {
+  id bigint [pk, increment]
+  session_id bigint [not null]
+  user_id bigint [not null]
+  display_order int [default: 1]
+  total_price int [not null]
+  style varchar [note: '캐주얼 시크']
+  occasion varchar [note: '데일리, 출근']
+  season varchar [note: '봄/가을']
+  reason text [note: 'AI 추천 이유']
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+Table recommendation_items {
+  id bigint [pk, increment]
+  recommendation_id bigint [not null]
+  product_id bigint [not null]
+  category varchar [not null]
+  display_order int [default: 0]
+  price_snapshot int [not null, note: '추천 시점 가격']
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// -------------------------------------------
+// 저장된 코디
+// -------------------------------------------
+Table saved_outfits {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  recommendation_id bigint [not null]
+  note varchar [note: '사용자 메모']
+  saved_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`]
+  modified_at timestamp [default: `now()`]
+}
+
+// ===========================================
+// Relations
+// ===========================================
+
+// 퀴즈 구조
+Ref: quiz_questions.quiz_id > quizzes.id [delete: cascade]
+Ref: quiz_options.question_id > quiz_questions.id [delete: cascade]
+
+// 퀴즈 진행
+Ref: quiz_sessions.quiz_id > quizzes.id
+Ref: quiz_sessions.user_id > users.id
+Ref: quiz_answers.session_id > quiz_sessions.id [delete: cascade]
+Ref: quiz_answers.question_id > quiz_questions.id
+
+// 상품
+Ref: products.brand_id > brands.id
+
+// 추천
+Ref: recommendations.session_id > quiz_sessions.id
+Ref: recommendations.user_id > users.id
+Ref: recommendation_items.recommendation_id > recommendations.id [delete: cascade]
+Ref: recommendation_items.product_id > products.id
+
+// 저장
+Ref: saved_outfits.user_id > users.id
+Ref: saved_outfits.recommendation_id > recommendations.id
+
+// ===========================================
+// Table Groups (색상 구분)
+// ===========================================
+
+TableGroup 사용자 {
+  users
+}
+
+TableGroup 퀴즈 {
+  quizzes
+  quiz_questions
+  quiz_options
+  quiz_sessions
+  quiz_answers
+}
+
+TableGroup 상품 {
+  brands
+  products
+}
+
+TableGroup 추천 {
+  recommendations
+  recommendation_items
+  saved_outfits
+}
