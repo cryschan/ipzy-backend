@@ -373,7 +373,6 @@ AI 추천 생성 요청
     "id": 1,
     "email": "user@example.com",
     "name": "홍길동",
-    "phone": "010-1234-5678",
     "profileImageUrl": null,
     "role": "USER",
     "createdAt": "2024-01-01T00:00:00"
