@@ -28,14 +28,14 @@ public class SwaggerConfig {
     private Info apiInfo() {
         return new Info()
                 .title("Ipzy API")
-                .description("""
+                .description(String.format("""
                         Ipzy 백엔드 REST API 문서
 
                         ## 인증 방식
                         세션 기반 OAuth2 인증 (카카오 로그인)
 
                         ## 테스트 방법
-                        1. 브라우저에서 `http://localhost:8080/oauth2/authorization/kakao` 접속
+                        1. [카카오 로그인 바로가기](%s/oauth2/authorization/kakao) 클릭
                         2. 카카오 로그인 완료 후 세션 쿠키(JSESSIONID) 자동 발급
                         3. 같은 브라우저에서 Swagger UI로 API 테스트 가능
 
@@ -51,7 +51,7 @@ public class SwaggerConfig {
                         |------|------|
                         | AUTH_001 | 인증이 필요합니다 |
                         | AUTH_005 | 세션이 만료되었습니다 |
-                        """)
+                        """, serverUrl))
                 .version("1.0.0");
     }
 
