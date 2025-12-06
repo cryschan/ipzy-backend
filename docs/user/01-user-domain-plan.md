@@ -111,30 +111,31 @@ Optional<User> findByProviderAndProviderId(String provider, String providerId);
 
 ### Step 3: Auth DTO 생성 ✅ 완료
 
-**설계 결정:** `CustomUserPrincipal` 대신 `DefaultOAuth2User`를 사용하여 단순화.
-- userId를 attributes에 포함시켜 세션에서 조회 가능
-- 향후 다른 Provider 추가 시 인터페이스 분리 검토
+**설계 결정:** `CustomUserPrincipal`을 도입하여 타입 안전성 확보.
+- 강타입 getter로 컴파일 타임 검증
+- IDE 자동완성 지원
+- 상세 내용은 `02-custom-user-principal.md` 참조
 
 | 파일 | 용도 |
 |------|------|
+| `CustomUserPrincipal.java` | Spring Security Principal (OAuth2User 구현) |
 | `AuthMeResponse.java` | 현재 로그인 사용자 응답 DTO |
 
 #### AuthMeResponse.java
 
 ```java
 public record AuthMeResponse(
-    Long id,
+    Long userId,
     String email,
     String name,
     String profileImageUrl
 ) {
-    public static AuthMeResponse from(OAuth2User principal) {
-        Map<String, Object> attributes = principal.getAttributes();
+    public static AuthMeResponse from(CustomUserPrincipal principal) {
         return new AuthMeResponse(
-            ((Number) attributes.get("userId")).longValue(),
-            (String) attributes.get("email"),
-            (String) attributes.get("name"),
-            (String) attributes.get("profileImageUrl")
+            principal.getUserId(),
+            principal.getEmail(),
+            principal.getUserName(),
+            principal.getProfileImageUrl()
         );
     }
 }
@@ -338,7 +339,7 @@ public class AuthController {
 
     @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
-    public ApiResponse<AuthMeResponse> me(@AuthenticationPrincipal OAuth2User principal) {
+    public ApiResponse<AuthMeResponse> me(@AuthenticationPrincipal CustomUserPrincipal principal) {
         if (principal == null) {
             throw AuthException.unauthorized();
         }
@@ -354,10 +355,10 @@ public class AuthController {
 ```
 
 **변경 사항:**
-- `CustomUserPrincipal` → `OAuth2User` 사용
-- `UserResponse` → `AuthMeResponse` 사용
+- `CustomUserPrincipal` 사용으로 타입 안전성 확보
+- `AuthMeResponse.from(CustomUserPrincipal)` 팩토리 메서드 사용
 - `/api/auth/login/kakao` 엔드포인트 추가
-- UserController 제거 (AuthController의 `/me`와 중복)
+- UserController 제거 (AuthController의 `/me`와 통합)
 
 ---
 
@@ -367,29 +368,25 @@ public class AuthController {
 
 ```java
 public record AuthMeResponse(
-    Long id,
+    Long userId,
     String email,
     String name,
     String profileImageUrl
 ) {
-    public static AuthMeResponse from(OAuth2User principal) {
-        Map<String, Object> attributes = principal.getAttributes();
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-
+    public static AuthMeResponse from(CustomUserPrincipal principal) {
         return new AuthMeResponse(
-            ((Number) attributes.get("userId")).longValue(),
-            (String) attributes.get("email"),
-            (String) attributes.get("name"),
-            (String) profile.get("profile_image_url")
+            principal.getUserId(),
+            principal.getEmail(),
+            principal.getUserName(),
+            principal.getProfileImageUrl()
         );
     }
 }
 ```
 
 **변경 사항:**
-- `UserResponse` → `AuthMeResponse` 이름 변경
-- `OAuth2User`의 attributes에서 직접 추출
+- `CustomUserPrincipal`에서 타입 안전하게 값 추출
+- Map 캐스팅 제거로 런타임 오류 위험 해소
 - provider, role, createdAt 필드 제거 (MVP에 불필요)
 
 ---
@@ -444,7 +441,7 @@ app:
 | 11 | 수정 | `resources/application.yml` | ✅ |
 
 **설계 결정:**
-- `CustomUserPrincipal` 대신 `DefaultOAuth2User` 사용 (단순화)
+- `CustomUserPrincipal` 도입으로 타입 안전성 확보
 - `OAuth2UserInfo` 인터페이스 미사용 (카카오 전용, 향후 확장 시 분리)
 - `UserController` 미생성 (`AuthController`의 `/me`로 통합)
 

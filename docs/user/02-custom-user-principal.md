@@ -172,7 +172,7 @@ public ApiResponse<Void> deleteUser(
         @PathVariable Long userId) {
 
     if (principal.getRole() != UserRole.ADMIN) {
-        throw AuthException.forbidden();
+        throw AuthException.adminRequired();
     }
 
     userService.delete(userId);
@@ -198,7 +198,7 @@ public class QuizSessionService {
             .orElseThrow(() -> new QuizException(QUIZ_SESSION_NOT_FOUND));
 
         if (!session.getUserId().equals(userId)) {
-            throw AuthException.forbidden();
+            throw AuthException.adminRequired();
         }
 
         return session;
