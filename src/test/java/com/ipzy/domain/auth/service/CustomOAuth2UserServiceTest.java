@@ -177,6 +177,24 @@ class CustomOAuth2UserServiceTest {
                         assertThat(oauthEx.getError().getErrorCode()).isEqualTo("invalid_response");
                     });
         }
+
+        @Test
+        @DisplayName("이메일이 없으면 OAuth2AuthenticationException 발생")
+        void throwsException_whenEmailMissing() {
+            // given
+            OAuth2UserRequest request = createOAuth2UserRequest();
+            OAuth2User invalidOAuth2User = createOAuth2UserWithoutEmail();
+
+            doReturn(invalidOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+
+            // when & then
+            assertThatThrownBy(() -> customOAuth2UserService.loadUser(request))
+                    .isInstanceOf(OAuth2AuthenticationException.class)
+                    .satisfies(ex -> {
+                        OAuth2AuthenticationException oauthEx = (OAuth2AuthenticationException) ex;
+                        assertThat(oauthEx.getError().getErrorCode()).isEqualTo("invalid_user_info");
+                    });
+        }
     }
 
     private OAuth2UserRequest createOAuth2UserRequest() {
@@ -253,6 +271,27 @@ class CustomOAuth2UserServiceTest {
         Map<String, Object> kakaoAccount = new HashMap<>();
         kakaoAccount.put("email", "test@kakao.com");
         // profile 없음
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("id", 12345L);
+        attributes.put("kakao_account", kakaoAccount);
+
+        return new DefaultOAuth2User(
+                Collections.emptyList(),
+                attributes,
+                "id"
+        );
+    }
+
+    private OAuth2User createOAuth2UserWithoutEmail() {
+        // email이 없는 응답
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("nickname", "테스트유저");
+        profile.put("profile_image_url", "https://example.com/image.png");
+
+        Map<String, Object> kakaoAccount = new HashMap<>();
+        // email 없음
+        kakaoAccount.put("profile", profile);
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", 12345L);

@@ -58,6 +58,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         log.debug("profile: {}", profile);
 
         String email = (String) kakaoAccount.get("email");
+        if (email == null) {
+            log.error("카카오 계정에 이메일 정보가 없습니다. providerId: {}", providerId);
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("invalid_user_info", "이메일 동의가 필수입니다", null));
+        }
+
         String name = (String) profile.get("nickname");
         String profileImage = (String) profile.get("profile_image_url");
 
