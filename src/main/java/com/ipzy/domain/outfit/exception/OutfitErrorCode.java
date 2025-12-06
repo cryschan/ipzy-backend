@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 코디 관련 에러 코드
+ */
 @Getter
 @RequiredArgsConstructor
 public enum OutfitErrorCode implements ErrorCode {

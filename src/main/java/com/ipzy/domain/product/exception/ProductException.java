@@ -2,6 +2,9 @@ package com.ipzy.domain.product.exception;
 
 import com.ipzy.global.exception.BusinessException;
 
+/**
+ * 상품 관련 예외
+ */
 public class ProductException extends BusinessException {
 
     public ProductException(ProductErrorCode errorCode) {

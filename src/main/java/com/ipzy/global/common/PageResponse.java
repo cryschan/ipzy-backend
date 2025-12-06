@@ -5,6 +5,9 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
+/**
+ * 페이징 응답 래퍼 - 목록 데이터와 페이지네이션 정보 포함
+ */
 @Getter
 public class PageResponse<T> {
 
