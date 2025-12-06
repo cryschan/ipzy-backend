@@ -1,9 +1,11 @@
 spring:
   application:
     name: ipzy-backend
+  config:
+    import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ipzy}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ipzy_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -13,13 +15,39 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: false
     open-in-view: false
 
-  flyway:
-    enabled: false
+  # Spring Security OAuth2 Client 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/api/auth/kakao/callback"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope:
+              - profile_nickname
+              - profile_image
+              - account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+# 앱 설정
+app:
+  oauth2:
+    success-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback
+    failure-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback?error=true
+  swagger:
+    server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
 
 logging:
   level:
@@ -28,7 +56,14 @@ logging:
     org.hibernate.SQL: DEBUG
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: false  # 로컬 개발용 (HTTP)
+        same-site: lax
 
 ---
 spring:
@@ -40,9 +75,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
-  flyway:
-    enabled: false
-
 ---
 spring:
   config:
@@ -52,7 +84,13 @@ spring:
   jpa:
     show-sql: false
 
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true  # 프로덕션 HTTPS 필수
+
 logging:
   level:
     root: WARN
-    com.ipzy: INFO
+    com.ipzy: DEBUG
