@@ -1,11 +1,9 @@
 package com.ipzy.domain.auth.dto;
 
+import com.ipzy.global.common.enums.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,46 +12,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthMeResponseTest {
 
     @Test
-    @DisplayName("OAuth2User로부터 AuthMeResponse 생성")
-    void fromOAuth2User() {
+    @DisplayName("CustomUserPrincipal로부터 AuthMeResponse 생성")
+    void fromCustomUserPrincipal() {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", 12345L);
-        attributes.put("userId", 1L);
-        attributes.put("email", "test@example.com");
-        attributes.put("name", "테스트");
 
-        OAuth2User oAuth2User = new DefaultOAuth2User(
-                Collections.emptyList(),
-                attributes,
-                "id"
-        );
+        CustomUserPrincipal principal = CustomUserPrincipal.builder()
+                .userId(1L)
+                .email("test@example.com")
+                .userName("테스트")
+                .profileImageUrl("https://example.com/profile.jpg")
+                .role(UserRole.USER)
+                .attributes(attributes)
+                .build();
 
-        AuthMeResponse response = AuthMeResponse.from(oAuth2User);
+        AuthMeResponse response = AuthMeResponse.from(principal);
 
         assertThat(response.userId()).isEqualTo(1L);
         assertThat(response.email()).isEqualTo("test@example.com");
         assertThat(response.name()).isEqualTo("테스트");
+        assertThat(response.profileImageUrl()).isEqualTo("https://example.com/profile.jpg");
     }
 
     @Test
-    @DisplayName("null 값이 포함된 OAuth2User로부터 AuthMeResponse 생성")
-    void fromOAuth2UserWithNullValues() {
+    @DisplayName("프로필 이미지가 없는 CustomUserPrincipal로부터 AuthMeResponse 생성")
+    void fromCustomUserPrincipalWithoutProfileImage() {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", 12345L);
-        attributes.put("userId", null);
-        attributes.put("email", null);
-        attributes.put("name", null);
 
-        OAuth2User oAuth2User = new DefaultOAuth2User(
-                Collections.emptyList(),
-                attributes,
-                "id"
-        );
+        CustomUserPrincipal principal = CustomUserPrincipal.builder()
+                .userId(2L)
+                .email("noimage@example.com")
+                .userName("이미지없음")
+                .profileImageUrl(null)
+                .role(UserRole.USER)
+                .attributes(attributes)
+                .build();
 
-        AuthMeResponse response = AuthMeResponse.from(oAuth2User);
+        AuthMeResponse response = AuthMeResponse.from(principal);
 
-        assertThat(response.userId()).isNull();
-        assertThat(response.email()).isNull();
-        assertThat(response.name()).isNull();
+        assertThat(response.userId()).isEqualTo(2L);
+        assertThat(response.email()).isEqualTo("noimage@example.com");
+        assertThat(response.name()).isEqualTo("이미지없음");
+        assertThat(response.profileImageUrl()).isNull();
     }
 }

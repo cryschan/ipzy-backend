@@ -1,8 +1,10 @@
 package com.ipzy.domain.auth.controller;
 
+import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.handler.OAuth2FailureHandler;
 import com.ipzy.domain.auth.handler.OAuth2SuccessHandler;
 import com.ipzy.domain.auth.service.CustomOAuth2UserService;
+import com.ipzy.global.common.enums.UserRole;
 import com.ipzy.global.config.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,13 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.Cookie;
@@ -53,10 +51,10 @@ class AuthControllerTest {
         @Test
         @DisplayName("인증된 사용자 정보 반환")
         void getAuthenticatedUser() throws Exception {
-            OAuth2User oAuth2User = createOAuth2User();
+            CustomUserPrincipal principal = createCustomUserPrincipal();
 
             mockMvc.perform(get("/api/auth/me")
-                            .with(oauth2Login().oauth2User(oAuth2User)))
+                            .with(oauth2Login().oauth2User(principal)))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
@@ -100,10 +98,10 @@ class AuthControllerTest {
         @Test
         @DisplayName("로그아웃 성공 시 200 반환")
         void logout_success() throws Exception {
-            OAuth2User oAuth2User = createOAuth2User();
+            CustomUserPrincipal principal = createCustomUserPrincipal();
 
             mockMvc.perform(post("/api/auth/logout")
-                            .with(oauth2Login().oauth2User(oAuth2User))
+                            .with(oauth2Login().oauth2User(principal))
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -124,17 +122,17 @@ class AuthControllerTest {
 
     }
 
-    private OAuth2User createOAuth2User() {
+    private CustomUserPrincipal createCustomUserPrincipal() {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", 12345L);
-        attributes.put("userId", 1L);
-        attributes.put("email", "test@example.com");
-        attributes.put("name", "테스트");
 
-        return new DefaultOAuth2User(
-                List.of(new SimpleGrantedAuthority("ROLE_USER")),
-                attributes,
-                "id"
-        );
+        return CustomUserPrincipal.builder()
+                .userId(1L)
+                .email("test@example.com")
+                .userName("테스트")
+                .profileImageUrl("https://example.com/profile.jpg")
+                .role(UserRole.USER)
+                .attributes(attributes)
+                .build();
     }
 }

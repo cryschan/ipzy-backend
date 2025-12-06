@@ -57,16 +57,10 @@ CREATE TABLE users (
 
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|:----:|
-| GET | `/api/auth/kakao` | 카카오 로그인 시작 | X |
-| GET | `/api/auth/kakao/callback` | 카카오 콜백 | X |
+| GET | `/api/auth/login/kakao` | 카카오 로그인 시작 (→ `/oauth2/authorization/kakao` 리다이렉트) | X |
+| GET | `/api/auth/kakao/callback` | 카카오 콜백 (Spring Security 자동 처리) | X |
 | GET | `/api/auth/me` | 현재 로그인 사용자 | O |
 | POST | `/api/auth/logout` | 로그아웃 | O |
-
-### 사용자 API
-
-| Method | Endpoint | 설명 | 인증 |
-|--------|----------|------|:----:|
-| GET | `/api/users/me` | 내 정보 조회 | O |
 
 ---
 
@@ -115,96 +109,45 @@ Optional<User> findByProviderAndProviderId(String provider, String providerId);
 
 ---
 
-### Step 3: Auth DTO 생성
+### Step 3: Auth DTO 생성 ✅ 완료
+
+**설계 결정:** `CustomUserPrincipal` 대신 `DefaultOAuth2User`를 사용하여 단순화.
+- userId를 attributes에 포함시켜 세션에서 조회 가능
+- 향후 다른 Provider 추가 시 인터페이스 분리 검토
 
 | 파일 | 용도 |
 |------|------|
-| `OAuth2UserInfo.java` | OAuth 사용자 정보 인터페이스 |
-| `KakaoOAuth2UserInfo.java` | 카카오 응답 파싱 |
-| `OAuth2UserInfoFactory.java` | Provider별 UserInfo 생성 |
-| `CustomUserPrincipal.java` | Spring Security Principal |
+| `AuthMeResponse.java` | 현재 로그인 사용자 응답 DTO |
 
-#### OAuth2UserInfo.java
+#### AuthMeResponse.java
 
 ```java
-public interface OAuth2UserInfo {
-    String getId();
-    String getEmail();
-    String getName();
-    String getImageUrl();
-}
-```
-
-#### KakaoOAuth2UserInfo.java
-
-```java
-public class KakaoOAuth2UserInfo implements OAuth2UserInfo {
-    private final Map<String, Object> attributes;
-
-    @Override
-    public String getId() {
-        return String.valueOf(attributes.get("id"));
+public record AuthMeResponse(
+    Long id,
+    String email,
+    String name,
+    String profileImageUrl
+) {
+    public static AuthMeResponse from(OAuth2User principal) {
+        Map<String, Object> attributes = principal.getAttributes();
+        return new AuthMeResponse(
+            ((Number) attributes.get("userId")).longValue(),
+            (String) attributes.get("email"),
+            (String) attributes.get("name"),
+            (String) attributes.get("profileImageUrl")
+        );
     }
-
-    @Override
-    public String getEmail() {
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        return (String) kakaoAccount.get("email");
-    }
-
-    @Override
-    public String getName() {
-        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-        return (String) properties.get("nickname");
-    }
-
-    @Override
-    public String getImageUrl() {
-        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-        return (String) properties.get("profile_image");
-    }
-}
-```
-
-#### CustomUserPrincipal.java
-
-```java
-public class CustomUserPrincipal implements OAuth2User, UserDetails {
-    private final User user;
-    private final Map<String, Object> attributes;
-
-    // OAuth2User 구현
-    @Override
-    public Map<String, Object> getAttributes() { return attributes; }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-    }
-
-    @Override
-    public String getName() { return String.valueOf(user.getId()); }
-
-    // UserDetails 구현
-    @Override
-    public String getUsername() { return user.getEmail(); }
-
-    @Override
-    public String getPassword() { return null; }
-
-    // Getter
-    public User getUser() { return user; }
-    public Long getUserId() { return user.getId(); }
 }
 ```
 
 ---
 
-### Step 4: OAuth2UserService 구현
+### Step 4: OAuth2UserService 구현 ✅ 완료
 
 **파일:** `domain/auth/service/CustomOAuth2UserService.java`
 
 ```java
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
@@ -213,46 +156,56 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     @Override
     @Transactional
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) {
-        OAuth2User oauth2User = super.loadUser(userRequest);
+    public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
+        OAuth2User oauth2User = super.loadUser(request);
 
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        String provider = registrationId.toUpperCase();
+        String provider = request.getClientRegistration().getRegistrationId().toUpperCase();
+        String providerId = String.valueOf(oauth2User.getAttributes().get("id"));
 
-        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.create(provider, oauth2User.getAttributes());
+        // 카카오 응답에서 사용자 정보 추출
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oauth2User.getAttributes().get("kakao_account");
+        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
-        User user = userRepository.findByProviderAndProviderId(provider, userInfo.getId())
-            .map(existingUser -> updateExistingUser(existingUser, userInfo))
-            .orElseGet(() -> createUser(provider, userInfo));
+        String email = (String) kakaoAccount.get("email");
+        String name = (String) profile.get("nickname");
+        String profileImage = (String) profile.get("profile_image_url");
 
-        return new CustomUserPrincipal(user, oauth2User.getAttributes());
-    }
+        // 사용자 조회 또는 생성
+        User user = userRepository.findByProviderAndProviderId(provider, providerId)
+                .map(existingUser -> {
+                    existingUser.updateOAuthInfo(name, profileImage);
+                    return existingUser;
+                })
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .email(email)
+                        .name(name)
+                        .profileImageUrl(profileImage)
+                        .provider(provider)
+                        .providerId(providerId)
+                        .role(UserRole.USER)
+                        .status(UserStatus.ACTIVE)
+                        .build()));
 
-    private User updateExistingUser(User user, OAuth2UserInfo userInfo) {
         user.updateLastLoginAt();
-        // 필요시 프로필 업데이트
-        return user;
-    }
 
-    private User createUser(String provider, OAuth2UserInfo userInfo) {
-        User user = User.builder()
-            .email(userInfo.getEmail())
-            .name(userInfo.getName())
-            .profileImageUrl(userInfo.getImageUrl())
-            .provider(provider)
-            .providerId(userInfo.getId())
-            .role(UserRole.USER)
-            .status(UserStatus.ACTIVE)
-            .build();
+        // 세션에 저장될 attributes에 userId 추가
+        Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
+        attributes.put("userId", user.getId());
+        attributes.put("email", email);
+        attributes.put("name", name);
 
-        return userRepository.save(user);
+        return new DefaultOAuth2User(
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                attributes,
+                "id"
+        );
     }
 }
 ```
 
 ---
 
-### Step 5: Handler 구현
+### Step 5: Handler 구현 ✅ 완료
 
 #### OAuth2SuccessHandler.java
 
@@ -294,7 +247,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
 
 ---
 
-### Step 6: SecurityConfig 수정
+### Step 6: SecurityConfig 수정 ✅ 완료
 
 **파일:** `global/config/SecurityConfig.java`
 
@@ -312,12 +265,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(5)
+                .maximumSessions(2)
                 .maxSessionsPreventsLogin(false)
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/me").authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/quizzes/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
@@ -327,7 +282,7 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(endpoint -> endpoint
-                    .baseUri("/api/auth")
+                    .baseUri("/oauth2/authorization")  // Spring 기본값 사용
                 )
                 .redirectionEndpoint(endpoint -> endpoint
                     .baseUri("/api/auth/*/callback")
@@ -338,10 +293,18 @@ public class SecurityConfig {
                 .successHandler(oAuth2SuccessHandler)
                 .failureHandler(oAuth2FailureHandler)
             )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) -> {
+                    // 401 JSON 응답 (세션 만료 / 비로그인 구분)
+                })
+            )
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    // 200 JSON 응답
+                })
             );
 
         return http.build();
@@ -349,84 +312,89 @@ public class SecurityConfig {
 }
 ```
 
+**주요 변경 사항:**
+- `authorizationEndpoint`: `/api/auth` → `/oauth2/authorization` (Spring 기본값)
+- `/api/auth/me`는 authenticated 먼저 체크
+- 401 응답을 JSON으로 반환하는 `authenticationEntryPoint` 추가
+- 로그아웃 성공 시 JSON 응답 반환
+
 ---
 
-### Step 7: Controller 구현
+### Step 7: Controller 구현 ✅ 완료
 
 #### AuthController.java
 
 ```java
+@Tag(name = "Auth", description = "인증 API")
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
 
+    @Operation(summary = "카카오 로그인")
+    @GetMapping("/login/kakao")
+    public void kakaoLogin(HttpServletResponse response) throws IOException {
+        response.sendRedirect("/oauth2/authorization/kakao");
+    }
+
+    @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
-    public ApiResponse<UserResponse> getCurrentUser(
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
+    public ApiResponse<AuthMeResponse> me(@AuthenticationPrincipal OAuth2User principal) {
         if (principal == null) {
-            throw new AuthException(AuthErrorCode.UNAUTHORIZED);
+            throw AuthException.unauthorized();
         }
-        return ApiResponse.success(UserResponse.from(principal.getUser()));
+        return ApiResponse.success(AuthMeResponse.from(principal));
     }
 
+    @Operation(summary = "로그아웃")
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(HttpSession session) {
-        session.invalidate();
-        return ApiResponse.success(null, "로그아웃되었습니다");
+    public void logout() {
+        // Spring Security가 처리 (Swagger 문서화용)
     }
 }
 ```
 
-#### UserController.java
-
-```java
-@RestController
-@RequestMapping("/api/users")
-@RequiredArgsConstructor
-public class UserController {
-
-    @GetMapping("/me")
-    public ApiResponse<UserResponse> getMyInfo(
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
-        return ApiResponse.success(UserResponse.from(principal.getUser()));
-    }
-}
-```
+**변경 사항:**
+- `CustomUserPrincipal` → `OAuth2User` 사용
+- `UserResponse` → `AuthMeResponse` 사용
+- `/api/auth/login/kakao` 엔드포인트 추가
+- UserController 제거 (AuthController의 `/me`와 중복)
 
 ---
 
-### Step 8: Response DTO
+### Step 8: Response DTO ✅ 완료
 
-#### UserResponse.java
+#### AuthMeResponse.java
 
 ```java
-public record UserResponse(
+public record AuthMeResponse(
     Long id,
     String email,
     String name,
-    String profileImageUrl,
-    String provider,
-    String role,
-    LocalDateTime createdAt
+    String profileImageUrl
 ) {
-    public static UserResponse from(User user) {
-        return new UserResponse(
-            user.getId(),
-            user.getEmail(),
-            user.getName(),
-            user.getProfileImageUrl(),
-            user.getProvider(),
-            user.getRole().name(),
-            user.getCreatedAt()
+    public static AuthMeResponse from(OAuth2User principal) {
+        Map<String, Object> attributes = principal.getAttributes();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+
+        return new AuthMeResponse(
+            ((Number) attributes.get("userId")).longValue(),
+            (String) attributes.get("email"),
+            (String) attributes.get("name"),
+            (String) profile.get("profile_image_url")
         );
     }
 }
 ```
 
+**변경 사항:**
+- `UserResponse` → `AuthMeResponse` 이름 변경
+- `OAuth2User`의 attributes에서 직접 추출
+- provider, role, createdAt 필드 제거 (MVP에 불필요)
+
 ---
 
-### Step 9: application.yml 설정
+### Step 9: application.yml 설정 ✅ 완료
 
 ```yaml
 spring:
@@ -463,15 +431,22 @@ app:
 
 | 순서 | 작업 | 파일 경로 | 상태 |
 |:----:|------|----------|:----:|
-| 1 | 수정 | `domain/user/entity/User.java` | [x] |
-| 2 | 수정 | `domain/user/repository/UserRepository.java` | [x] |
-| 3 | 생성 | `domain/auth/service/CustomOAuth2UserService.java` | [x] |
-| 4 | 수정 | `global/config/SecurityConfig.java` | [x] |
-| 5 | 생성 | `domain/auth/controller/AuthController.java` | [x] |
-| 6 | 생성 | `domain/auth/dto/AuthMeResponse.java` | [x] |
-| 7 | 수정 | `resources/application.yml` | [x] |
+| 1 | 수정 | `domain/user/entity/User.java` | ✅ |
+| 2 | 수정 | `domain/user/repository/UserRepository.java` | ✅ |
+| 3 | 생성 | `domain/auth/service/CustomOAuth2UserService.java` | ✅ |
+| 4 | 수정 | `global/config/SecurityConfig.java` | ✅ |
+| 5 | 생성 | `domain/auth/controller/AuthController.java` | ✅ |
+| 6 | 생성 | `domain/auth/dto/AuthMeResponse.java` | ✅ |
+| 7 | 생성 | `domain/auth/handler/OAuth2SuccessHandler.java` | ✅ |
+| 8 | 생성 | `domain/auth/handler/OAuth2FailureHandler.java` | ✅ |
+| 9 | 생성 | `domain/auth/exception/AuthErrorCode.java` | ✅ |
+| 10 | 생성 | `domain/auth/exception/AuthException.java` | ✅ |
+| 11 | 수정 | `resources/application.yml` | ✅ |
 
-**참고:** OAuth2UserInfo 인터페이스 패턴 대신 CustomOAuth2UserService에서 카카오 응답을 직접 파싱하는 단순화된 구조로 구현됨. 향후 다른 Provider 추가 시 인터페이스 분리 검토 필요.
+**설계 결정:**
+- `CustomUserPrincipal` 대신 `DefaultOAuth2User` 사용 (단순화)
+- `OAuth2UserInfo` 인터페이스 미사용 (카카오 전용, 향후 확장 시 분리)
+- `UserController` 미생성 (`AuthController`의 `/me`로 통합)
 
 ---
 
@@ -523,6 +498,8 @@ POST /api/auth/logout
 | Entity/Repository | 2 | 2 | 100% |
 | Auth DTO | 1 | 1 | 100% |
 | Service | 1 | 1 | 100% |
+| Handler | 2 | 2 | 100% |
+| Exception | 2 | 2 | 100% |
 | Config | 1 | 1 | 100% |
 | Controller | 1 | 1 | 100% |
-| **합계** | **7** | **7** | **100%** |
+| **합계** | **11** | **11** | **100%** |
