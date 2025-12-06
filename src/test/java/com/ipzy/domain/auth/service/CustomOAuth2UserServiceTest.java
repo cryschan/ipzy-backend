@@ -245,26 +245,20 @@ class CustomOAuth2UserServiceTest {
     }
 
     private User createUser(Long id) {
-        User user = User.builder()
-                .email("test@kakao.com")
-                .name("기존이름")
-                .provider("KAKAO")
-                .providerId("12345")
-                .profileImageUrl("https://old-image.com/img.png")
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .build();
-        ReflectionTestUtils.setField(user, "id", id);
-        return user;
+        return createUserWithInfo(id, "기존이름", "https://old-image.com/img.png");
     }
 
     private User createNewUser(Long id) {
+        return createUserWithInfo(id, "테스트유저", "https://example.com/image.png");
+    }
+
+    private User createUserWithInfo(Long id, String name, String profileImageUrl) {
         User user = User.builder()
                 .email("test@kakao.com")
-                .name("테스트유저")  // 카카오에서 받은 정보와 일치
+                .name(name)
                 .provider("KAKAO")
                 .providerId("12345")
-                .profileImageUrl("https://example.com/image.png")
+                .profileImageUrl(profileImageUrl)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .build();

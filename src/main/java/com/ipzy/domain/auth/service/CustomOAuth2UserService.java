@@ -45,17 +45,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     new OAuth2Error("invalid_response", "카카오 계정 정보를 가져올 수 없습니다", null));
         }
 
-        log.debug("kakaoAccount: {}", kakaoAccount);
-
         Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
         if (profile == null) {
-            log.error("카카오 응답에 profile이 없습니다. kakaoAccount: {}", kakaoAccount);
+            log.error("카카오 응답에 profile이 없습니다. providerId: {}", providerId);
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("invalid_response", "카카오 프로필 정보를 가져올 수 없습니다", null));
         }
-
-        log.debug("profile: {}", profile);
 
         String email = (String) kakaoAccount.get("email");
 

@@ -46,15 +46,22 @@ public class CustomUserPrincipal implements OAuth2User, Serializable {
 
     /**
      * User 엔티티로부터 Principal 생성
+     * - 세션 크기 최소화를 위해 필요한 필드만 attributes에 저장
      */
-    public static CustomUserPrincipal from(User user, Map<String, Object> attributes) {
+    public static CustomUserPrincipal from(User user, Map<String, Object> originalAttributes) {
+        // 필요한 최소 필드만 복사 (PII 노출 범위 축소, 세션 크기 최소화)
+        Map<String, Object> minimalAttributes = Map.of(
+                "id", originalAttributes.get("id"),
+                "userId", user.getId()
+        );
+
         return CustomUserPrincipal.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .userName(user.getName())
                 .profileImageUrl(user.getProfileImageUrl())
                 .role(user.getRole())
-                .attributes(attributes)
+                .attributes(minimalAttributes)
                 .build();
     }
 

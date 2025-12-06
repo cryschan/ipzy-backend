@@ -124,21 +124,23 @@ public class AuthController {
                     세션을 무효화하고 쿠키를 삭제합니다. 실제 처리는 Spring Security가 수행합니다.
 
                     """)
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "로그아웃 성공",
-            content = @Content(
-                    mediaType = "application/json",
-                    examples = @ExampleObject(value = """
-                            {
-                              "success": true,
-                              "data": {
-                                "message": "로그아웃 되었습니다"
-                              }
-                            }
-                            """)
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "message": "로그아웃 되었습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
-    )
+    })
     @PostMapping("/logout")
     public void logout() {
         // Spring Security가 /api/auth/logout을 가로채서 처리함

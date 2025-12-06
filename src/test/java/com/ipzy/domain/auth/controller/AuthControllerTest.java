@@ -60,7 +60,8 @@ class AuthControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.userId").value(1))
                     .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                    .andExpect(jsonPath("$.data.name").value("테스트"));
+                    .andExpect(jsonPath("$.data.name").value("테스트"))
+                    .andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/profile.jpg"));
         }
 
         @Test
