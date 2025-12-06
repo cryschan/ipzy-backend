@@ -2,6 +2,9 @@ package com.ipzy.global.exception;
 
 import lombok.Getter;
 
+/**
+ * 비즈니스 로직 예외의 기본 클래스 - 모든 도메인 예외가 상속
+ */
 @Getter
 public class BusinessException extends RuntimeException {
 

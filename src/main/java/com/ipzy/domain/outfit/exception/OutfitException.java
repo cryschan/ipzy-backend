@@ -2,6 +2,9 @@ package com.ipzy.domain.outfit.exception;
 
 import com.ipzy.global.exception.BusinessException;
 
+/**
+ * 코디 관련 예외
+ */
 public class OutfitException extends BusinessException {
 
     public OutfitException(OutfitErrorCode errorCode) {

@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_004)
+ */
 @Getter
 @RequiredArgsConstructor
 public enum QuizErrorCode implements ErrorCode {

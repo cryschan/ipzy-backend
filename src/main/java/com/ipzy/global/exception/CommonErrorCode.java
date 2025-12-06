@@ -4,6 +4,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 공통 에러 코드 - 검증(VAL), 시스템(SYS) 에러
+ */
 @Getter
 @RequiredArgsConstructor
 public enum CommonErrorCode implements ErrorCode {
