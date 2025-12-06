@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: on-failure
@@ -41,6 +41,13 @@ services:
 
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Kakao OAuth2
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+
+      # Frontend URL
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
 volumes:
   postgres_data:
