@@ -78,6 +78,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/brands/**").permitAll()
                 // Swagger UI: 개발 편의를 위해 허용
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // AI 통신 테스트 (개발용)
+                .requestMatchers("/api/recommendations/test").permitAll()
                 // 그 외 모든 요청: 인증 필요
                 .anyRequest().authenticated()
             )
