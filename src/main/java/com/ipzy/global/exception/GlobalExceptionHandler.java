@@ -1,6 +1,6 @@
-package com.ipzy._global.exception;
+package com.ipzy.global.exception;
 
-import com.ipzy._global.common.ApiResponse;
+import com.ipzy.global.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;

@@ -1,8 +1,8 @@
 package com.ipzy.domain.subscription.entity;
 
 import com.ipzy.domain.user.entity.User;
-import com.ipzy._global.common.BaseEntity;
-import com.ipzy._global.common.enums.SubscriptionStatus;
+import com.ipzy.global.common.BaseEntity;
+import com.ipzy.global.common.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

@@ -1,6 +1,6 @@
 package com.ipzy.domain.product.entity;
 
-import com.ipzy._global.common.BaseEntity;
+import com.ipzy.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

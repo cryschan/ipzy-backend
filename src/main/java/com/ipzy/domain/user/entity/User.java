@@ -1,8 +1,8 @@
 package com.ipzy.domain.user.entity;
 
-import com.ipzy._global.common.BaseEntity;
-import com.ipzy._global.common.enums.UserRole;
-import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.global.common.BaseEntity;
+import com.ipzy.global.common.enums.UserRole;
+import com.ipzy.global.common.enums.UserStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

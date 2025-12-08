@@ -1,6 +1,6 @@
 package com.ipzy.domain.outfit.exception;
 
-import com.ipzy._global.exception.ErrorCode;
+import com.ipzy.global.exception.ErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.ipzy._global.common.enums;
+package com.ipzy.global.common.enums;
 
 public enum UserRole {
     USER,

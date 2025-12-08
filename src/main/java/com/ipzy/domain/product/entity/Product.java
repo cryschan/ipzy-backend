@@ -1,7 +1,7 @@
 package com.ipzy.domain.product.entity;
 
-import com.ipzy._global.common.BaseEntity;
-import com.ipzy._global.common.enums.ClothingCategory;
+import com.ipzy.global.common.BaseEntity;
+import com.ipzy.global.common.enums.ClothingCategory;
 import io.hypersistence.utils.hibernate.type.array.StringArrayType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

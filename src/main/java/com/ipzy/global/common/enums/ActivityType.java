@@ -1,4 +1,4 @@
-package com.ipzy._global.common.enums;
+package com.ipzy.global.common.enums;
 
 /**
  * 사용자 활동 유형

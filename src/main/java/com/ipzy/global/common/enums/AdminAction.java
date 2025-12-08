@@ -1,4 +1,4 @@
-package com.ipzy._global.common.enums;
+package com.ipzy.global.common.enums;
 
 /**
  * 관리자 감사 로그 액션 유형

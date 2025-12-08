@@ -1,7 +1,7 @@
-package com.ipzy._global.common;
+package com.ipzy.global.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.ipzy._global.exception.ErrorCode;
+import com.ipzy.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

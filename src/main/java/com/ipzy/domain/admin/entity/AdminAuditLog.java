@@ -1,7 +1,7 @@
 package com.ipzy.domain.admin.entity;
 
 import com.ipzy.domain.user.entity.User;
-import com.ipzy._global.common.enums.AdminAction;
+import com.ipzy.global.common.enums.AdminAction;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -1,6 +1,6 @@
 package com.ipzy.domain.recommendation.exception;
 
-import com.ipzy._global.exception.BusinessException;
+import com.ipzy.global.exception.BusinessException;
 
 /**
  * 추천 도메인 예외

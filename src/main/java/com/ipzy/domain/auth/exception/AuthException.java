@@ -1,6 +1,6 @@
 package com.ipzy.domain.auth.exception;
 
-import com.ipzy._global.exception.BusinessException;
+import com.ipzy.global.exception.BusinessException;
 
 /**
  * 인증 관련 예외 (팩토리 메서드로 생성)

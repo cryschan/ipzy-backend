@@ -1,4 +1,4 @@
-package com.ipzy._global.infrastructure.client;
+package com.ipzy.global.infrastructure.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

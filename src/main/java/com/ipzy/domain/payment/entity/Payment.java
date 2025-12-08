@@ -2,9 +2,9 @@ package com.ipzy.domain.payment.entity;
 
 import com.ipzy.domain.subscription.entity.Subscription;
 import com.ipzy.domain.user.entity.User;
-import com.ipzy._global.common.BaseEntity;
-import com.ipzy._global.common.enums.PaymentMethod;
-import com.ipzy._global.common.enums.PaymentStatus;
+import com.ipzy.global.common.BaseEntity;
+import com.ipzy.global.common.enums.PaymentMethod;
+import com.ipzy.global.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

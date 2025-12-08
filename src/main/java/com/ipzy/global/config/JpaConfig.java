@@ -1,4 +1,4 @@
-package com.ipzy._global.config;
+package com.ipzy.global.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

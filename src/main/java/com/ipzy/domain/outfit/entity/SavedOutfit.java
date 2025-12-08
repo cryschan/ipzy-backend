@@ -2,7 +2,7 @@ package com.ipzy.domain.outfit.entity;
 
 import com.ipzy.domain.recommendation.entity.Recommendation;
 import com.ipzy.domain.user.entity.User;
-import com.ipzy._global.common.BaseEntity;
+import com.ipzy.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

@@ -1,6 +1,6 @@
 package com.ipzy.domain.product.exception;
 
-import com.ipzy._global.exception.BusinessException;
+import com.ipzy.global.exception.BusinessException;
 
 /**
  * 상품 관련 예외
