@@ -3,13 +3,33 @@ package com.ipzy.domain.user.exception;
 import com.ipzy.global.exception.BusinessException;
 import com.ipzy.global.exception.ErrorCode;
 
+/**
+ * 사용자 관련 예외 (팩토리 메서드로 생성)
+ */
 public class UserException extends BusinessException {
 
-    public UserException(ErrorCode errorCode) {
+    private UserException(ErrorCode errorCode) {
         super(errorCode);
     }
 
-    public UserException(ErrorCode errorCode, String message) {
+    private UserException(ErrorCode errorCode, String message) {
         super(errorCode, message);
+    }
+
+    public static UserException notFound() {
+        return new UserException(UserErrorCode.USER_NOT_FOUND);
+    }
+
+    public static UserException notFound(Long userId) {
+        return new UserException(UserErrorCode.USER_NOT_FOUND,
+                "사용자를 찾을 수 없습니다: " + userId);
+    }
+
+    public static UserException profileUpdateFailed() {
+        return new UserException(UserErrorCode.PROFILE_UPDATE_FAILED);
+    }
+
+    public static UserException passwordMismatch() {
+        return new UserException(UserErrorCode.PASSWORD_MISMATCH);
     }
 }

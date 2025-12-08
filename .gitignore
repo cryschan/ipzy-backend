@@ -61,3 +61,6 @@ secrets/
 ### 개발 문서 ###
 docs/product
 
+
+### 학습 문서 ###
+docs/user/learning/
