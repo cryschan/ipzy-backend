@@ -1,6 +1,6 @@
 package com.ipzy.domain.outfit.exception;
 
-import com.ipzy.global.exception.BusinessException;
+import com.ipzy._global.exception.BusinessException;
 
 /**
  * 코디 관련 예외

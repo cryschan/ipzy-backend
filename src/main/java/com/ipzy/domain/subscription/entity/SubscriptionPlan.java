@@ -1,7 +1,7 @@
 package com.ipzy.domain.subscription.entity;
 
-import com.ipzy.global.common.BaseEntity;
-import com.ipzy.global.common.enums.BillingPeriod;
+import com.ipzy._global.common.BaseEntity;
+import com.ipzy._global.common.enums.BillingPeriod;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
