@@ -148,18 +148,19 @@
 com.ipzy
 ├── domain
 │   └── recommendation
+│       ├── client/
+│       │   └── PythonAiClient.java            # Python 통신 클라이언트
 │       ├── controller/
-│       │   └── RecommendationController.java  # 기존 + AI 추천 엔드포인트 추가
+│       │   └── RecommendationController.java  # AI 추천 엔드포인트
 │       ├── service/
-│       │   └── RecommendationService.java     # AI 추천 로직 추가
-│       └── dto/
-│           ├── AiRecommendRequest.java        # Python 요청 DTO
-│           └── AiRecommendResponse.java       # Python 응답 DTO
+│       │   └── RecommendationService.java     # AI 추천 로직 (예정)
+│       └── exception/
+│           ├── RecommendationErrorCode.java   # 에러 코드
+│           └── RecommendationException.java   # 커스텀 예외
 │
-└── global
+└── _global
     └── infrastructure/
         └── client/
-            ├── PythonAiClient.java            # Python 통신 클라이언트
             └── PythonAiClientConfig.java      # RestClient 설정
 ```
 
