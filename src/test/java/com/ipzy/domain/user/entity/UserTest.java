@@ -1,7 +1,7 @@
 package com.ipzy.domain.user.entity;
 
-import com.ipzy.global.common.enums.UserRole;
-import com.ipzy.global.common.enums.UserStatus;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy._global.common.enums.UserStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.ipzy.domain.quiz.exception;
 
-import com.ipzy.global.exception.BusinessException;
+import com.ipzy._global.exception.BusinessException;
 
 /**
  * 퀴즈 관련 예외

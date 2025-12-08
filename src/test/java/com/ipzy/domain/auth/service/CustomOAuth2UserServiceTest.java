@@ -1,10 +1,12 @@
 package com.ipzy.domain.auth.service;
 
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
+import com.ipzy.domain.auth.dto.oauth.KakaoOAuth2UserInfo;
+import com.ipzy.domain.auth.dto.oauth.OAuth2UserInfo;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
-import com.ipzy.global.common.enums.UserRole;
-import com.ipzy.global.common.enums.UserStatus;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy._global.common.enums.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -30,6 +32,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -39,11 +43,14 @@ class CustomOAuth2UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private OAuth2UserInfoFactory oAuth2UserInfoFactory;
+
     private CustomOAuth2UserService customOAuth2UserService;
 
     @BeforeEach
     void setUp() {
-        customOAuth2UserService = spy(new CustomOAuth2UserService(userRepository));
+        customOAuth2UserService = spy(new CustomOAuth2UserService(userRepository, oAuth2UserInfoFactory));
     }
 
     @Nested
@@ -56,11 +63,15 @@ class CustomOAuth2UserServiceTest {
             // given
             OAuth2UserRequest request = createOAuth2UserRequest();
             OAuth2User kakaoOAuth2User = createKakaoOAuth2User();
+            OAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(kakaoOAuth2User.getAttributes());
 
             // fetchOAuth2User() mock - HTTP 호출 없이 mock 데이터 반환
             doReturn(kakaoOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
 
             given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
+                    .willReturn(Optional.empty());
+            given(userRepository.findByEmail("test@kakao.com"))
                     .willReturn(Optional.empty());
 
             User savedUser = createNewUser(1L);  // 신규 사용자용
@@ -84,8 +95,10 @@ class CustomOAuth2UserServiceTest {
             // given
             OAuth2UserRequest request = createOAuth2UserRequest();
             OAuth2User kakaoOAuth2User = createKakaoOAuth2User();
+            OAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(kakaoOAuth2User.getAttributes());
 
             doReturn(kakaoOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
 
             User existingUser = createUser(1L);
             given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
@@ -109,8 +122,10 @@ class CustomOAuth2UserServiceTest {
             // given
             OAuth2UserRequest request = createOAuth2UserRequest();
             OAuth2User kakaoOAuth2User = createKakaoOAuth2User();
+            OAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(kakaoOAuth2User.getAttributes());
 
             doReturn(kakaoOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
 
             User existingUser = createUser(1L);
             assertThat(existingUser.getLastLoginAt()).isNull();
@@ -131,8 +146,10 @@ class CustomOAuth2UserServiceTest {
             // given
             OAuth2UserRequest request = createOAuth2UserRequest();
             OAuth2User kakaoOAuth2User = createKakaoOAuth2User();
+            OAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(kakaoOAuth2User.getAttributes());
 
             doReturn(kakaoOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
 
             User existingUser = createUser(1L);
             given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
@@ -148,31 +165,18 @@ class CustomOAuth2UserServiceTest {
         }
 
         @Test
-        @DisplayName("kakao_account가 없으면 OAuth2AuthenticationException 발생")
-        void throwsException_whenKakaoAccountMissing() {
+        @DisplayName("providerId가 없으면 OAuth2AuthenticationException 발생")
+        void throwsException_whenProviderIdMissing() {
             // given
             OAuth2UserRequest request = createOAuth2UserRequest();
             OAuth2User invalidOAuth2User = createOAuth2UserWithoutKakaoAccount();
 
             doReturn(invalidOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
 
-            // when & then
-            assertThatThrownBy(() -> customOAuth2UserService.loadUser(request))
-                    .isInstanceOf(OAuth2AuthenticationException.class)
-                    .satisfies(ex -> {
-                        OAuth2AuthenticationException oauthEx = (OAuth2AuthenticationException) ex;
-                        assertThat(oauthEx.getError().getErrorCode()).isEqualTo("invalid_response");
-                    });
-        }
-
-        @Test
-        @DisplayName("profile이 없으면 OAuth2AuthenticationException 발생")
-        void throwsException_whenProfileMissing() {
-            // given
-            OAuth2UserRequest request = createOAuth2UserRequest();
-            OAuth2User invalidOAuth2User = createOAuth2UserWithoutProfile();
-
-            doReturn(invalidOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            // providerId가 null인 UserInfo mock
+            OAuth2UserInfo userInfo = mock(OAuth2UserInfo.class);
+            given(userInfo.getProviderId()).willReturn(null);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
 
             // when & then
             assertThatThrownBy(() -> customOAuth2UserService.loadUser(request))
@@ -192,6 +196,12 @@ class CustomOAuth2UserServiceTest {
 
             doReturn(invalidOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
 
+            // 이메일이 null인 UserInfo mock
+            OAuth2UserInfo userInfo = mock(OAuth2UserInfo.class);
+            given(userInfo.getProviderId()).willReturn("12345");
+            given(userInfo.getEmail()).willReturn(null);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
+
             // when & then
             assertThatThrownBy(() -> customOAuth2UserService.loadUser(request))
                     .isInstanceOf(OAuth2AuthenticationException.class)
@@ -199,6 +209,36 @@ class CustomOAuth2UserServiceTest {
                         OAuth2AuthenticationException oauthEx = (OAuth2AuthenticationException) ex;
                         assertThat(oauthEx.getError().getErrorCode()).isEqualTo("invalid_user_info");
                     });
+        }
+
+        @Test
+        @DisplayName("같은 이메일의 다른 소셜로 로그인 시 계정 연동")
+        void linksAccountWhenSameEmailDifferentProvider() {
+            // given
+            OAuth2UserRequest request = createOAuth2UserRequest();
+            OAuth2User kakaoOAuth2User = createKakaoOAuth2User();
+            OAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(kakaoOAuth2User.getAttributes());
+
+            doReturn(kakaoOAuth2User).when(customOAuth2UserService).fetchOAuth2User(request);
+            given(oAuth2UserInfoFactory.create(eq("kakao"), anyMap())).willReturn(userInfo);
+
+            // provider+providerId로는 못 찾고
+            given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
+                    .willReturn(Optional.empty());
+
+            // email로 찾으면 GOOGLE로 가입된 기존 사용자 발견
+            User existingGoogleUser = createUserWithProvider(1L, "GOOGLE", "google123");
+            given(userRepository.findByEmail("test@kakao.com"))
+                    .willReturn(Optional.of(existingGoogleUser));
+
+            // when
+            OAuth2User result = customOAuth2UserService.loadUser(request);
+
+            // then
+            // 기존 계정에 KAKAO로 연동됨
+            assertThat(existingGoogleUser.getProvider()).isEqualTo("KAKAO");
+            assertThat(existingGoogleUser.getProviderId()).isEqualTo("12345");
+            verify(userRepository, never()).save(any(User.class));
         }
     }
 
@@ -266,28 +306,25 @@ class CustomOAuth2UserServiceTest {
         return user;
     }
 
+    private User createUserWithProvider(Long id, String provider, String providerId) {
+        User user = User.builder()
+                .email("test@kakao.com")
+                .name("기존유저")
+                .provider(provider)
+                .providerId(providerId)
+                .profileImageUrl("https://old-image.com/img.png")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+
     private OAuth2User createOAuth2UserWithoutKakaoAccount() {
         // kakao_account가 없는 응답
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", 12345L);
         // kakao_account 없음
-
-        return new DefaultOAuth2User(
-                Collections.emptyList(),
-                attributes,
-                "id"
-        );
-    }
-
-    private OAuth2User createOAuth2UserWithoutProfile() {
-        // profile이 없는 응답
-        Map<String, Object> kakaoAccount = new HashMap<>();
-        kakaoAccount.put("email", "test@kakao.com");
-        // profile 없음
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("id", 12345L);
-        attributes.put("kakao_account", kakaoAccount);
 
         return new DefaultOAuth2User(
                 Collections.emptyList(),

@@ -2,10 +2,12 @@ package com.ipzy.domain.auth.controller;
 
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.handler.OAuth2FailureHandler;
+import com.ipzy.domain.auth.handler.OAuth2LogoutSuccessHandler;
 import com.ipzy.domain.auth.handler.OAuth2SuccessHandler;
+import com.ipzy.domain.auth.logout.OAuth2LogoutStrategyFactory;
 import com.ipzy.domain.auth.service.CustomOAuth2UserService;
-import com.ipzy.global.common.enums.UserRole;
-import com.ipzy.global.config.SecurityConfig;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy._global.config.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
@@ -29,7 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, OAuth2LogoutSuccessHandler.class})
+@TestPropertySource(properties = {
+    "spring.security.oauth2.client.registration.kakao.client-id=test-client-id",
+    "app.oauth2.logout-redirect-uri=http://localhost:5173",
+    "app.oauth2.success-redirect-uri=http://localhost:5173"
+})
 class AuthControllerTest {
 
     @Autowired
@@ -43,6 +51,9 @@ class AuthControllerTest {
 
     @MockBean
     private OAuth2FailureHandler oAuth2FailureHandler;
+
+    @MockBean
+    private OAuth2LogoutStrategyFactory oAuth2LogoutStrategyFactory;
 
     @Nested
     @DisplayName("GET /api/auth/me")
@@ -97,7 +108,7 @@ class AuthControllerTest {
     class PostLogout {
 
         @Test
-        @DisplayName("로그아웃 성공 시 200 반환")
+        @DisplayName("로그아웃 성공 시 200 OK와 JSON 응답 반환")
         void logout_success() throws Exception {
             CustomUserPrincipal principal = createCustomUserPrincipal();
 
@@ -111,8 +122,8 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("비로그인 상태에서 로그아웃 요청해도 200 반환")
-        void logout_withoutLogin_success() throws Exception {
+        @DisplayName("비로그인 상태에서 로그아웃 요청 시에도 200 OK 반환")
+        void logout_withoutLogin_returns200() throws Exception {
             mockMvc.perform(post("/api/auth/logout")
                             .with(csrf()))
                     .andDo(print())

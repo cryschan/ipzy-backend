@@ -34,6 +34,7 @@ spring:
               - profile_nickname
               - profile_image
               - account_email
+
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -44,10 +45,18 @@ spring:
 # 앱 설정
 app:
   oauth2:
-    success-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback
+    success-redirect-uri: ${FRONTEND_URL:http://localhost:5173}
     failure-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback?error=true
+    logout-redirect-uri: ${FRONTEND_URL:http://localhost:5173}
   swagger:
     server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
+
+# AI 서비스 설정
+ai:
+  python:
+    base-url: ${AI_SERVICE_URL:http://localhost:8000}
+    connect-timeout: 5000
+    read-timeout: 10000
 
 logging:
   level:
