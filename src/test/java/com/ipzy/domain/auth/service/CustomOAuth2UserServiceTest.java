@@ -1,5 +1,6 @@
 package com.ipzy.domain.auth.service;
 
+import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
 import com.ipzy.global.common.enums.UserRole;
@@ -62,7 +63,7 @@ class CustomOAuth2UserServiceTest {
             given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
                     .willReturn(Optional.empty());
 
-            User savedUser = createUser(1L);
+            User savedUser = createNewUser(1L);  // 신규 사용자용
             given(userRepository.save(any(User.class))).willReturn(savedUser);
 
             // when
@@ -70,9 +71,11 @@ class CustomOAuth2UserServiceTest {
 
             // then
             verify(userRepository).save(any(User.class));
-            assertThat(result.getAttributes().get("userId")).isEqualTo(1L);
-            assertThat(result.getAttributes().get("email")).isEqualTo("test@kakao.com");
-            assertThat(result.getAttributes().get("name")).isEqualTo("테스트유저");
+            assertThat(result).isInstanceOf(CustomUserPrincipal.class);
+            CustomUserPrincipal principal = (CustomUserPrincipal) result;
+            assertThat(principal.getUserId()).isEqualTo(1L);
+            assertThat(principal.getEmail()).isEqualTo("test@kakao.com");
+            assertThat(principal.getUserName()).isEqualTo("테스트유저");
         }
 
         @Test
@@ -95,7 +98,9 @@ class CustomOAuth2UserServiceTest {
             verify(userRepository, never()).save(any(User.class));
             assertThat(existingUser.getName()).isEqualTo("테스트유저");
             assertThat(existingUser.getProfileImageUrl()).isEqualTo("https://example.com/image.png");
-            assertThat(result.getAttributes().get("userId")).isEqualTo(1L);
+            assertThat(result).isInstanceOf(CustomUserPrincipal.class);
+            CustomUserPrincipal principal = (CustomUserPrincipal) result;
+            assertThat(principal.getUserId()).isEqualTo(1L);
         }
 
         @Test
@@ -240,12 +245,20 @@ class CustomOAuth2UserServiceTest {
     }
 
     private User createUser(Long id) {
+        return createUserWithInfo(id, "기존이름", "https://old-image.com/img.png");
+    }
+
+    private User createNewUser(Long id) {
+        return createUserWithInfo(id, "테스트유저", "https://example.com/image.png");
+    }
+
+    private User createUserWithInfo(Long id, String name, String profileImageUrl) {
         User user = User.builder()
                 .email("test@kakao.com")
-                .name("기존이름")
+                .name(name)
                 .provider("KAKAO")
                 .providerId("12345")
-                .profileImageUrl("https://old-image.com/img.png")
+                .profileImageUrl(profileImageUrl)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .build();

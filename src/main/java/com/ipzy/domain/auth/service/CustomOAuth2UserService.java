@@ -1,23 +1,20 @@
 package com.ipzy.domain.auth.service;
 
+import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
 import com.ipzy.global.common.enums.UserRole;
 import com.ipzy.global.common.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
+
         OAuth2User oauth2User = fetchOAuth2User(request);
 
         String provider = request.getClientRegistration().getRegistrationId().toUpperCase();
@@ -46,18 +44,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("invalid_response", "카카오 계정 정보를 가져올 수 없습니다", null));
         }
-        log.debug("kakaoAccount: {}", kakaoAccount);
 
         Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
         if (profile == null) {
-            log.error("카카오 응답에 profile이 없습니다. kakaoAccount: {}", kakaoAccount);
+            log.error("카카오 응답에 profile이 없습니다. providerId: {}", providerId);
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("invalid_response", "카카오 프로필 정보를 가져올 수 없습니다", null));
         }
-        log.debug("profile: {}", profile);
 
         String email = (String) kakaoAccount.get("email");
+
         if (email == null) {
             log.error("카카오 계정에 이메일 정보가 없습니다. providerId: {}", providerId);
             throw new OAuth2AuthenticationException(
@@ -85,17 +82,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         user.updateLastLoginAt();
 
-        // 세션에 저장될 attributes에 userId 추가
-        Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
-        attributes.put("userId", user.getId());
-        attributes.put("email", email);
-        attributes.put("name", name);
-
-        return new DefaultOAuth2User(
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
-                attributes,
-                "id"
-        );
+        return CustomUserPrincipal.from(user, oauth2User.getAttributes());
     }
 
     /**

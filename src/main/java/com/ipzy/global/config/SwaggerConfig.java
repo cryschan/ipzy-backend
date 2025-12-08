@@ -42,21 +42,9 @@ public class SwaggerConfig {
                         ## 주요 엔드포인트
                         | 엔드포인트 | 설명 |
                         |-----------|------|
-                        | `GET /oauth2/authorization/kakao` | 카카오 로그인 |
+                        | `GET /api/auth/login/kakao` | 카카오 로그인 (→ `/oauth2/authorization/kakao`로 리다이렉트) |
                         | `GET /api/auth/me` | 현재 로그인 사용자 정보 |
                         | `POST /api/auth/logout` | 로그아웃 |
-
-                        ## 인증 에러 코드
-                        | 코드 | HTTP | 설명 |
-                        |------|------|------|
-                        | AUTH_001 | 401 | 인증이 필요합니다 |
-                        | AUTH_002 | 401 | OAuth 인증에 실패했습니다 |
-                        | AUTH_003 | 403 | 관리자 권한이 필요합니다 |
-                        | AUTH_004 | 409 | 이미 사용 중인 이메일입니다 |
-                        | AUTH_005 | 401 | 세션이 만료되었습니다 |
-                        | AUTH_006 | 401 | 사용자가 로그인을 취소했습니다 |
-                        | AUTH_007 | 401 | OAuth 토큰이 유효하지 않습니다 |
-                        | AUTH_008 | 401 | OAuth 응답을 처리할 수 없습니다 |
                         """, serverUrl))
                 .version("1.0.0");
     }
