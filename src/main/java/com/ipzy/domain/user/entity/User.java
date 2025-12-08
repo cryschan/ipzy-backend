@@ -15,8 +15,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 사용자 엔티티 - OAuth2 소셜 로그인 사용자 정보
+ */
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"provider", "provider_id"})
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
@@ -28,13 +33,17 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    private String password;
-
     @Column(nullable = false, length = 100)
     private String name;
 
     @Column(length = 20)
     private String phone;
+
+    @Column(nullable = false, length = 20)
+    private String provider;
+
+    @Column(name = "provider_id", nullable = false, length = 100)
+    private String providerId;
 
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
@@ -58,13 +67,14 @@ public class User extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    public User(String email, String password, String name, String phone,
-                String profileImageUrl, UserRole role, UserStatus status,
-                Map<String, Object> preferences) {
+    public User(String email, String name, String phone, String provider,
+                String providerId, String profileImageUrl, UserRole role,
+                UserStatus status, Map<String, Object> preferences) {
         this.email = email;
-        this.password = password;
         this.name = name;
         this.phone = phone;
+        this.provider = provider;
+        this.providerId = providerId;
         this.profileImageUrl = profileImageUrl;
         this.role = role != null ? role : UserRole.USER;
         this.status = status != null ? status : UserStatus.ACTIVE;
@@ -75,6 +85,11 @@ public class User extends BaseEntity {
         this.lastLoginAt = LocalDateTime.now();
     }
 
+    public void updateOAuthInfo(String name, String profileImageUrl) {
+        this.name = name;
+        this.profileImageUrl = profileImageUrl;
+    }
+
     public void updateProfile(String name, String phone, String profileImageUrl) {
         this.name = name;
         this.phone = phone;
@@ -83,10 +98,6 @@ public class User extends BaseEntity {
 
     public void updatePreferences(Map<String, Object> preferences) {
         this.preferences = preferences;
-    }
-
-    public void updatePassword(String encodedPassword) {
-        this.password = encodedPassword;
     }
 
     public void suspend() {
