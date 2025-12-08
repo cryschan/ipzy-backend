@@ -2,6 +2,7 @@ package com.ipzy.global.config;
 
 import com.ipzy.domain.auth.exception.AuthErrorCode;
 import com.ipzy.domain.auth.handler.OAuth2FailureHandler;
+import com.ipzy.domain.auth.handler.OAuth2LogoutSuccessHandler;
 import com.ipzy.domain.auth.handler.OAuth2SuccessHandler;
 import com.ipzy.domain.auth.service.CustomOAuth2UserService;
 import jakarta.servlet.http.Cookie;
@@ -35,6 +36,8 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     // OAuth2 로그인 실패 시 처리 핸들러 (에러 코드와 함께 리다이렉트)
     private final OAuth2FailureHandler oAuth2FailureHandler;
+    // OAuth2 로그아웃 성공 시 처리 핸들러 (Provider 토큰 revoke)
+    private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
 
     /**
      * Security Filter Chain 설정
@@ -137,15 +140,8 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 // 비로그인 상태에서도 로그아웃 요청 허용
                 .permitAll()
-                // 로그아웃 성공 시 JSON 응답 반환
-                .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(HttpServletResponse.SC_OK);  // 200
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write(
-                        "{\"success\":true,\"data\":{\"message\":\"로그아웃 되었습니다\"}}"
-                    );
-                })
+                // 로그아웃 성공 시 Provider 토큰 revoke 후 JSON 응답 반환
+                .logoutSuccessHandler(oAuth2LogoutSuccessHandler)
             );
 
         return http.build();

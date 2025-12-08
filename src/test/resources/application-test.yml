@@ -28,6 +28,7 @@ spring:
               - profile_nickname
               - profile_image
               - account_email
+
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -37,8 +38,9 @@ spring:
 
 app:
   oauth2:
-    success-redirect-uri: http://localhost:3000/auth/callback
-    failure-redirect-uri: http://localhost:3000/auth/callback?error=true
+    success-redirect-uri: http://localhost:5173
+    failure-redirect-uri: http://localhost:5173/auth/callback?error=true
+    logout-redirect-uri: http://localhost:5173
 
 logging:
   level:
