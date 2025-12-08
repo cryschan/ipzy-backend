@@ -10,8 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
-
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -27,7 +25,6 @@ import org.springframework.security.web.SecurityFilterChain;
  * - 세션 기반 인증 (30분 타임아웃)
  * - REST API용 JSON 응답
  */
-@Slf4j
 @Configuration  // Spring 설정 클래스임을 선언
 @EnableWebSecurity  // Spring Security 활성화
 @RequiredArgsConstructor  // final 필드 생성자 자동 생성 (DI용)
@@ -39,6 +36,8 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     // OAuth2 로그인 실패 시 처리 핸들러 (에러 코드와 함께 리다이렉트)
     private final OAuth2FailureHandler oAuth2FailureHandler;
+    // OAuth2 로그아웃 성공 시 처리 핸들러 (Provider 토큰 revoke)
+    private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
 
     /**
      * Security Filter Chain 설정
@@ -141,20 +140,8 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 // 비로그인 상태에서도 로그아웃 요청 허용
                 .permitAll()
-                // 로그아웃 성공 시 JSON 응답 반환
-                .logoutSuccessHandler((request, response, authentication) -> {
-                    if (authentication != null) {
-                        log.info("로그아웃 성공: user={}", authentication.getName());
-                    } else {
-                        log.info("비인증 상태에서 로그아웃 요청");
-                    }
-                    response.setStatus(HttpServletResponse.SC_OK);  // 200
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write(
-                        "{\"success\":true,\"data\":{\"message\":\"로그아웃 되었습니다\"}}"
-                    );
-                })
+                // 로그아웃 성공 시 Provider 토큰 revoke 후 JSON 응답 반환
+                .logoutSuccessHandler(oAuth2LogoutSuccessHandler)
             );
 
         return http.build();
