@@ -1,5 +1,7 @@
 package com.ipzy.domain.product.controller;
 
+import com.ipzy.domain.product.entity.Brand;
+import com.ipzy.domain.product.repository.BrandRepository;
 import com.ipzy.domain.product.service.ProductCrawlingService;
 import com.ipzy.domain.product.service.ProductSeasonService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class ProductCrawlingController {
 
     private final ProductCrawlingService productCrawlingService;
     private final ProductSeasonService productSeasonService;
+    private final BrandRepository brandRepository;
 
     /**
      * 전체 브랜드 상품 크롤링 및 저장
@@ -187,5 +190,54 @@ public class ProductCrawlingController {
         response.put("message", "크롤링 서비스 정상 작동 중");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 테스트용 브랜드 생성 (개발/테스트 전용)
+     *
+     * POST /api/admin/crawling/brands/create?name=musinsastandard&primaryStyle=minimalist
+     */
+    @PostMapping("/brands/create")
+    public ResponseEntity<Map<String, Object>> createBrand(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "minimalist") String primaryStyle
+    ) {
+        log.info("브랜드 생성 API 호출: name={}, primaryStyle={}", name, primaryStyle);
+
+        try {
+            // 이미 존재하는지 확인
+            if (brandRepository.findByName(name).isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "이미 존재하는 브랜드: " + name);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 브랜드 생성
+            Brand brand = Brand.builder()
+                    .name(name)
+                    .primaryStyle(primaryStyle)
+                    .brandType("CLOTHING")
+                    .build();
+
+            brandRepository.save(brand);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "브랜드 생성 완료");
+            response.put("brandId", brand.getId());
+            response.put("brandName", brand.getName());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("브랜드 생성 실패", e);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "브랜드 생성 실패: " + e.getMessage());
+
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 }

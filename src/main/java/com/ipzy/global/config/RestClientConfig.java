@@ -20,7 +20,7 @@ public class RestClientConfig {
         factory.setReadTimeout(Duration.ofSeconds(10));
 
         return RestClient.builder()
-                .baseUrl("https://www.musinsa.com")
+                .baseUrl("https://api.musinsa.com")
                 .requestFactory(factory)
                 .defaultHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
                 .build();

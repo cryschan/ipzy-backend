@@ -3,6 +3,7 @@ package com.ipzy.domain.product.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ipzy.domain.product.dto.CrawledProductDto;
+import com.ipzy.domain.product.dto.MusinsaPlpResponse;
 import com.ipzy.domain.product.dto.MusinsaRankingLinkDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +22,26 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MusinsaCrawlerService {
 
+    // PLP API 엔드포인트
+    private static final String PLP_API_TEMPLATE = "/api2/dp/v1/plp/goods"
+            + "?gf=%s&sortCode=%s&category=%s&brand=%s&page=%d&size=%d&caller=FLAGSHIP";
+
     private static final String RANKING_API_TEMPLATE = "/api2/hm/web/v5/pans/ranking/sections/199"
             + "?storeCode=musinsa&gf=A&ageBand=AGE_BAND_ALL&period=DAILY"
             + "&eventPeriod=BASIC_REALTIME&categoryCode=%s&page=1&startRank=1&offset=%d";
 
     private static final String TARGET_SECTION_NAME = "ranking_goods_list";
 
-    // 카테고리 코드 매핑
+    // 카테고리 코드 매핑 (PLP API용 - 단순 코드)
+    private static final Map<String, String> CATEGORY_CODES_SHORT = Map.of(
+            "TOP", "001",         // 상의
+            "OUTER", "002",       // 아우터
+            "BOTTOM", "003",      // 바지/하의
+            "SHOES", "103",       // 신발
+            "ACCESSORY", "101"    // 패션소품
+    );
+
+    // 카테고리 코드 매핑 (랭킹 API용 - 상세 코드)
     private static final Map<String, String> CATEGORY_CODES = Map.of(
             "TOP", "001000",      // 상의
             "OUTER", "002000",    // 아우터
@@ -91,13 +105,148 @@ public class MusinsaCrawlerService {
     }
 
     /**
-     * 브랜드명으로 상품 검색 및 크롤링 (하위 호환성 유지)
-     * TODO: 다음 PR에서 상세 파싱 추가 예정
+     * 브랜드명으로 상품 검색 및 크롤링 (PLP API 사용)
+     *
+     * @param brandName 브랜드명
+     * @param style 스타일 (미사용 - 향후 확장용)
+     * @param limit 크롤링할 상품 수
+     * @return 크롤링한 상품 리스트
      */
     public List<CrawledProductDto> crawlBrandProducts(String brandName, String style, int limit) {
-        log.info("브랜드별 크롤링은 아직 미구현 (다음 PR): 브랜드={}", brandName);
-        // 일단 TOP 카테고리에서 가져오기
-        return crawlCategoryProducts("TOP", limit);
+        log.info("브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 수량={}", brandName, limit);
+
+        // 브랜드 코드 변환 (예: "Musinsa Standard" -> "musinsastandard")
+        String brandCode = convertToBrandCode(brandName);
+
+        List<CrawledProductDto> allProducts = new ArrayList<>();
+
+        // 주요 카테고리별로 크롤링
+        for (String category : List.of("TOP", "OUTER", "BOTTOM")) {
+            try {
+                List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, category, limit / 3);
+                allProducts.addAll(products);
+
+                // 크롤링 간격
+                Thread.sleep(1000);
+
+            } catch (InterruptedException e) {
+                log.error("크롤링 대기 중 인터럽트 발생", e);
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("카테고리 {} 크롤링 실패: {}", category, e.getMessage());
+            }
+        }
+
+        log.info("브랜드 상품 크롤링 완료: {} ({}개)", brandName, allProducts.size());
+        return allProducts;
+    }
+
+    /**
+     * 특정 브랜드의 특정 카테고리 상품 크롤링 (PLP API 사용)
+     *
+     * @param brandCode 브랜드 코드
+     * @param category 카테고리 (TOP, OUTER, BOTTOM 등)
+     * @param limit 상품 수
+     * @return 크롤링한 상품 리스트
+     */
+    private List<CrawledProductDto> crawlBrandProductsByCategory(String brandCode, String category, int limit) {
+        String categoryCode = CATEGORY_CODES_SHORT.get(category.toUpperCase());
+        if (categoryCode == null) {
+            log.warn("유효하지 않은 카테고리: {}", category);
+            return List.of();
+        }
+
+        int pageSize = Math.min(limit, 30); // 최대 30개씩
+        int page = 1;
+
+        try {
+            // PLP API 호출
+            MusinsaPlpResponse response = fetchPlpApi("M", "POPULAR", categoryCode, brandCode, page, pageSize);
+
+            if (response == null || response.getData() == null || response.getData().getList() == null) {
+                log.warn("브랜드 {} 카테고리 {} API 응답 없음", brandCode, category);
+                return List.of();
+            }
+
+            // 응답을 CrawledProductDto로 변환
+            List<CrawledProductDto> products = response.getData().getList().stream()
+                    .limit(limit)
+                    .map(item -> convertToDto(item, category))
+                    .toList();
+
+            log.debug("브랜드 {} 카테고리 {}: {}개 상품 수집", brandCode, category, products.size());
+            return products;
+
+        } catch (Exception e) {
+            log.error("브랜드 {} 카테고리 {} 크롤링 실패: {}", brandCode, category, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * 무신사 PLP API 호출
+     *
+     * @param gender 성별 필터 (M/F)
+     * @param sortCode 정렬 기준 (POPULAR, SALE_RATE 등)
+     * @param categoryCode 카테고리 코드
+     * @param brandCode 브랜드 코드
+     * @param page 페이지 번호
+     * @param size 페이지당 상품 수
+     * @return API 응답
+     */
+    private MusinsaPlpResponse fetchPlpApi(String gender, String sortCode, String categoryCode,
+                                           String brandCode, int page, int size) {
+        String plpApi = String.format(PLP_API_TEMPLATE, gender, sortCode, categoryCode, brandCode, page, size);
+        log.debug("무신사 PLP API 호출: brand={}, category={}, page={}, size={}", brandCode, categoryCode, page, size);
+
+        try {
+            String responseBody = musinsaRestClient.get()
+                    .uri(plpApi)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .header("Origin", "https://www.musinsa.com")
+                    .header("Referer", "https://www.musinsa.com/")
+                    .retrieve()
+                    .body(String.class);
+
+            return objectMapper.readValue(responseBody, MusinsaPlpResponse.class);
+
+        } catch (Exception e) {
+            log.error("무신사 PLP API 호출 실패", e);
+            return null;
+        }
+    }
+
+    /**
+     * MusinsaPlpResponse.ProductItem을 CrawledProductDto로 변환
+     */
+    private CrawledProductDto convertToDto(MusinsaPlpResponse.ProductItem item, String category) {
+        return CrawledProductDto.builder()
+                .brandName(item.getBrandName())
+                .name(item.getGoodsName())
+                .category(category)
+                .subCategory("")
+                .price(item.getPrice())
+                .originalPrice(item.getNormalPrice())
+                .discountPercent(item.getSaleRate())
+                .thumbnailImageUrl(item.getThumbnail())
+                .description(String.format("리뷰: %d개 (평점: %d점)",
+                        item.getReviewCount() != null ? item.getReviewCount() : 0,
+                        item.getReviewScore() != null ? item.getReviewScore() : 0))
+                .colors(List.of())
+                .purchaseUrl(item.getGoodsLinkUrl())
+                .build();
+    }
+
+    /**
+     * 브랜드명을 브랜드 코드로 변환
+     * 예: "Musinsa Standard" -> "musinsastandard"
+     */
+    private String convertToBrandCode(String brandName) {
+        return brandName.toLowerCase()
+                .replace(" ", "")
+                .replace("-", "")
+                .replace("_", "");
     }
 
     /**
