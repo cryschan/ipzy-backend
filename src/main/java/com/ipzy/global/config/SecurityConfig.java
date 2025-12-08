@@ -30,6 +30,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/quizzes/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/brands/**").permitAll()
+                // Admin API (임시로 허용 - 나중에 인증 추가)
+                .requestMatchers("/api/admin/crawling/**").permitAll()
                 // Swagger
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // 나머지는 인증 필요

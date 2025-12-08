@@ -57,3 +57,7 @@ logs/
 *.key
 *.p12
 secrets/
+
+### 개발 문서 ###
+docs/product
+

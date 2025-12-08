@@ -35,6 +35,9 @@ dependencies {
     // Hibernate Types (JSONB, Array 지원)
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.7.0'
 
+    // Web Scraping
+    implementation 'org.jsoup:jsoup:1.17.2'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
