@@ -1,7 +1,7 @@
 package com.ipzy.domain.auth.dto;
 
 import com.ipzy.domain.user.entity.User;
-import com.ipzy.global.common.enums.UserRole;
+import com.ipzy._global.common.enums.UserRole;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;

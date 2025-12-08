@@ -1,4 +1,4 @@
-package com.ipzy.global.common;
+package com.ipzy._global.common;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

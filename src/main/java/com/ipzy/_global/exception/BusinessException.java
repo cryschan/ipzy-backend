@@ -1,4 +1,4 @@
-package com.ipzy.global.exception;
+package com.ipzy._global.exception;
 
 import lombok.Getter;
 
