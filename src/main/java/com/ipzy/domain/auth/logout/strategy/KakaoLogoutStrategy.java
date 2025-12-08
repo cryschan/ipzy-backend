@@ -37,6 +37,7 @@ public class KakaoLogoutStrategy implements OAuth2LogoutStrategy {
     @Override
     @SuppressWarnings("unchecked")
     public void revokeToken(String accessToken) {
+
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(accessToken);

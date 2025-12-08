@@ -2,6 +2,7 @@ package com.ipzy.global.config;
 
 import com.ipzy.domain.auth.exception.AuthErrorCode;
 import com.ipzy.domain.auth.handler.OAuth2FailureHandler;
+import com.ipzy.domain.auth.handler.OAuth2LogoutSuccessHandler;
 import com.ipzy.domain.auth.handler.OAuth2SuccessHandler;
 import com.ipzy.domain.auth.service.CustomOAuth2UserService;
 import jakarta.servlet.http.Cookie;
@@ -9,6 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -24,6 +27,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * - 세션 기반 인증 (30분 타임아웃)
  * - REST API용 JSON 응답
  */
+@Slf4j
 @Configuration  // Spring 설정 클래스임을 선언
 @EnableWebSecurity  // Spring Security 활성화
 @RequiredArgsConstructor  // final 필드 생성자 자동 생성 (DI용)
@@ -139,6 +143,11 @@ public class SecurityConfig {
                 .permitAll()
                 // 로그아웃 성공 시 JSON 응답 반환
                 .logoutSuccessHandler((request, response, authentication) -> {
+                    if (authentication != null) {
+                        log.info("로그아웃 성공: user={}", authentication.getName());
+                    } else {
+                        log.info("비인증 상태에서 로그아웃 요청");
+                    }
                     response.setStatus(HttpServletResponse.SC_OK);  // 200
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding("UTF-8");

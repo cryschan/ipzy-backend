@@ -37,7 +37,7 @@ public class OAuth2LogoutStrategyFactory {
     /**
      * Provider에 해당하는 Strategy를 반환합니다.
      *
-     * @param provider Provider 이름 (KAKAO, NAVER, GOOGLE)
+     * @param provider Provider 이름 (KAKAO)
      * @return Strategy Optional (없으면 empty)
      */
     public Optional<OAuth2LogoutStrategy> getStrategy(String provider) {
