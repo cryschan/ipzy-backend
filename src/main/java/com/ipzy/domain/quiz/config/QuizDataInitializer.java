@@ -29,7 +29,7 @@ public class QuizDataInitializer implements CommandLineRunner {
 
         log.info("퀴즈 기본 데이터를 초기화합니다...");
 
-        // 퀴즈 생성
+        // ========== Quiz 생성 ==========
         Quiz quiz = Quiz.builder()
                 .title("나의 스타일 찾기")
                 .description("4가지 질문으로 당신의 스타일을 분석합니다")
@@ -37,6 +37,8 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(1)
                 .build();
 
+        // ========== Questions 생성 및 Options 추가 ==========
+        
         // Q1. 어디 가요?
         QuizQuestion question1 = QuizQuestion.builder()
                 .quiz(quiz)
@@ -45,7 +47,8 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(1)
                 .required(true)
                 .build();
-
+        
+        // Q1의 Options 추가
         question1.addOption(QuizOption.builder()
                 .question(question1)
                 .text("회사")
@@ -79,7 +82,8 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(2)
                 .required(true)
                 .build();
-
+        
+        // Q2의 Options 추가
         question2.addOption(QuizOption.builder()
                 .question(question2)
                 .text("깔끔하게")
@@ -113,7 +117,8 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(3)
                 .required(true)
                 .build();
-
+        
+        // Q3의 Options 추가
         question3.addOption(QuizOption.builder()
                 .question(question3)
                 .text("없음")
@@ -147,7 +152,8 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(4)
                 .required(true)
                 .build();
-
+        
+        // Q4의 Options 추가
         question4.addOption(QuizOption.builder()
                 .question(question4)
                 .text("10만원")
@@ -173,13 +179,13 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(4)
                 .build());
 
-        // 퀴즈에 질문 추가
+        // ========== Quiz에 Questions 추가 (계층 구조 완성) ==========
         quiz.addQuestion(question1);
         quiz.addQuestion(question2);
         quiz.addQuestion(question3);
         quiz.addQuestion(question4);
 
-        // 저장
+        // ========== 저장 (Quiz -> Questions -> Options cascade 저장) ==========
         quizRepository.save(quiz);
 
         log.info("퀴즈 기본 데이터 초기화가 완료되었습니다. (퀴즈 1개, 질문 4개, 옵션 16개)");

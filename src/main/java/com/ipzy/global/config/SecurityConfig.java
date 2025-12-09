@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 // 퀴즈, 상품, 브랜드 API: 비로그인도 조회 가능
                 .requestMatchers("/api/quizzes/**").permitAll()
+                .requestMatchers("/api/quiz-sessions/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/brands/**").permitAll()
                 // Swagger UI: 개발 편의를 위해 허용
