@@ -4,7 +4,7 @@ import com.ipzy.domain.quiz.entity.Quiz;
 import com.ipzy.domain.quiz.entity.QuizOption;
 import com.ipzy.domain.quiz.entity.QuizQuestion;
 import com.ipzy.domain.quiz.repository.QuizRepository;
-import com.ipzy.global.common.enums.QuizType;
+import com.ipzy._global.common.enums.QuizType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -38,7 +38,7 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .build();
 
         // ========== Questions 생성 및 Options 추가 ==========
-        
+
         // Q1. 어디 가요?
         QuizQuestion question1 = QuizQuestion.builder()
                 .quiz(quiz)
@@ -47,7 +47,7 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(1)
                 .required(true)
                 .build();
-        
+
         // Q1의 Options 추가
         question1.addOption(QuizOption.builder()
                 .question(question1)
@@ -82,7 +82,7 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(2)
                 .required(true)
                 .build();
-        
+
         // Q2의 Options 추가
         question2.addOption(QuizOption.builder()
                 .question(question2)
@@ -117,7 +117,7 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(3)
                 .required(true)
                 .build();
-        
+
         // Q3의 Options 추가
         question3.addOption(QuizOption.builder()
                 .question(question3)
@@ -152,7 +152,7 @@ public class QuizDataInitializer implements CommandLineRunner {
                 .displayOrder(4)
                 .required(true)
                 .build();
-        
+
         // Q4의 Options 추가
         question4.addOption(QuizOption.builder()
                 .question(question4)

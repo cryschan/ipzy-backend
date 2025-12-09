@@ -9,20 +9,11 @@ import java.util.Optional;
 public interface QuizSessionRepository extends JpaRepository<QuizSession, Long> {
 
     @Query("""
-        SELECT DISTINCT s FROM QuizSession s
-        JOIN FETCH s.quiz q
-        LEFT JOIN FETCH s.answers a
-        LEFT JOIN FETCH a.question
-        WHERE s.id = :sessionId
-    """)
+                SELECT DISTINCT s FROM QuizSession s
+                JOIN FETCH s.quiz q
+                LEFT JOIN FETCH s.answers a
+                LEFT JOIN FETCH a.question
+                WHERE s.id = :sessionId
+            """)
     Optional<QuizSession> findByIdWithAnswers(Long sessionId);
-
-    @Query("""
-        SELECT DISTINCT s FROM QuizSession s
-        JOIN FETCH s.quiz q
-        LEFT JOIN FETCH s.answers a
-        LEFT JOIN FETCH a.question
-        WHERE s.id = :sessionId
-    """)
-    Optional<QuizSession> findByIdWithQuestionsAndAnswers(Long sessionId);
 }

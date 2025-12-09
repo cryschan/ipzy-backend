@@ -13,7 +13,7 @@ import com.ipzy.domain.quiz.repository.QuizRepository;
 import com.ipzy.domain.quiz.repository.QuizSessionRepository;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
-import com.ipzy.global.common.enums.QuizType;
+import com.ipzy._global.common.enums.QuizType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,10 +88,15 @@ public class QuizService {
                 .findByIdWithAnswers(sessionId)
                 .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
+        // 퀴즈가 null인 경우 예외 처리
+        if (session.getQuiz() == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+        }
+
         // 질문 목록 별도 조회 
         List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(
                 session.getQuiz().getId());
-        
+
         // 전체 질문 수
         int totalQuestions = questions.size();
         // 답변한 질문 수
@@ -118,7 +123,7 @@ public class QuizService {
     public QuizCompletionResponse completeSession(Long sessionId) {
         // 세션 조회 (퀴즈, 답변을 JOIN FETCH로 조회)
         QuizSession session = quizSessionRepository
-                .findByIdWithQuestionsAndAnswers(sessionId)
+                .findByIdWithAnswers(sessionId)
                 .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
         // 이미 완료된 세션이면 막기
@@ -205,14 +210,14 @@ public class QuizService {
             }
 
             Long questionId = answer.getQuestion().getId();
-            
+
             // questions 리스트에서 해당 질문 찾기 (options가 로드된 질문 사용)
             QuizQuestion question = questions.stream()
                     .filter(q -> q != null && q.getId() != null && q.getId().equals(questionId))
                     .findFirst()
                     .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
                             "답변에 해당하는 질문을 찾을 수 없습니다: " + questionId));
-            
+
             List<String> selectedOptions = answer.getSelectedOptions();
 
             // 2-1. 선택한 옵션이 비어있지 않은지 확인

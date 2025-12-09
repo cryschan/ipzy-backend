@@ -28,6 +28,12 @@ public class QuizSessionStartResponse {
     private LocalDateTime createdAt;
 
     public static QuizSessionStartResponse from(QuizSession session) {
+        if (session == null) {
+            throw new IllegalArgumentException("QuizSession cannot be null");
+        }
+        if (session.getQuiz() == null) {
+            throw new IllegalArgumentException("QuizSession must have a quiz");
+        }
         return new QuizSessionStartResponse(
                 session.getId(),
                 session.getUser() != null ? session.getUser().getId() : null,

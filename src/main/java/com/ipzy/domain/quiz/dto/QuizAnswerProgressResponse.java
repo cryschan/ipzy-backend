@@ -10,6 +10,6 @@ import java.util.List;
 public class QuizAnswerProgressResponse {
 
     private Long questionId;
-    private List<String> selectedOptionIds;
+    private List<String> selectedOptions;
 
 }
