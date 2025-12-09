@@ -23,14 +23,24 @@ public class Brand extends BaseEntity {
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
 
+    @Column(name = "primary_style", length = 50)
+    private String primaryStyle;
+
+    @Column(name = "brand_type", length = 20)
+    private String brandType;
+
     @Builder
-    public Brand(String name, String logoUrl) {
+    public Brand(String name, String logoUrl, String primaryStyle, String brandType) {
         this.name = name;
         this.logoUrl = logoUrl;
+        this.primaryStyle = primaryStyle;
+        this.brandType = brandType;
     }
 
-    public void update(String name, String logoUrl) {
+    public void update(String name, String logoUrl, String primaryStyle, String brandType) {
         this.name = name;
         this.logoUrl = logoUrl;
+        this.primaryStyle = primaryStyle;
+        this.brandType = brandType;
     }
 }

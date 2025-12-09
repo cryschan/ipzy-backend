@@ -54,7 +54,7 @@ public class RecommendationItem extends BaseEntity {
         if (product != null) {
             this.priceSnapshot = product.getPrice();
             this.productNameSnapshot = product.getName();
-            this.imageUrlSnapshot = product.getImageUrl();
+            this.imageUrlSnapshot = product.getThumbnailImageUrl();
         }
     }
 
