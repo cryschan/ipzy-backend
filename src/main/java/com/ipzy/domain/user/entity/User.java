@@ -1,8 +1,9 @@
 package com.ipzy.domain.user.entity;
 
-import com.ipzy.global.common.BaseEntity;
-import com.ipzy.global.common.enums.UserRole;
-import com.ipzy.global.common.enums.UserStatus;
+import com.ipzy._global.common.BaseEntity;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.vo.UserStylePreference;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -18,12 +19,12 @@ import java.util.Map;
 /**
  * 사용자 엔티티 - OAuth2 소셜 로그인 사용자 정보
  */
-@Entity
 @Table(name = "users", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"provider", "provider_id"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
 public class User extends BaseEntity {
 
     @Id
@@ -60,6 +61,10 @@ public class User extends BaseEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> preferences = new HashMap<>();
 
+    @Type(JsonType.class)
+    @Column(name = "style_preference", columnDefinition = "jsonb")
+    private UserStylePreference stylePreference;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
@@ -90,6 +95,18 @@ public class User extends BaseEntity {
         this.profileImageUrl = profileImageUrl;
     }
 
+    /**
+     * 다른 소셜 계정을 연동합니다.
+     * 기존 이메일로 가입된 사용자가 다른 소셜로 로그인할 때 사용됩니다.
+     *
+     * @param provider   새로운 OAuth2 Provider (KAKAO, NAVER, GOOGLE)
+     * @param providerId Provider에서 발급한 사용자 ID
+     */
+    public void linkSocialAccount(String provider, String providerId) {
+        this.provider = provider;
+        this.providerId = providerId;
+    }
+
     public void updateProfile(String name, String phone, String profileImageUrl) {
         this.name = name;
         this.phone = phone;
@@ -100,6 +117,10 @@ public class User extends BaseEntity {
         this.preferences = preferences;
     }
 
+    public void updateStylePreference(UserStylePreference stylePreference) {
+        this.stylePreference = stylePreference;
+    }
+
     public void suspend() {
         this.status = UserStatus.SUSPENDED;
     }
@@ -107,6 +128,26 @@ public class User extends BaseEntity {
     public void delete() {
         this.status = UserStatus.DELETED;
         this.deletedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 계정 탈퇴를 수행합니다.
+     *
+     * <p>상태를 DELETED로 변경하고, 개인정보를 마스킹 처리합니다.
+     * 법적 보존 의무가 있는 데이터(Payment, Subscription)는 연관 엔티티에서 별도 처리합니다.
+     */
+    public void withdraw() {
+        this.status = UserStatus.DELETED;
+        this.deletedAt = LocalDateTime.now();
+
+        // 개인정보 마스킹
+        this.email = "deleted_" + this.id + "_" + System.currentTimeMillis() + "@ipzy.com";
+        this.name = "탈퇴한 사용자";
+        this.phone = null;
+        this.profileImageUrl = null;
+        this.providerId = "deleted_" + this.id;
+        this.preferences = null;
+        this.stylePreference = null;
     }
 
     public void activate() {

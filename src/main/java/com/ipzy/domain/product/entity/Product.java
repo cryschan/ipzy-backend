@@ -1,7 +1,7 @@
 package com.ipzy.domain.product.entity;
 
-import com.ipzy.global.common.BaseEntity;
-import com.ipzy.global.common.enums.ClothingCategory;
+import com.ipzy._global.common.BaseEntity;
+import com.ipzy._global.common.enums.ClothingCategory;
 import io.hypersistence.utils.hibernate.type.array.StringArrayType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -36,6 +36,9 @@ public class Product extends BaseEntity {
     @Column(name = "sub_category", length = 50)
     private String subCategory;
 
+    @Column(name = "primary_style", length = 50)
+    private String primaryStyle;
+
     @Column(nullable = false)
     private Integer price;
 
@@ -45,19 +48,11 @@ public class Product extends BaseEntity {
     @Column(name = "discount_percent")
     private Integer discountPercent = 0;
 
-    @Column(name = "image_url", nullable = false, length = 500)
-    private String imageUrl;
-
-    @Type(StringArrayType.class)
-    @Column(columnDefinition = "text[]")
-    private String[] images;
+    @Column(name = "thumbnail_image_url", nullable = false, length = 500)
+    private String thumbnailImageUrl;
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Type(StringArrayType.class)
-    @Column(columnDefinition = "text[]")
-    private String[] sizes;
 
     @Type(StringArrayType.class)
     @Column(columnDefinition = "text[]")
@@ -65,10 +60,7 @@ public class Product extends BaseEntity {
 
     @Type(StringArrayType.class)
     @Column(columnDefinition = "text[]")
-    private String[] tags;
-
-    @Column(nullable = false)
-    private Integer stock = 0;
+    private String[] seasons;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -81,30 +73,24 @@ public class Product extends BaseEntity {
 
     @Builder
     public Product(Brand brand, String name, ClothingCategory category, String subCategory,
-                   Integer price, Integer originalPrice, Integer discountPercent,
-                   String imageUrl, String[] images, String description,
-                   String[] sizes, String[] colors, String[] tags,
-                   Integer stock, Boolean isActive, String purchaseUrl) {
+                   String primaryStyle, Integer price, Integer originalPrice, Integer discountPercent,
+                   String thumbnailImageUrl, String description,
+                   String[] colors, String[] seasons,
+                   Boolean isActive, String purchaseUrl) {
         this.brand = brand;
         this.name = name;
         this.category = category;
         this.subCategory = subCategory;
+        this.primaryStyle = primaryStyle;
         this.price = price;
         this.originalPrice = originalPrice;
         this.discountPercent = discountPercent != null ? discountPercent : 0;
-        this.imageUrl = imageUrl;
-        this.images = images;
+        this.thumbnailImageUrl = thumbnailImageUrl != null ? thumbnailImageUrl : "";
         this.description = description;
-        this.sizes = sizes;
         this.colors = colors;
-        this.tags = tags;
-        this.stock = stock != null ? stock : 0;
+        this.seasons = seasons;
         this.isActive = isActive != null ? isActive : true;
         this.purchaseUrl = purchaseUrl;
-    }
-
-    public void updateStock(Integer stock) {
-        this.stock = stock;
     }
 
     public void activate() {
@@ -113,10 +99,6 @@ public class Product extends BaseEntity {
 
     public void deactivate() {
         this.isActive = false;
-    }
-
-    public boolean isInStock() {
-        return this.stock > 0;
     }
 
     public void softDelete() {

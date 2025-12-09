@@ -1,7 +1,7 @@
 package com.ipzy.domain.quiz.entity;
 
-import com.ipzy.global.common.BaseEntity;
-import com.ipzy.global.common.enums.QuizType;
+import com.ipzy._global.common.BaseEntity;
+import com.ipzy._global.common.enums.QuizType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

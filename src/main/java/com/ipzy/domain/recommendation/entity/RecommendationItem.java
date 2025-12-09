@@ -1,8 +1,8 @@
 package com.ipzy.domain.recommendation.entity;
 
 import com.ipzy.domain.product.entity.Product;
-import com.ipzy.global.common.BaseEntity;
-import com.ipzy.global.common.enums.ClothingCategory;
+import com.ipzy._global.common.BaseEntity;
+import com.ipzy._global.common.enums.ClothingCategory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -54,7 +54,7 @@ public class RecommendationItem extends BaseEntity {
         if (product != null) {
             this.priceSnapshot = product.getPrice();
             this.productNameSnapshot = product.getName();
-            this.imageUrlSnapshot = product.getImageUrl();
+            this.imageUrlSnapshot = product.getThumbnailImageUrl();
         }
     }
 

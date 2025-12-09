@@ -1,11 +1,14 @@
 package com.ipzy.domain.user.entity;
 
-import com.ipzy.global.common.enums.UserRole;
-import com.ipzy.global.common.enums.UserStatus;
+import com.ipzy._global.common.enums.Gender;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.vo.UserStylePreference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +99,28 @@ class UserTest {
             assertThat(user.isActive()).isTrue();
             assertThat(user.getDeletedAt()).isNull();
         }
+
+        @Test
+        @DisplayName("withdraw() 호출 시 상태가 DELETED로 변경되고 개인정보가 마스킹된다")
+        void withdraw() {
+            User user = createUserWithAllFields();
+
+            user.withdraw();
+
+            // 상태 변경 확인
+            assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
+            assertThat(user.isDeleted()).isTrue();
+            assertThat(user.getDeletedAt()).isNotNull();
+
+            // 개인정보 마스킹 확인
+            assertThat(user.getEmail()).startsWith("deleted_").endsWith("@ipzy.com");
+            assertThat(user.getName()).isEqualTo("탈퇴한 사용자");
+            assertThat(user.getPhone()).isNull();
+            assertThat(user.getProfileImageUrl()).isNull();
+            assertThat(user.getProviderId()).startsWith("deleted_");
+            assertThat(user.getPreferences()).isNull();
+            assertThat(user.getStylePreference()).isNull();
+        }
     }
 
     @Nested
@@ -146,5 +171,24 @@ class UserTest {
                 .provider("KAKAO")
                 .providerId("12345")
                 .build();
+    }
+
+    private User createUserWithAllFields() {
+        User user = User.builder()
+                .email("test@example.com")
+                .name("테스트")
+                .phone("010-1234-5678")
+                .provider("KAKAO")
+                .providerId("12345")
+                .profileImageUrl("https://example.com/image.png")
+                .preferences(Map.of("theme", "dark"))
+                .build();
+        user.updateStylePreference(UserStylePreference.builder()
+                .colors(List.of("BLACK", "WHITE"))
+                .age(25)
+                .gender(Gender.MALE)
+                .styles(List.of("CASUAL", "MODERN"))
+                .build());
+        return user;
     }
 }
