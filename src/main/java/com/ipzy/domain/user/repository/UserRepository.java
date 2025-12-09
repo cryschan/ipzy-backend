@@ -1,6 +1,5 @@
 package com.ipzy.domain.user.repository;
 
-import com.ipzy._global.common.enums.UserStatus;
 import com.ipzy.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,7 +10,6 @@ import java.util.Optional;
  */
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByIdAndStatusNot(Long id, UserStatus status);
 
     Optional<User> findByEmail(String email);
 
