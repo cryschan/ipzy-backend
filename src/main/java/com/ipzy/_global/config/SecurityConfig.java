@@ -74,6 +74,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 // 퀴즈, 상품, 브랜드 API: 비로그인도 조회 가능
                 .requestMatchers("/api/quizzes/**").permitAll()
+                .requestMatchers("/api/quiz-sessions/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/brands/**").permitAll()
                 // 크롤링 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
