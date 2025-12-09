@@ -29,7 +29,11 @@ public class UserException extends BusinessException {
         return new UserException(UserErrorCode.PROFILE_UPDATE_FAILED);
     }
 
-    public static UserException passwordMismatch() {
-        return new UserException(UserErrorCode.PASSWORD_MISMATCH);
+    public static UserException alreadyDeleted() {
+        return new UserException(UserErrorCode.ALREADY_DELETED);
+    }
+
+    public static UserException adminCannotWithdraw() {
+        return new UserException(UserErrorCode.ADMIN_CANNOT_WITHDRAW);
     }
 }
