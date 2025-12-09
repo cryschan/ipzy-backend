@@ -1,4 +1,4 @@
-package com.ipzy.global.config;
+package com.ipzy._global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

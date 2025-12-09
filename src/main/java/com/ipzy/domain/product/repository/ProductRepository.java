@@ -1,7 +1,7 @@
 package com.ipzy.domain.product.repository;
 
 import com.ipzy.domain.product.entity.Product;
-import com.ipzy.global.common.enums.ClothingCategory;
+import com.ipzy._global.common.enums.ClothingCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

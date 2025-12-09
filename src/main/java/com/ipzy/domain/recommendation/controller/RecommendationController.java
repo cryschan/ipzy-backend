@@ -1,6 +1,6 @@
 package com.ipzy.domain.recommendation.controller;
 
-import com.ipzy.global.common.ApiResponse;
+import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.recommendation.client.PythonAiClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

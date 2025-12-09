@@ -3,9 +3,11 @@ package com.ipzy.domain.product.service;
 import com.ipzy.domain.product.dto.CrawledProductDto;
 import com.ipzy.domain.product.entity.Brand;
 import com.ipzy.domain.product.entity.Product;
+import com.ipzy.domain.product.exception.ProductErrorCode;
+import com.ipzy.domain.product.exception.ProductException;
 import com.ipzy.domain.product.repository.BrandRepository;
 import com.ipzy.domain.product.repository.ProductRepository;
-import com.ipzy.global.common.enums.ClothingCategory;
+import com.ipzy._global.common.enums.ClothingCategory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,7 +43,7 @@ public class ProductCrawlingService {
 
         // 브랜드 확인
         Brand brand = brandRepository.findByName(brandName)
-                .orElseThrow(() -> new IllegalArgumentException("브랜드를 찾을 수 없습니다: " + brandName));
+                .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND, brandName));
 
         // 크롤링
         List<CrawledProductDto> crawledProducts = musinsaCrawlerService.crawlBrandProducts(brandName, style, limit);
@@ -88,8 +90,11 @@ public class ProductCrawlingService {
         for (CrawledProductDto dto : allProducts) {
             try {
                 // 브랜드 조회
-                Brand brand = brandRepository.findByName(dto.getBrandName())
-                        .orElseThrow(() -> new IllegalArgumentException("브랜드를 찾을 수 없습니다: " + dto.getBrandName()));
+                Brand brand = brandRepository.findByName(dto.getBrandName()).orElse(null);
+                if (brand == null) {
+                    log.warn("브랜드를 찾을 수 없어 건너뜀: {}", dto.getBrandName());
+                    continue;
+                }
 
                 // 중복 체크
                 if (productRepository.existsByNameAndBrandId(dto.getName(), brand.getId())) {

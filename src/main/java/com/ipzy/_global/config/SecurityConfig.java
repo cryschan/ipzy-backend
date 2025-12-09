@@ -1,4 +1,4 @@
-package com.ipzy.global.config;
+package com.ipzy._global.config;
 
 import com.ipzy.domain.auth.exception.AuthErrorCode;
 import com.ipzy.domain.auth.handler.OAuth2FailureHandler;

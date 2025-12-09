@@ -123,7 +123,8 @@ public class MusinsaCrawlerService {
         // 주요 카테고리별로 크롤링
         for (String category : List.of("TOP", "OUTER", "BOTTOM")) {
             try {
-                List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, category, limit / 3);
+                int perCategoryLimit = Math.max(1, limit / 3); // 최소 1개 보장
+                List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, category, perCategoryLimit);
                 allProducts.addAll(products);
 
                 // 크롤링 간격

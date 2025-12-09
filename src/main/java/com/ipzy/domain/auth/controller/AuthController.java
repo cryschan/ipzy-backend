@@ -3,7 +3,7 @@ package com.ipzy.domain.auth.controller;
 import com.ipzy.domain.auth.dto.AuthMeResponse;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.exception.AuthException;
-import com.ipzy.global.common.ApiResponse;
+import com.ipzy._global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;

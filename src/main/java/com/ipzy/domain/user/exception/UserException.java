@@ -1,7 +1,7 @@
 package com.ipzy.domain.user.exception;
 
-import com.ipzy.global.exception.BusinessException;
-import com.ipzy.global.exception.ErrorCode;
+import com.ipzy._global.exception.BusinessException;
+import com.ipzy._global.exception.ErrorCode;
 
 /**
  * 사용자 관련 예외 (팩토리 메서드로 생성)
