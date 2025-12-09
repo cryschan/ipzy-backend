@@ -3,7 +3,8 @@ package com.ipzy.domain.user.controller;
 import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.exception.AuthException;
-import com.ipzy.domain.auth.logout.OAuth2TokenSessionKey;
+import com.ipzy.domain.auth.session.OAuth2SessionTokenResolver;
+import com.ipzy.domain.auth.session.OAuth2SessionTokenResolver.OAuth2SessionToken;
 import com.ipzy.domain.user.dto.UpdatePreferencesRequest;
 import com.ipzy.domain.user.dto.UpdateProfileRequest;
 import com.ipzy.domain.user.dto.UpdateStylePreferenceRequest;
@@ -15,7 +16,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +37,7 @@ public class UserController {
 
     private final UserService userService;
     private final WithdrawalService withdrawalService;
+    private final OAuth2SessionTokenResolver sessionTokenResolver;
 
     @Operation(
             summary = "내 프로필 조회",
@@ -173,25 +174,15 @@ public class UserController {
         validatePrincipal(principal);
 
         // 세션에서 OAuth 정보 조회
-        HttpSession session = request.getSession(false);
-        String provider = null;
-        String accessToken = null;
-
-        if (session != null) {
-            provider = (String) session.getAttribute("OAUTH2_PROVIDER");
-            if (provider != null) {
-                String sessionKey = OAuth2TokenSessionKey.getSessionKey(provider);
-                accessToken = (String) session.getAttribute(sessionKey);
-            }
-        }
+        OAuth2SessionToken token = sessionTokenResolver.resolve(request).orElse(null);
+        String provider = token != null ? token.provider() : null;
+        String accessToken = token != null ? token.accessToken() : null;
 
         // 탈퇴 수행
         withdrawalService.withdraw(principal.getUserId(), provider, accessToken);
 
         // 세션 무효화
-        if (session != null) {
-            session.invalidate();
-        }
+        sessionTokenResolver.invalidateSession(request);
         SecurityContextHolder.clearContext();
 
         return ResponseEntity.noContent().build();
