@@ -64,21 +64,8 @@ public class QuizService {
                 quizQuestionRepository.findAllByQuizIdWithOptions(quizId);
 
         return questions.stream()
-                .map(q -> new QuizQuestionResponse(
-                        q.getId(),
-                        q.getText(),
-                        q.getType().name(),
-                        q.getRequired(),
-                        q.getDisplayOrder(),
-                        q.getOptions().stream()
-                                .map(o -> new QuizOptionResponse(
-                                        o.getId(),
-                                        o.getText(),
-                                        o.getValue(),
-                                        o.getImageUrl(),
-                                        o.getDisplayOrder()
-                                )).toList()
-                )).toList();
+                .map(QuizQuestionResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -274,6 +261,38 @@ public class QuizService {
             throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
                     "같은 질문에 중복 답변이 있습니다");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public QuizQuestionResponse getQuestionByOrder(Long sessionId, Integer order) {
+        // 세션 조회
+        QuizSession session = quizSessionRepository
+                .findById(sessionId)
+                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+
+        // 이미 완료된 세션이면 막기
+        if (session.getCompleted()) {
+            throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
+        }
+
+        // 퀴즈가 null인 경우 예외 처리
+        if (session.getQuiz() == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+        }
+
+        // 질문 목록 조회 (JOIN FETCH로 옵션도 함께 조회)
+        List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(
+                session.getQuiz().getId());
+
+        // displayOrder로 질문 찾기
+        QuizQuestion question = questions.stream()
+                .filter(q -> q != null && q.getDisplayOrder() != null && q.getDisplayOrder().equals(order))
+                .findFirst()
+                .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                        "해당 순서의 질문을 찾을 수 없습니다: " + order));
+
+        // QuizQuestionResponse로 변환
+        return QuizQuestionResponse.from(question);
     }
 
 }
