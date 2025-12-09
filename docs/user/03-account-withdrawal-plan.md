@@ -4,7 +4,7 @@
 
 계정 탈퇴는 사용자가 서비스를 떠날 때 **개인정보 보호법과 비즈니스 요구사항**을 동시에 충족해야 합니다.
 
-```
+```text
 탈퇴 요청 → 활성 구독 확인 → OAuth 연동 해제 → 연관 데이터 처리 → 계정 비활성화
     ↑              ↑              ↑                ↑                ↑
     └──────────────┴──────────────┴────────────────┴────────────────┘
@@ -17,7 +17,7 @@
 
 ### ERD (User 중심)
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                           USER                                   │
 │  id, email, name, phone, provider, providerId                    │
@@ -282,7 +282,7 @@ public void invalidateAllSessions(Long userId) {
 
 ### 탈퇴 API
 
-```
+```http
 DELETE /api/v1/users/me
 Authorization: Required (세션)
 
@@ -300,7 +300,7 @@ Response:
 
 ### 탈퇴 확인 API (선택)
 
-```
+```http
 GET /api/v1/users/me/withdrawal-check
 Authorization: Required
 
@@ -567,7 +567,7 @@ public User registerOrLogin(String provider, String providerId) {
 
 ### 요약: 탈퇴 시 데이터 처리 원칙
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  개인정보보호법: 탈퇴 즉시 파기 원칙                             │
 │  ↓                                                               │

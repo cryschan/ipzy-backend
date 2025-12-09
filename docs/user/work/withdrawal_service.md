@@ -35,7 +35,7 @@
 
 ### 탈퇴 흐름도
 
-```
+```text
 ┌──────────┐     ┌──────────────────┐     ┌───────────────────┐
 │ Frontend │────>│ UserController   │────>│ WithdrawalService │
 │          │     │ DELETE /users/me │     │                   │
@@ -89,7 +89,7 @@
 
 ### 클래스 구조
 
-```
+```text
 domain/user/
 ├── controller/
 │   └── UserController.java           # DELETE /api/users/me 엔드포인트
@@ -258,7 +258,7 @@ PENDING_PAYMENT_EXISTS(400, "U006", "처리 중인 결제가 있어 탈퇴할 �
 
 ## 5. 의존성 관계
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                      UserController                              │
 │                    DELETE /api/users/me                          │
@@ -323,7 +323,7 @@ PENDING_PAYMENT_EXISTS(400, "U006", "처리 중인 결제가 있어 탈퇴할 �
 
 ### DELETE /api/users/me
 
-```
+```http
 DELETE /api/users/me
 Authorization: Required (Session)
 
