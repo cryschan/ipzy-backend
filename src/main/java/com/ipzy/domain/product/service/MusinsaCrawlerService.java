@@ -2,9 +2,12 @@ package com.ipzy.domain.product.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ipzy.domain.product.dto.BrandValidationResult;
 import com.ipzy.domain.product.dto.CrawledProductDto;
 import com.ipzy.domain.product.dto.MusinsaPlpResponse;
 import com.ipzy.domain.product.dto.MusinsaRankingLinkDto;
+import com.ipzy.domain.product.exception.ProductErrorCode;
+import com.ipzy.domain.product.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -105,7 +108,7 @@ public class MusinsaCrawlerService {
     }
 
     /**
-     * 브랜드명으로 상품 검색 및 크롤링 (PLP API 사용)
+     * 브랜드명으로 상품 검색 및 크롤링 (PLP API 사용) - 의류용
      *
      * @param brandName 브랜드명
      * @param style 스타일 (미사용 - 향후 확장용)
@@ -113,14 +116,14 @@ public class MusinsaCrawlerService {
      * @return 크롤링한 상품 리스트
      */
     public List<CrawledProductDto> crawlBrandProducts(String brandName, String style, int limit) {
-        log.info("브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 수량={}", brandName, limit);
+        log.info("의류 브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 수량={}", brandName, limit);
 
         // 브랜드 코드 변환 (예: "Musinsa Standard" -> "musinsastandard")
         String brandCode = convertToBrandCode(brandName);
 
         List<CrawledProductDto> allProducts = new ArrayList<>();
 
-        // 주요 카테고리별로 크롤링
+        // 주요 의류 카테고리별로 크롤링
         for (String category : List.of("TOP", "OUTER", "BOTTOM")) {
             try {
                 int perCategoryLimit = Math.max(1, limit / 3); // 최소 1개 보장
@@ -139,8 +142,29 @@ public class MusinsaCrawlerService {
             }
         }
 
-        log.info("브랜드 상품 크롤링 완료: {} ({}개)", brandName, allProducts.size());
+        log.info("의류 브랜드 상품 크롤링 완료: {} ({}개)", brandName, allProducts.size());
         return allProducts;
+    }
+
+    /**
+     * 신발 브랜드 상품 크롤링 (PLP API 사용) - 신발용
+     *
+     * @param brandName 브랜드명
+     * @param style 스타일 (미사용 - 향후 확장용)
+     * @param limit 크롤링할 상품 수
+     * @return 크롤링한 상품 리스트
+     */
+    public List<CrawledProductDto> crawlShoeProducts(String brandName, String style, int limit) {
+        log.info("신발 브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 수량={}", brandName, limit);
+
+        // 브랜드 코드 변환 (예: "Nike" -> "nike")
+        String brandCode = convertToBrandCode(brandName);
+
+        // SHOES 카테고리만 크롤링
+        List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, "SHOES", limit);
+
+        log.info("신발 브랜드 상품 크롤링 완료: {} ({}개)", brandName, products.size());
+        return products;
     }
 
     /**
@@ -222,21 +246,53 @@ public class MusinsaCrawlerService {
      * MusinsaPlpResponse.ProductItem을 CrawledProductDto로 변환
      */
     private CrawledProductDto convertToDto(MusinsaPlpResponse.ProductItem item, String category) {
+        // 필수 필드 기본값 처리
+        Integer price = item.getPrice() != null && item.getPrice() > 0 ? item.getPrice() : null;
+        Integer normalPrice = item.getNormalPrice() != null && item.getNormalPrice() > 0
+                ? item.getNormalPrice()
+                : price;  // normalPrice가 없으면 price 사용
+        Integer saleRate = item.getSaleRate() != null ? item.getSaleRate() : 0;
+
         return CrawledProductDto.builder()
                 .brandName(item.getBrandName())
                 .name(item.getGoodsName())
                 .category(category)
                 .subCategory("")
-                .price(item.getPrice())
-                .originalPrice(item.getNormalPrice())
-                .discountPercent(item.getSaleRate())
+                .price(price)
+                .originalPrice(normalPrice)
+                .discountPercent(saleRate)
                 .thumbnailImageUrl(item.getThumbnail())
                 .description(String.format("리뷰: %d개 (평점: %d점)",
                         item.getReviewCount() != null ? item.getReviewCount() : 0,
                         item.getReviewScore() != null ? item.getReviewScore() : 0))
-                .colors(List.of())
+                .colors(extractColorsFromName(item.getGoodsName()))
                 .purchaseUrl(item.getGoodsLinkUrl())
                 .build();
+    }
+
+    /**
+     * 상품명에서 색상 추출
+     * 예: "올마이티 썸머 레저 셋업 [블랙]" -> ["블랙"]
+     *     "신세틱 스웨이드 웨스턴 셔츠 [라이트 브라운]" -> ["라이트 브라운"]
+     */
+    private List<String> extractColorsFromName(String productName) {
+        if (productName == null) {
+            return List.of();
+        }
+
+        List<String> colors = new ArrayList<>();
+        // 대괄호 안의 내용 추출: [색상]
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]");
+        java.util.regex.Matcher matcher = pattern.matcher(productName);
+
+        while (matcher.find()) {
+            String color = matcher.group(1).trim();
+            if (!color.isEmpty()) {
+                colors.add(color);
+            }
+        }
+
+        return colors;
     }
 
     /**
@@ -363,5 +419,193 @@ public class MusinsaCrawlerService {
 
         log.info("전체 카테고리 랭킹 크롤링 완료: 총 {}개 상품 수집", allProducts.size());
         return allProducts;
+    }
+
+    /**
+     * 신발 카테고리별 랭킹 크롤링 (신발 전용 API 사용)
+     *
+     * @param shoeCategory 신발 카테고리 (sneakers, boots, sandals 등)
+     * @param limit 가져올 상품 수
+     * @return 크롤링한 상품 리스트
+     */
+    // 신발 카테고리 코드 매핑 (상수로 분리)
+    private static final Map<String, String> SHOE_CATEGORY_CODES = Map.of(
+            "all_shoes", "103000",      // 전체
+            "sneakers", "103004",       // 스니커즈
+            "boots", "103002",          // 부츠/워커
+            "sandals", "103003",        // 샌들/슬리퍼
+            "dress_shoes", "103001",    // 구두
+            "sports_shoes", "103005",   // 스포츠화
+            "padding_shoes", "103007"   // 패딩/퍼신발
+    );
+
+    public List<CrawledProductDto> crawlShoesRanking(String shoeCategory, int limit) {
+        log.info("신발 랭킹 크롤링 시작: 카테고리={}, 수량={}", shoeCategory, limit);
+
+        // 신발 카테고리 검증
+        if (shoeCategory == null || shoeCategory.isBlank()) {
+            throw new ProductException(ProductErrorCode.INVALID_SHOE_CATEGORY, "신발 카테고리가 비어있습니다");
+        }
+
+        String categoryCode = SHOE_CATEGORY_CODES.get(shoeCategory);
+        if (categoryCode == null) {
+            throw new ProductException(ProductErrorCode.INVALID_SHOE_CATEGORY,
+                    "유효하지 않은 신발 카테고리입니다: " + shoeCategory +
+                    ". 사용 가능한 카테고리: " + SHOE_CATEGORY_CODES.keySet());
+        }
+
+        List<CrawledProductDto> products = new ArrayList<>();
+
+        try {
+            // 신발 랭킹 API 호출
+            String apiUrl = String.format(
+                    "/api2/hm/web/v5/pans/ranking/sections/256?storeCode=sneaker&categoryCode=%s&contentsId=",
+                    categoryCode
+            );
+
+            String jsonResponse = musinsaRestClient.get()
+                    .uri(apiUrl)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .header("Referer", "https://www.musinsa.com/main/sneaker/ranking")
+                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .retrieve()
+                    .body(String.class);
+
+            if (jsonResponse == null) {
+                log.error("신발 랭킹 API 응답 없음");
+                return List.of();
+            }
+
+            // JSON 파싱하여 상품 정보 추출
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            JsonNode dataNode = root.path("data");
+            JsonNode modules = dataNode.path("modules");
+
+            if (modules.isMissingNode()) {
+                log.warn("modules 노드 없음");
+                log.debug("API 응답: {}", jsonResponse.substring(0, Math.min(500, jsonResponse.length())));
+                return List.of();
+            }
+
+            log.debug("modules 배열 크기: {}", modules.size());
+
+            int count = 0;
+            for (JsonNode module : modules) {
+                if (count >= limit) break;
+
+                String moduleType = module.path("type").asText();  // moduleType이 아니라 type!
+                log.debug("type: {}", moduleType);
+                if (!"MULTICOLUMN".equals(moduleType)) {
+                    continue;
+                }
+
+                log.debug("MULTICOLUMN 찾음");
+
+                // items 배열에서 상품 정보 추출
+                JsonNode items = module.path("items");
+                if (items.isMissingNode()) {
+                    log.debug("items 노드 없음");
+                    continue;
+                }
+                if (!items.isArray()) {
+                    log.debug("items가 배열이 아님");
+                    continue;
+                }
+                log.debug("items 배열 크기: {}", items.size());
+
+                for (JsonNode item : items) {
+                    if (count >= limit) break;
+
+                    JsonNode info = item.path("info");
+                    if (info.isMissingNode()) continue;
+
+                    String brandName = info.path("brandName").asText("Unknown");
+                    String productName = info.path("productName").asText("");
+
+                    // 필수 필드 기본값 처리 (0이면 null로)
+                    Integer price = info.path("finalPrice").asInt(0);
+                    if (price == null || price <= 0) {
+                        log.warn("가격 정보가 없는 상품 건너뜀: {}", productName);
+                        continue;
+                    }
+
+                    Integer normalPrice = info.path("normalPrice").asInt(0);
+                    if (normalPrice <= 0) {
+                        normalPrice = price;  // normalPrice가 없으면 price 사용
+                    }
+
+                    Integer discountRate = info.path("discountRatio").asInt(0);
+                    String thumbnailUrl = info.path("imageUrl").asText("");
+                    String productUrl = info.path("goodsLinkUrl").asText("");
+                    String purchaseUrl = productUrl.startsWith("http") ? productUrl : "https://www.musinsa.com" + productUrl;
+
+                    // 색상 추출
+                    List<String> colors = extractColorsFromName(productName);
+
+                    CrawledProductDto product = CrawledProductDto.builder()
+                            .brandName(brandName)
+                            .name(productName)
+                            .category("SHOES")
+                            .subCategory(shoeCategory)
+                            .price(price)
+                            .originalPrice(normalPrice)
+                            .discountPercent(discountRate)
+                            .thumbnailImageUrl(thumbnailUrl)
+                            .description("")
+                            .colors(colors)
+                            .purchaseUrl(purchaseUrl)
+                            .build();
+
+                    products.add(product);
+                    count++;
+                }
+            }
+
+            log.info("신발 랭킹 크롤링 완료: {}개 상품 수집", products.size());
+
+        } catch (Exception e) {
+            log.error("신발 랭킹 크롤링 실패: category={}, error={}", shoeCategory, e.getMessage(), e);
+        }
+
+        return products;
+    }
+
+    /**
+     * 무신사에 브랜드가 존재하는지 검증
+     *
+     * @param brandName 브랜드명 (예: "Musinsa Standard", "Thisisneverthat")
+     * @return 브랜드 검증 결과
+     */
+    public BrandValidationResult validateBrandExists(String brandName) {
+        // brandName null/blank 체크
+        if (brandName == null || brandName.isBlank()) {
+            throw new ProductException(ProductErrorCode.BRAND_NAME_REQUIRED);
+        }
+
+        String brandCode = convertToBrandCode(brandName);
+        log.info("무신사 브랜드 검증 시작: brandName={}, brandCode={}", brandName, brandCode);
+
+        try {
+            // TOP 카테고리에서 최소한의 상품을 조회하여 브랜드 존재 여부 확인
+            MusinsaPlpResponse response = fetchPlpApi("M", "POPULAR", "001", brandCode, 1, 1);
+
+            if (response == null || response.getData() == null) {
+                return BrandValidationResult.failure(brandCode, "API 응답 없음");
+            }
+
+            if (response.getData().getList() == null || response.getData().getList().isEmpty()) {
+                return BrandValidationResult.failure(brandCode, "상품을 찾을 수 없습니다");
+            }
+
+            // 상품이 존재하면 브랜드가 유효함
+            int productCount = response.getData().getList().size();
+
+            log.info("무신사 브랜드 검증 성공: brandCode={}, 상품수={}", brandCode, productCount);
+            return BrandValidationResult.success(brandCode, productCount);
+
+        } catch (Exception e) {
+            log.warn("무신사 브랜드 검증 실패: brandCode={}, error={}", brandCode, e.getMessage());
+            return BrandValidationResult.failure(brandCode, e.getMessage());
+        }
     }
 }
