@@ -24,8 +24,8 @@ public class KakaoUnlinkStrategy implements OAuth2UnlinkStrategy {
     private static final String UNLINK_URL = "https://kapi.kakao.com/v1/user/unlink";
     private final RestClient restClient;
 
-    public KakaoUnlinkStrategy() {
-        this.restClient = RestClient.create();
+    public KakaoUnlinkStrategy(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
     }
 
     @Override

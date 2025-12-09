@@ -28,7 +28,7 @@ public class OAuth2UnlinkStrategyFactory {
     public OAuth2UnlinkStrategyFactory(List<OAuth2UnlinkStrategy> strategyList) {
         this.strategies = strategyList.stream()
                 .collect(Collectors.toMap(
-                        OAuth2UnlinkStrategy::getProvider,
+                        strategy -> strategy.getProvider().toUpperCase(),
                         Function.identity()
                 ));
         log.info("등록된 연결 끊기 전략: {}", strategies.keySet());
@@ -41,6 +41,12 @@ public class OAuth2UnlinkStrategyFactory {
      * @return Strategy Optional (없으면 empty)
      */
     public Optional<OAuth2UnlinkStrategy> getStrategy(String provider) {
+
+        if (provider == null) {
+            log.warn("provider 정보가 없어 연결 끊기 전략을 찾을 수 없습니다");
+            return Optional.empty();
+        }
+
         return Optional.ofNullable(strategies.get(provider.toUpperCase()));
     }
 

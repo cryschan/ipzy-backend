@@ -2,12 +2,13 @@ package com.ipzy.domain.auth.unlink.strategy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class KakaoUnlinkStrategyTest {
 
-    private final KakaoUnlinkStrategy strategy = new KakaoUnlinkStrategy();
+    private final KakaoUnlinkStrategy strategy = new KakaoUnlinkStrategy(RestClient.builder());
 
     @Test
     @DisplayName("Provider 이름은 KAKAO를 반환한다")
