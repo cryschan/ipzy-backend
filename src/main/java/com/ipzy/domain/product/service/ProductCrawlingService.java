@@ -41,14 +41,21 @@ public class ProductCrawlingService {
     public int crawlAndSaveBrandProducts(String brandName, String brandType, String style, int limit) {
         log.info("브랜드 상품 크롤링 및 저장 시작: {}, brandType: {}", brandName, brandType);
 
+        // 파라미터 검증
+        if (brandType == null || brandType.isBlank()) {
+            throw new ProductException(ProductErrorCode.INVALID_BRAND_TYPE,
+                    "브랜드 타입은 필수입니다");
+        }
+
         // 브랜드 확인 (name + brandType으로 조회)
         Brand brand = brandRepository.findByNameAndBrandType(brandName, brandType)
-                .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND, brandName));
+                .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND,
+                        String.format("브랜드를 찾을 수 없습니다: name=%s, brandType=%s", brandName, brandType)));
 
-        // 브랜드 타입 검증
+        // 브랜드 타입 검증 (DB에서 조회한 엔티티도 체크)
         if (brand.getBrandType() == null || brand.getBrandType().isBlank()) {
             throw new ProductException(ProductErrorCode.INVALID_BRAND_TYPE,
-                    "브랜드 타입이 설정되지 않았습니다: " + brandName);
+                    "DB의 브랜드 타입이 설정되지 않았습니다: " + brandName);
         }
 
         // 브랜드 타입에 따라 크롤러 선택
@@ -105,10 +112,11 @@ public class ProductCrawlingService {
 
         for (CrawledProductDto dto : allProducts) {
             try {
-                // 브랜드 조회 (CLOTHING 타입으로 조회)
-                Brand brand = brandRepository.findByNameAndBrandType(dto.getBrandName(), "CLOTHING").orElse(null);
+                // 브랜드 조회 (카테고리에 따라 brandType 결정)
+                String brandType = "SHOES".equals(dto.getCategory()) ? "SHOES" : "CLOTHING";
+                Brand brand = brandRepository.findByNameAndBrandType(dto.getBrandName(), brandType).orElse(null);
                 if (brand == null) {
-                    log.warn("브랜드를 찾을 수 없어 건너뜀: {}", dto.getBrandName());
+                    log.warn("브랜드를 찾을 수 없어 건너뜀: brandName={}, brandType={}", dto.getBrandName(), brandType);
                     continue;
                 }
 

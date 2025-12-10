@@ -263,9 +263,19 @@ public class MusinsaCrawlerService {
     /**
      * MusinsaPlpResponse.ProductItem을 CrawledProductDto로 변환
      *
-     * @return 유효한 DTO, 가격이 없으면 null 반환
+     * @return 유효한 DTO, 필수 필드가 없으면 null 반환
      */
     private CrawledProductDto convertToDto(MusinsaPlpResponse.ProductItem item, String category) {
+        // 필수 필드 검증: brandName, goodsName
+        if (item.getBrandName() == null || item.getBrandName().isBlank()) {
+            log.warn("브랜드명이 없는 상품 건너뜀: goodsName={}", item.getGoodsName());
+            return null;
+        }
+        if (item.getGoodsName() == null || item.getGoodsName().isBlank()) {
+            log.warn("상품명이 없는 상품 건너뜀: brandName={}", item.getBrandName());
+            return null;
+        }
+
         // 필수 필드 검증: price가 없거나 0 이하면 null 반환
         Integer price = item.getPrice();
         if (price == null || price <= 0) {
@@ -326,8 +336,13 @@ public class MusinsaCrawlerService {
     /**
      * 브랜드명을 브랜드 코드로 변환
      * 예: "Musinsa Standard" -> "musinsastandard"
+     *
+     * @throws ProductException brandName이 null이거나 빈 문자열인 경우
      */
     private String convertToBrandCode(String brandName) {
+        if (brandName == null || brandName.isBlank()) {
+            throw new ProductException(ProductErrorCode.BRAND_NAME_REQUIRED, "브랜드명은 필수입니다");
+        }
         return brandName.toLowerCase()
                 .replace(" ", "")
                 .replace("-", "")
@@ -459,16 +474,18 @@ public class MusinsaCrawlerService {
     public List<CrawledProductDto> crawlShoesRanking(String shoeCategory, int limit) {
         log.info("신발 랭킹 크롤링 시작: 카테고리={}, 수량={}", shoeCategory, limit);
 
-        // 신발 카테고리 검증
+        // 신발 카테고리 필수 검증
         if (shoeCategory == null || shoeCategory.isBlank()) {
-            throw new ProductException(ProductErrorCode.INVALID_SHOE_CATEGORY, "신발 카테고리가 비어있습니다");
+            throw new ProductException(ProductErrorCode.INVALID_SHOE_CATEGORY,
+                    "신발 카테고리는 필수입니다. 사용 가능한 카테고리: " + SHOE_CATEGORY_CODES.keySet());
         }
 
-        String categoryCode = SHOE_CATEGORY_CODES.get(shoeCategory);
+        // 화이트리스트 검증
+        String categoryCode = SHOE_CATEGORY_CODES.get(shoeCategory.toLowerCase().trim());
         if (categoryCode == null) {
             throw new ProductException(ProductErrorCode.INVALID_SHOE_CATEGORY,
-                    "유효하지 않은 신발 카테고리입니다: " + shoeCategory +
-                    ". 사용 가능한 카테고리: " + SHOE_CATEGORY_CODES.keySet());
+                    String.format("유효하지 않은 신발 카테고리입니다: '%s'. 사용 가능한 카테고리: %s",
+                            shoeCategory, SHOE_CATEGORY_CODES.keySet()));
         }
 
         List<CrawledProductDto> products = new ArrayList<>();
@@ -536,13 +553,25 @@ public class MusinsaCrawlerService {
                     JsonNode info = item.path("info");
                     if (info.isMissingNode()) continue;
 
-                    String brandName = info.path("brandName").asText("Unknown");
+                    String brandName = info.path("brandName").asText("");
                     String productName = info.path("productName").asText("");
 
-                    // 필수 필드 기본값 처리
+                    // 필수 필드 검증: brandName
+                    if (brandName.isBlank()) {
+                        log.warn("브랜드명이 없는 상품 건너뜀: productName={}", productName);
+                        continue;
+                    }
+
+                    // 필수 필드 검증: productName
+                    if (productName.isBlank()) {
+                        log.warn("상품명이 없는 상품 건너뜀: brandName={}", brandName);
+                        continue;
+                    }
+
+                    // 필수 필드 검증: price
                     int price = info.path("finalPrice").asInt(0);
                     if (price <= 0) {
-                        log.warn("가격 정보가 없는 상품 건너뜀: {}", productName);
+                        log.warn("가격 정보가 없는 상품 건너뜀: brandName={}, productName={}", brandName, productName);
                         continue;
                     }
 

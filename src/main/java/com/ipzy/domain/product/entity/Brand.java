@@ -32,7 +32,7 @@ public class Brand extends BaseEntity {
     @Column(name = "primary_style", length = 50)
     private String primaryStyle;
 
-    @Column(name = "brand_type", length = 20)
+    @Column(name = "brand_type", nullable = false, length = 20)
     private String brandType;
 
     @Builder

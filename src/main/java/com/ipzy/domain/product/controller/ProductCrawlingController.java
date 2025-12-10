@@ -8,8 +8,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/crawling")
 @RequiredArgsConstructor
+@Validated
 public class ProductCrawlingController {
 
     private final ProductCrawlingService productCrawlingService;
@@ -127,10 +131,10 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/brand")
     public ApiResponse<CrawlingResponse> crawlBrandProducts(
-            @RequestParam String brandName,
-            @RequestParam(defaultValue = "CLOTHING") String brandType,
-            @RequestParam String style,
-            @RequestParam(defaultValue = "1") int limit
+            @RequestParam @NotBlank(message = "브랜드명은 필수입니다") String brandName,
+            @RequestParam(defaultValue = "CLOTHING") @NotBlank(message = "브랜드 타입은 필수입니다") String brandType,
+            @RequestParam @NotBlank(message = "스타일은 필수입니다") String style,
+            @RequestParam(defaultValue = "1") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, style={}, limit={}",
                 brandName, brandType, style, limit);
@@ -165,8 +169,8 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/shoes")
     public ApiResponse<CrawlingResponse> crawlShoesRanking(
-            @RequestParam(defaultValue = "sneakers") String category,
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(defaultValue = "sneakers") @NotBlank(message = "카테고리는 필수입니다") String category,
+            @RequestParam(defaultValue = "20") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("신발 랭킹 크롤링 API 호출: category={}, limit={}", category, limit);
 

@@ -11,8 +11,10 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/brands")
 @RequiredArgsConstructor
+@Validated
 public class BrandController {
 
     private final BrandService brandService;
@@ -217,7 +220,9 @@ public class BrandController {
             )
     })
     @GetMapping("/style/{style}")
-    public ApiResponse<List<BrandResponse>> getBrandsByStyle(@PathVariable String style) {
+    public ApiResponse<List<BrandResponse>> getBrandsByStyle(
+            @PathVariable @NotBlank(message = "스타일은 필수입니다") String style
+    ) {
         log.info("스타일별 브랜드 조회 API 호출: style={}", style);
         List<BrandResponse> response = brandService.getBrandsByStyle(style);
         return ApiResponse.success(response);
@@ -248,7 +253,9 @@ public class BrandController {
             )
     })
     @GetMapping("/validate")
-    public ApiResponse<BrandValidationResult> validateMusinsaBrand(@RequestParam String brandName) {
+    public ApiResponse<BrandValidationResult> validateMusinsaBrand(
+            @RequestParam @NotBlank(message = "브랜드명은 필수입니다") String brandName
+    ) {
         log.info("브랜드 검증 API 호출: brandName={}", brandName);
         BrandValidationResult response = brandService.validateMusinsaBrand(brandName);
         return ApiResponse.success(response);
