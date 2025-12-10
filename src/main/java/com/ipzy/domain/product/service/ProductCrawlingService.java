@@ -79,13 +79,16 @@ public class ProductCrawlingService {
     /**
      * 크롤링한 상품 목록을 배치로 저장 (트랜잭션 내부)
      *
+     * NOTE: Spring AOP 프록시가 동작하려면 public 또는 protected이어야 합니다.
+     * private 메서드는 @Transactional이 무시됩니다.
+     *
      * @param dtos 크롤링한 상품 DTO 목록
      * @param brand 브랜드 엔티티
      * @param brandName 브랜드명 (로그용)
      * @return 크롤링 결과
      */
     @Transactional
-    private CrawlingResult saveProductsBatch(List<CrawledProductDto> dtos, Brand brand, String brandName) {
+    protected CrawlingResult saveProductsBatch(List<CrawledProductDto> dtos, Brand brand, String brandName) {
         if (dtos.isEmpty()) {
             log.warn("크롤링된 상품이 없습니다: {}", brandName);
             return new CrawlingResult(0, List.of());

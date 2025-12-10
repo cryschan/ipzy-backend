@@ -253,8 +253,6 @@ GET https://api.musinsa.com/api2/hm/web/v5/pans/ranking/sections/256
 ## 📚 참고 문서
 
 - [Brand 스타일 정리](./brand-by-style.md)
-- [아키텍처 문서](./ARCHITECTURE.md)
-- [데이터 흐름](./DATA_FLOW.md)
 
 ## 🔗 관련 파일
 
