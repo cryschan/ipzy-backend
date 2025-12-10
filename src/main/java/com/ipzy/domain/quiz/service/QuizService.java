@@ -19,8 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -157,24 +160,15 @@ public class QuizService {
                     "퀴즈에 질문이 없습니다");
         }
 
-        // 1. 필수 질문 답변 여부 확인
-        List<Long> answeredQuestionIds = answers.stream()
-                .filter(a -> a != null && a.getQuestion() != null)
-                .map(a -> a.getQuestion().getId())
-                .distinct()
-                .toList();
+        // 질문 Map 생성 (O(1) 조회를 위해)
+        Map<Long, QuizQuestion> questionMap = questions.stream()
+                .filter(q -> q != null && q.getId() != null)
+                .collect(Collectors.toMap(QuizQuestion::getId, q -> q));
 
-        boolean allRequiredAnswered = questions.stream()
-                .filter(QuizQuestion::getRequired)
-                .allMatch(q -> answeredQuestionIds.contains(q.getId()));
-
-        if (!allRequiredAnswered) {
-            throw new QuizException(QuizErrorCode.QUIZ_REQUIRED_NOT_ANSWERED);
-        }
-
-        // 2. 각 답변 내용 검증
+        // 1. 필수 질문 답변 여부 확인 및 중복 답변 체크를 한 번에 처리
+        List<Long> answeredQuestionIds = new ArrayList<>();
         for (QuizAnswer answer : answers) {
-            // 답변이 null인 경우 건너뛰기 (이미 위에서 체크했지만 안전을 위해)
+            // 답변이 null인 경우 예외 처리
             if (answer == null) {
                 throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
                         "유효하지 않은 답변입니다");
@@ -188,12 +182,19 @@ public class QuizService {
 
             Long questionId = answer.getQuestion().getId();
 
-            // questions 리스트에서 해당 질문 찾기 (options가 로드된 질문 사용)
-            QuizQuestion question = questions.stream()
-                    .filter(q -> q != null && q.getId() != null && q.getId().equals(questionId))
-                    .findFirst()
-                    .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                            "답변에 해당하는 질문을 찾을 수 없습니다: " + questionId));
+            // 중복 답변 체크 (같은 질문에 여러 답변이 있는지)
+            if (answeredQuestionIds.contains(questionId)) {
+                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                        "같은 질문에 중복 답변이 있습니다");
+            }
+            answeredQuestionIds.add(questionId);
+
+            // 질문 조회 (Map에서 O(1) 조회)
+            QuizQuestion question = questionMap.get(questionId);
+            if (question == null) {
+                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                        "답변에 해당하는 질문을 찾을 수 없습니다: " + questionId);
+            }
 
             List<String> selectedOptions = answer.getSelectedOptions();
 
@@ -201,16 +202,13 @@ public class QuizService {
             validateOptions(question, selectedOptions);
         }
 
-        // 3. 중복 답변 체크 (같은 질문에 여러 답변이 있는지)
-        long distinctQuestionCount = answers.stream()
-                .filter(a -> a != null && a.getQuestion() != null)
-                .map(a -> a.getQuestion().getId())
-                .distinct()
-                .count();
+        // 2. 필수 질문 답변 여부 확인
+        boolean allRequiredAnswered = questions.stream()
+                .filter(QuizQuestion::getRequired)
+                .allMatch(q -> answeredQuestionIds.contains(q.getId()));
 
-        if (distinctQuestionCount != answers.size()) {
-            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                    "같은 질문에 중복 답변이 있습니다");
+        if (!allRequiredAnswered) {
+            throw new QuizException(QuizErrorCode.QUIZ_REQUIRED_NOT_ANSWERED);
         }
     }
 
@@ -271,8 +269,7 @@ public class QuizService {
         if (existing.isPresent()) {
             // 업데이트
             answer = existing.get();
-            answer.getSelectedOptions().clear();
-            answer.getSelectedOptions().addAll(request.getSelectedOptions());
+            answer.updateSelectedOptions(request.getSelectedOptions());
         } else {
             // 새로 생성
             answer = QuizAnswer.builder()
