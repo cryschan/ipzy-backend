@@ -1,5 +1,7 @@
 package com.ipzy.domain.quiz.controller;
 
+import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
+import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizCompletionResponse;
 import com.ipzy.domain.quiz.dto.QuizQuestionResponse;
 import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
@@ -133,6 +135,50 @@ public class QuizSessionController {
             @PathVariable Integer order
     ) {
         return quizService.getQuestionByOrder(sessionId, order);
+    }
+
+    @PostMapping("/{sessionId}/answers")
+    @Operation(
+            summary = "답변 저장/수정",
+            description = """
+                    퀴즈 세션의 답변을 저장하거나 수정합니다. 비로그인 사용자도 접근 가능합니다.
+                    
+                    **동작:**
+                    - 기존 답변이 있으면 업데이트, 없으면 새로 생성
+                    - 질문 타입별 검증 (SINGLE: 1개, MULTIPLE: 1개 이상)
+                    - 선택한 옵션이 해당 질문의 유효한 옵션인지 확인
+                    
+                    **에러 코드:**
+                    | 코드 | HTTP | 설명 |
+                    |------|------|------|
+                    | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
+                    | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
+                    | QUIZ_007 | 404 | 퀴즈 질문을 찾을 수 없습니다 |
+                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
+                    | QUIZ_008 | 400 | 해당 질문이 세션의 퀴즈에 속하지 않습니다 |
+                    | QUIZ_009 | 400 | 유효하지 않은 옵션입니다 |
+                    | QUIZ_010 | 400 | 단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다 |
+                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "답변 저장/수정 성공",
+            content = @Content(schema = @Schema(implementation = QuizAnswerResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_009, QUIZ_010)"
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_007)"
+    )
+    public QuizAnswerResponse saveAnswer(
+            @PathVariable Long sessionId,
+            @RequestBody QuizAnswerRequest request
+    ) {
+        return quizService.saveOrUpdateAnswer(sessionId, request);
     }
 
 }

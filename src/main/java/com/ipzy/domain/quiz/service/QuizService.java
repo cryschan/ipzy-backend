@@ -8,6 +8,7 @@ import com.ipzy.domain.quiz.entity.QuizQuestion;
 import com.ipzy.domain.quiz.entity.QuizSession;
 import com.ipzy.domain.quiz.exception.QuizErrorCode;
 import com.ipzy.domain.quiz.exception.QuizException;
+import com.ipzy.domain.quiz.repository.QuizAnswerRepository;
 import com.ipzy.domain.quiz.repository.QuizQuestionRepository;
 import com.ipzy.domain.quiz.repository.QuizRepository;
 import com.ipzy.domain.quiz.repository.QuizSessionRepository;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +30,7 @@ public class QuizService {
     private final QuizSessionRepository quizSessionRepository;
     private final UserRepository userRepository;
     private final QuizQuestionRepository quizQuestionRepository;
+    private final QuizAnswerRepository quizAnswerRepository;
 
     @Transactional
     public QuizSessionStartResponse startQuiz(Long quizId, Long userId) {
@@ -75,14 +78,8 @@ public class QuizService {
                 .findByIdWithAnswers(sessionId)
                 .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
-        // 퀴즈가 null인 경우 예외 처리
-        if (session.getQuiz() == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
-        }
-
-        // 질문 목록 별도 조회 
-        List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(
-                session.getQuiz().getId());
+        // 질문 목록 조회
+        List<QuizQuestion> questions = getQuestionsBySession(session);
 
         // 전체 질문 수
         int totalQuestions = questions.size();
@@ -91,6 +88,7 @@ public class QuizService {
 
         // 답변 목록 매핑
         List<QuizAnswerProgressResponse> answerList = session.getAnswers().stream()
+                .filter(a -> a != null && a.getQuestion() != null)
                 .map(a -> new QuizAnswerProgressResponse(
                         a.getQuestion().getId(),
                         a.getSelectedOptions()
@@ -113,19 +111,11 @@ public class QuizService {
                 .findByIdWithAnswers(sessionId)
                 .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
-        // 이미 완료된 세션이면 막기
-        if (session.getCompleted()) {
-            throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
-        }
+        // 세션 완료 여부 검증
+        validateSessionNotCompleted(session);
 
-        // 퀴즈가 null인 경우 예외 처리
-        if (session.getQuiz() == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
-        }
-
-        // 질문 목록 별도 조회
-        List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(
-                session.getQuiz().getId());
+        // 질문 목록 조회
+        List<QuizQuestion> questions = getQuestionsBySession(session);
 
         // 답변 검증
         validateAnswers(session, questions);
@@ -207,47 +197,8 @@ public class QuizService {
 
             List<String> selectedOptions = answer.getSelectedOptions();
 
-            // 2-1. 선택한 옵션이 비어있지 않은지 확인
-            if (selectedOptions == null || selectedOptions.isEmpty()) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "질문에 답변이 없습니다: " + question.getId());
-            }
-
-            // 2-2. 선택한 옵션이 해당 질문의 유효한 옵션인지 확인
-            // 질문의 옵션이 null이거나 비어있는 경우 예외 처리
-            if (question.getOptions() == null || question.getOptions().isEmpty()) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "질문에 옵션이 없습니다: " + question.getId());
-            }
-
-            List<String> validOptionValues = question.getOptions().stream()
-                    .filter(o -> o != null && o.getValue() != null)
-                    .map(QuizOption::getValue)
-                    .toList();
-
-            boolean allOptionsValid = selectedOptions.stream()
-                    .allMatch(validOptionValues::contains);
-
-            if (!allOptionsValid) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "유효하지 않은 옵션이 선택되었습니다: " + question.getId());
-            }
-
-            // 2-3. 질문 타입별 검증
-            QuizType questionType = question.getType();
-            if (questionType == QuizType.SINGLE) {
-                // SINGLE 타입: 정확히 1개만 선택해야 함
-                if (selectedOptions.size() != 1) {
-                    throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                            "단일 선택 질문에는 1개의 답변만 가능합니다: " + question.getId());
-                }
-            } else if (questionType == QuizType.MULTIPLE) {
-                // MULTIPLE 타입: 최소 1개 이상 선택해야 함
-                if (selectedOptions.size() < 1) {
-                    throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                            "다중 선택 질문에는 최소 1개 이상의 답변이 필요합니다: " + question.getId());
-                }
-            }
+            // 옵션 검증 (validateOptions 재사용)
+            validateOptions(question, selectedOptions);
         }
 
         // 3. 중복 답변 체크 (같은 질문에 여러 답변이 있는지)
@@ -270,19 +221,11 @@ public class QuizService {
                 .findById(sessionId)
                 .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
-        // 이미 완료된 세션이면 막기
-        if (session.getCompleted()) {
-            throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
-        }
+        // 세션 완료 여부 검증
+        validateSessionNotCompleted(session);
 
-        // 퀴즈가 null인 경우 예외 처리
-        if (session.getQuiz() == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
-        }
-
-        // 질문 목록 조회 (JOIN FETCH로 옵션도 함께 조회)
-        List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(
-                session.getQuiz().getId());
+        // 질문 목록 조회
+        List<QuizQuestion> questions = getQuestionsBySession(session);
 
         // displayOrder로 질문 찾기
         QuizQuestion question = questions.stream()
@@ -293,6 +236,129 @@ public class QuizService {
 
         // QuizQuestionResponse로 변환
         return QuizQuestionResponse.from(question);
+    }
+
+    @Transactional
+    public QuizAnswerResponse saveOrUpdateAnswer(Long sessionId, QuizAnswerRequest request) {
+        QuizSession session = quizSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+
+        // 세션 완료 여부 검증
+        validateSessionNotCompleted(session);
+
+        QuizQuestion question = quizQuestionRepository.findById(request.getQuestionId())
+                .orElseThrow(() -> new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_FOUND));
+
+        // 퀴즈가 null인 경우 예외 처리
+        if (session.getQuiz() == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+        }
+
+        // 질문이 세션의 퀴즈에 속해 있는지 검증
+        if (question.getQuiz() == null || !question.getQuiz().getId().equals(session.getQuiz().getId())) {
+            throw new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_IN_SESSION);
+        }
+
+        // 옵션 검증
+        validateOptions(question, request.getSelectedOptions());
+
+        // 기존 답변 조회
+        Optional<QuizAnswer> existing = quizAnswerRepository
+                .findBySessionIdAndQuestionId(sessionId, request.getQuestionId());
+
+        QuizAnswer answer;
+
+        if (existing.isPresent()) {
+            // 업데이트
+            answer = existing.get();
+            answer.getSelectedOptions().clear();
+            answer.getSelectedOptions().addAll(request.getSelectedOptions());
+        } else {
+            // 새로 생성
+            answer = QuizAnswer.builder()
+                    .session(session)
+                    .question(question)
+                    .selectedOptions(request.getSelectedOptions())
+                    .build();
+
+            quizAnswerRepository.save(answer);
+        }
+
+        return QuizAnswerResponse.from(answer);
+
+    }
+
+    private void validateOptions(QuizQuestion question, List<String> selectedOptions) {
+        // 질문 null 체크
+        if (question == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_FOUND);
+        }
+
+        // 선택한 옵션이 null이거나 비어있는지 확인
+        if (selectedOptions == null || selectedOptions.isEmpty()) {
+            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                    "선택한 옵션이 없습니다");
+        }
+
+        // 질문의 옵션이 null이거나 비어있는지 확인
+        if (question.getOptions() == null || question.getOptions().isEmpty()) {
+            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                    "질문에 옵션이 없습니다: " + question.getId());
+        }
+
+        List<String> available = question.getOptions().stream()
+                .filter(o -> o != null && o.getValue() != null)
+                .map(QuizOption::getValue)
+                .toList();
+
+        // 옵션이 유효한지 체크
+        for (String option : selectedOptions) {
+            if (option == null || !available.contains(option)) {
+                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
+            }
+        }
+
+        // 질문 타입별 검증
+        QuizType questionType = question.getType();
+        if (questionType == QuizType.SINGLE) {
+            // SINGLE 타입: 정확히 1개만 선택해야 함
+            if (selectedOptions.size() != 1) {
+                throw new QuizException(QuizErrorCode.QUIZ_ANSWER_TOO_MANY_OPTIONS);
+            }
+        } else if (questionType == QuizType.MULTIPLE) {
+            // MULTIPLE 타입: 최소 1개 이상 선택해야 함 (이미 위에서 empty 체크했지만 명시적으로)
+            if (selectedOptions.size() < 1) {
+                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                        "다중 선택 질문에는 최소 1개 이상의 답변이 필요합니다: " + question.getId());
+            }
+        }
+    }
+
+    /**
+     * 세션의 퀴즈에 속한 질문 목록 조회
+     * - 퀴즈 null 체크 포함
+     * - 옵션 포함하여 조회
+     */
+    private List<QuizQuestion> getQuestionsBySession(QuizSession session) {
+        if (session == null) {
+            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
+        }
+        if (session.getQuiz() == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+        }
+        return quizQuestionRepository.findAllByQuizIdWithOptions(session.getQuiz().getId());
+    }
+
+    /**
+     * 세션이 완료되지 않았는지 검증
+     */
+    private void validateSessionNotCompleted(QuizSession session) {
+        if (session == null) {
+            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
+        }
+        if (session.getCompleted()) {
+            throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
+        }
     }
 
 }
