@@ -53,6 +53,17 @@ public class MusinsaCrawlerService {
             "ACCESSORY", "101000" // 패션소품
     );
 
+    // 신발 카테고리 코드 매핑 (신발 랭킹 API용)
+    private static final Map<String, String> SHOE_CATEGORY_CODES = Map.of(
+            "all_shoes", "103000",      // 전체
+            "sneakers", "103004",       // 스니커즈
+            "boots", "103002",          // 부츠/워커
+            "sandals", "103003",        // 샌들/슬리퍼
+            "dress_shoes", "103001",    // 구두
+            "sports_shoes", "103005",   // 스포츠화
+            "padding_shoes", "103007"   // 패딩/퍼신발
+    );
+
     private final RestClient musinsaRestClient;
     private final ObjectMapper objectMapper;
 
@@ -428,17 +439,6 @@ public class MusinsaCrawlerService {
      * @param limit 가져올 상품 수
      * @return 크롤링한 상품 리스트
      */
-    // 신발 카테고리 코드 매핑 (상수로 분리)
-    private static final Map<String, String> SHOE_CATEGORY_CODES = Map.of(
-            "all_shoes", "103000",      // 전체
-            "sneakers", "103004",       // 스니커즈
-            "boots", "103002",          // 부츠/워커
-            "sandals", "103003",        // 샌들/슬리퍼
-            "dress_shoes", "103001",    // 구두
-            "sports_shoes", "103005",   // 스포츠화
-            "padding_shoes", "103007"   // 패딩/퍼신발
-    );
-
     public List<CrawledProductDto> crawlShoesRanking(String shoeCategory, int limit) {
         log.info("신발 랭킹 크롤링 시작: 카테고리={}, 수량={}", shoeCategory, limit);
 
@@ -522,9 +522,9 @@ public class MusinsaCrawlerService {
                     String brandName = info.path("brandName").asText("Unknown");
                     String productName = info.path("productName").asText("");
 
-                    // 필수 필드 기본값 처리 (0이면 null로)
-                    Integer price = info.path("finalPrice").asInt(0);
-                    if (price == null || price <= 0) {
+                    // 필수 필드 기본값 처리
+                    int price = info.path("finalPrice").asInt(0);
+                    if (price <= 0) {
                         log.warn("가격 정보가 없는 상품 건너뜀: {}", productName);
                         continue;
                     }

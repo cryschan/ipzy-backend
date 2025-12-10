@@ -21,7 +21,8 @@ public enum ProductErrorCode implements ErrorCode {
     INVALID_BRAND_TYPE(HttpStatus.BAD_REQUEST, "PROD_007", "유효하지 않은 브랜드 타입입니다"),
     INVALID_SHOE_CATEGORY(HttpStatus.BAD_REQUEST, "PROD_008", "유효하지 않은 신발 카테고리입니다"),
     INVALID_PRODUCT_DATA(HttpStatus.BAD_REQUEST, "PROD_009", "유효하지 않은 상품 데이터입니다"),
-    BRAND_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "PROD_010", "브랜드명은 필수입니다");
+    BRAND_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "PROD_010", "브랜드명은 필수입니다"),
+    BRAND_HAS_PRODUCTS(HttpStatus.CONFLICT, "PROD_011", "해당 브랜드에 연결된 상품이 존재하여 삭제할 수 없습니다");
 
     private final HttpStatus status;
     private final String code;

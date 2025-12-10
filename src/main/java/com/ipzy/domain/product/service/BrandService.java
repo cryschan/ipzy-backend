@@ -4,15 +4,18 @@ import com.ipzy.domain.product.dto.BrandRequest;
 import com.ipzy.domain.product.dto.BrandResponse;
 import com.ipzy.domain.product.dto.BrandValidationResult;
 import com.ipzy.domain.product.entity.Brand;
+import com.ipzy.domain.product.entity.Product;
 import com.ipzy.domain.product.exception.ProductErrorCode;
 import com.ipzy.domain.product.exception.ProductException;
 import com.ipzy.domain.product.repository.BrandRepository;
+import com.ipzy.domain.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -21,6 +24,7 @@ import java.util.List;
 public class BrandService {
 
     private final BrandRepository brandRepository;
+    private final ProductRepository productRepository;
     private final MusinsaCrawlerService musinsaCrawlerService;
 
     /**
@@ -69,8 +73,8 @@ public class BrandService {
                 .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND));
 
         // 이름 또는 타입 변경 시 중복 체크 (name + brandType 조합)
-        boolean nameOrTypeChanged = !brand.getName().equals(request.getName())
-                || !brand.getBrandType().equals(request.getBrandType());
+        boolean nameOrTypeChanged = !Objects.equals(brand.getName(), request.getName())
+                || !Objects.equals(brand.getBrandType(), request.getBrandType());
         if (nameOrTypeChanged && brandRepository.existsByNameAndBrandType(request.getName(), request.getBrandType())) {
             throw new ProductException(ProductErrorCode.BRAND_ALREADY_EXISTS);
         }
@@ -106,6 +110,14 @@ public class BrandService {
         Brand brand = brandRepository.findById(brandId)
                 .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND));
 
+        // 연관된 상품이 있는지 확인
+        List<Product> products = productRepository.findByBrandId(brandId);
+        if (!products.isEmpty()) {
+            log.warn("브랜드 삭제 실패: 연결된 상품이 존재합니다. brandId={}, productCount={}", brandId, products.size());
+            throw new ProductException(ProductErrorCode.BRAND_HAS_PRODUCTS,
+                    String.format("해당 브랜드에 %d개의 상품이 연결되어 있습니다", products.size()));
+        }
+
         brandRepository.delete(brand);
         log.info("브랜드 삭제 완료: id={}, name={}", brand.getId(), brand.getName());
     }
@@ -133,7 +145,15 @@ public class BrandService {
      * 스타일별 브랜드 조회
      */
     public List<BrandResponse> getBrandsByStyle(String style) {
-        return brandRepository.findByPrimaryStyle(style).stream()
+        log.info("스타일별 브랜드 조회: style={}", style);
+
+        List<Brand> brands = brandRepository.findByPrimaryStyle(style);
+
+        if (brands.isEmpty()) {
+            log.warn("스타일 '{}' 에 해당하는 브랜드가 없습니다", style);
+        }
+
+        return brands.stream()
                 .map(BrandResponse::from)
                 .toList();
     }

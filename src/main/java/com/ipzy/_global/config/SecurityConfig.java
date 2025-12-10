@@ -13,6 +13,7 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,6 +30,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
  */
 @Configuration  // Spring 설정 클래스임을 선언
 @EnableWebSecurity  // Spring Security 활성화
+@EnableMethodSecurity  // @PreAuthorize 등 메서드 레벨 시큐리티 활성화
 @RequiredArgsConstructor  // final 필드 생성자 자동 생성 (DI용)
 public class SecurityConfig {
 
@@ -81,8 +83,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/quiz-sessions/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/brands/**").permitAll()
-                // 크롤링 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
-                .requestMatchers("/api/admin/crawling/**").permitAll()
+                // 관리자 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
+                .requestMatchers("/api/admin/**").permitAll()
                 // Swagger UI: 개발 편의를 위해 허용
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // AI 통신 테스트 (개발용)

@@ -223,16 +223,7 @@ public class ProductCrawlingService {
                 }
 
                 // 브랜드 조회 또는 생성 (SHOES 타입)
-                Brand brand = brandRepository.findByNameAndBrandType(dto.getBrandName(), "SHOES")
-                        .orElseGet(() -> {
-                            log.info("신발 브랜드 자동 생성: {}", dto.getBrandName());
-                            Brand newBrand = Brand.builder()
-                                    .name(dto.getBrandName())
-                                    .brandType("SHOES")
-                                    .primaryStyle(shoeCategory)
-                                    .build();
-                            return brandRepository.save(newBrand);
-                        });
+                Brand brand = getOrCreateBrand(dto.getBrandName(), "SHOES", shoeCategory);
 
                 // 중복 체크
                 if (productRepository.existsByNameAndBrandId(dto.getName(), brand.getId())) {
@@ -279,5 +270,30 @@ public class ProductCrawlingService {
 
         log.info("스타일별 상품 크롤링 완료: {} (총 {}개)", style, totalSaved);
         return totalSaved;
+    }
+
+    /**
+     * 브랜드 조회 또는 생성 (동시성 문제 해결)
+     * - unique constraint 위반 시 재조회
+     */
+    private Brand getOrCreateBrand(String brandName, String brandType, String primaryStyle) {
+        return brandRepository.findByNameAndBrandType(brandName, brandType)
+                .orElseGet(() -> {
+                    try {
+                        log.info("브랜드 자동 생성: name={}, type={}", brandName, brandType);
+                        Brand newBrand = Brand.builder()
+                                .name(brandName)
+                                .brandType(brandType)
+                                .primaryStyle(primaryStyle)
+                                .build();
+                        return brandRepository.save(newBrand);
+                    } catch (Exception e) {
+                        // 동시 요청으로 인한 중복 생성 시도 시 재조회
+                        log.warn("브랜드 생성 실패 (중복 가능성), 재조회: name={}, type={}", brandName, brandType);
+                        return brandRepository.findByNameAndBrandType(brandName, brandType)
+                                .orElseThrow(() -> new ProductException(ProductErrorCode.BRAND_NOT_FOUND,
+                                        "브랜드 생성 및 재조회 실패: " + brandName));
+                    }
+                });
     }
 }
