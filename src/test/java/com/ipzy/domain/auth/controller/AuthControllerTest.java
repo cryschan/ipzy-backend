@@ -100,7 +100,7 @@ class AuthControllerTest {
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.error.code").value("AUTH_005"))
-                    .andExpect(jsonPath("$.error.message").value("세션이 만료되었습니다"));
+                    .andExpect(jsonPath("$.error.message").value("로그인 세션이 종료되었어요. 다시 로그인해주세요."));
         }
 
     }
