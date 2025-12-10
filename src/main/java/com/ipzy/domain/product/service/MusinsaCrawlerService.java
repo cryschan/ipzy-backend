@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 무신사 웹사이트 크롤링 서비스
@@ -63,6 +64,9 @@ public class MusinsaCrawlerService {
             "sports_shoes", "103005",   // 스포츠화
             "padding_shoes", "103007"   // 패딩/퍼신발
     );
+
+    // 색상 추출 정규식 패턴 (성능 최적화: 한 번만 컴파일)
+    private static final Pattern COLOR_PATTERN = Pattern.compile("\\[([^\\]]+)\\]");
 
     private final RestClient musinsaRestClient;
     private final ObjectMapper objectMapper;
@@ -259,6 +263,13 @@ public class MusinsaCrawlerService {
     private CrawledProductDto convertToDto(MusinsaPlpResponse.ProductItem item, String category) {
         // 필수 필드 기본값 처리
         Integer price = item.getPrice() != null && item.getPrice() > 0 ? item.getPrice() : null;
+
+        // price가 null인 경우 경고 로그
+        if (price == null) {
+            log.warn("가격 정보가 없는 상품: brandName={}, productName={}",
+                    item.getBrandName(), item.getGoodsName());
+        }
+
         Integer normalPrice = item.getNormalPrice() != null && item.getNormalPrice() > 0
                 ? item.getNormalPrice()
                 : price;  // normalPrice가 없으면 price 사용
@@ -292,9 +303,8 @@ public class MusinsaCrawlerService {
         }
 
         List<String> colors = new ArrayList<>();
-        // 대괄호 안의 내용 추출: [색상]
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]");
-        java.util.regex.Matcher matcher = pattern.matcher(productName);
+        // 대괄호 안의 내용 추출: [색상] (클래스 레벨 상수 사용)
+        var matcher = COLOR_PATTERN.matcher(productName);
 
         while (matcher.find()) {
             String color = matcher.group(1).trim();
@@ -585,27 +595,56 @@ public class MusinsaCrawlerService {
         String brandCode = convertToBrandCode(brandName);
         log.info("무신사 브랜드 검증 시작: brandName={}, brandCode={}", brandName, brandCode);
 
-        try {
-            // TOP 카테고리에서 최소한의 상품을 조회하여 브랜드 존재 여부 확인
-            MusinsaPlpResponse response = fetchPlpApi("M", "POPULAR", "001", brandCode, 1, 1);
+        // 여러 카테고리를 순회하며 브랜드 존재 확인
+        // 순서: 남성 상의 → 여성 상의 → 남성 신발 → 여성 신발 → 남성 액세서리
+        String[][] searchCombinations = {
+                {"M", "001"},  // 남성 TOP
+                {"F", "001"},  // 여성 TOP
+                {"M", "103"},  // 남성 SHOES
+                {"F", "103"},  // 여성 SHOES
+                {"M", "101"}   // 남성 ACCESSORY
+        };
 
-            if (response == null || response.getData() == null) {
-                return BrandValidationResult.failure(brandCode, "API 응답 없음");
+        for (String[] combo : searchCombinations) {
+            String gender = combo[0];
+            String category = combo[1];
+
+            try {
+                MusinsaPlpResponse response = fetchPlpApi(gender, "POPULAR", category, brandCode, 1, 1);
+
+                if (response != null && response.getData() != null
+                        && response.getData().getList() != null
+                        && !response.getData().getList().isEmpty()) {
+
+                    int productCount = response.getData().getList().size();
+                    String categoryName = getCategoryName(category);
+                    String genderName = "M".equals(gender) ? "남성" : "여성";
+
+                    log.info("무신사 브랜드 검증 성공: brandCode={}, 카테고리={}_{}, 상품수={}",
+                            brandCode, genderName, categoryName, productCount);
+
+                    return BrandValidationResult.success(brandCode, productCount);
+                }
+            } catch (Exception e) {
+                log.debug("브랜드 검증 실패 (다음 카테고리 시도): brandCode={}, gender={}, category={}, error={}",
+                        brandCode, gender, category, e.getMessage());
+                // 계속 다음 카테고리 시도
             }
-
-            if (response.getData().getList() == null || response.getData().getList().isEmpty()) {
-                return BrandValidationResult.failure(brandCode, "상품을 찾을 수 없습니다");
-            }
-
-            // 상품이 존재하면 브랜드가 유효함
-            int productCount = response.getData().getList().size();
-
-            log.info("무신사 브랜드 검증 성공: brandCode={}, 상품수={}", brandCode, productCount);
-            return BrandValidationResult.success(brandCode, productCount);
-
-        } catch (Exception e) {
-            log.warn("무신사 브랜드 검증 실패: brandCode={}, error={}", brandCode, e.getMessage());
-            return BrandValidationResult.failure(brandCode, e.getMessage());
         }
+
+        // 모든 카테고리에서 찾지 못함
+        log.warn("무신사 브랜드 검증 실패: brandCode={}, 모든 카테고리에서 상품을 찾을 수 없습니다", brandCode);
+        return BrandValidationResult.failure(brandCode, "상품을 찾을 수 없습니다");
+    }
+
+    private String getCategoryName(String categoryCode) {
+        return switch (categoryCode) {
+            case "001" -> "상의";
+            case "002" -> "아우터";
+            case "003" -> "하의";
+            case "103" -> "신발";
+            case "101" -> "액세서리";
+            default -> categoryCode;
+        };
     }
 }
