@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuizAnswerProgressResponse {
+public class QuizAnswerRequest {
 
     @Schema(description = "질문 ID", example = "1")
     private Long questionId;
