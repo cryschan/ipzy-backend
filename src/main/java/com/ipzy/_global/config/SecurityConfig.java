@@ -81,8 +81,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/quiz-sessions/**").permitAll()
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/brands/**").permitAll()
-                // 크롤링 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
-                .requestMatchers("/api/admin/crawling/**").permitAll()
+                // 관리자 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
+                .requestMatchers("/api/admin/**").permitAll()
                 // Swagger UI: 개발 편의를 위해 허용
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // AI 통신 테스트 (개발용)

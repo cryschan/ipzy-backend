@@ -8,7 +8,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "brands")
+@Table(
+    name = "brands",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_brand_name_type",
+        columnNames = {"name", "brand_type"}
+    )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Brand extends BaseEntity {
@@ -17,7 +23,7 @@ public class Brand extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(name = "logo_url", length = 500)
@@ -26,7 +32,7 @@ public class Brand extends BaseEntity {
     @Column(name = "primary_style", length = 50)
     private String primaryStyle;
 
-    @Column(name = "brand_type", length = 20)
+    @Column(name = "brand_type", nullable = false, length = 20)
     private String brandType;
 
     @Builder
