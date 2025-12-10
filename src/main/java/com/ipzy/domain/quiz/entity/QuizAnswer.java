@@ -44,4 +44,17 @@ public class QuizAnswer extends BaseEntity {
     void setSession(QuizSession session) {
         this.session = session;
     }
+
+    /**
+     * 선택한 옵션을 업데이트합니다.
+     * 
+     * @param selectedOptions 새로운 선택 옵션 value 목록
+     */
+    public void updateSelectedOptions(List<String> selectedOptions) {
+        if (selectedOptions == null) {
+            this.selectedOptions = new ArrayList<>();
+        } else {
+            this.selectedOptions = new ArrayList<>(selectedOptions);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.ipzy.domain.quiz.controller;
 
+import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.quiz.dto.QuizQuestionResponse;
 import com.ipzy.domain.quiz.dto.QuizSessionStartResponse;
@@ -7,7 +8,6 @@ import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,16 +29,16 @@ public class QuizController {
             summary = "퀴즈 세션 시작",
             description = "특정 퀴즈의 세션을 시작합니다. 비로그인 사용자도 접근 가능합니다."
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
-            content = @Content(schema = @Schema(implementation = QuizSessionStartResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    public QuizSessionStartResponse startQuiz(
+    public ApiResponse<QuizSessionStartResponse> startQuiz(
             @PathVariable Long quizId,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         Long userId = principal != null ? principal.getUserId() : null;
-        return quizService.startQuiz(quizId, userId);
+        return ApiResponse.success(quizService.startQuiz(quizId, userId));
     }
 
     // 특정 퀴즈의 전체 질문 조회 API
@@ -54,15 +54,15 @@ public class QuizController {
                     | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
                     """
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "질문 목록 조회 성공",
-            content = @Content(schema = @Schema(implementation = QuizQuestionResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    public List<QuizQuestionResponse> getQuestions(
+    public ApiResponse<List<QuizQuestionResponse>> getQuestions(
             @PathVariable Long quizId
     ) {
-        return quizService.getQuestions(quizId);
+        return ApiResponse.success(quizService.getQuestions(quizId));
     }
 
 }
