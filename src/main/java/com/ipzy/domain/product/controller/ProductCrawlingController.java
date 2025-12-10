@@ -27,7 +27,24 @@ public class ProductCrawlingController {
 
     @Operation(
             summary = "전체 브랜드 상품 크롤링",
-            description = "등록된 모든 브랜드의 상품을 크롤링하여 DB에 저장합니다."
+            description = """
+                    DB에 등록된 모든 브랜드의 상품을 크롤링하여 저장합니다.
+
+                    **의류 브랜드 (CLOTHING):**
+                    - 상의/아우터/하의를 각 limit개씩 크롤링
+                    - 총 limit × 3개 크롤링됩니다
+
+                    **신발 브랜드 (SHOES):**
+                    - 신발 카테고리에서 limit개 크롤링
+
+                    예: limit=3일 때 (기본값)
+                    - 의류 브랜드: 9개 (상의 3 + 아우터 3 + 하의 3)
+                    - 신발 브랜드: 3개
+
+                    예: limit=5일 때
+                    - 의류 브랜드: 15개 (상의 5 + 아우터 5 + 하의 5)
+                    - 신발 브랜드: 5개
+                    """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -64,18 +81,36 @@ public class ProductCrawlingController {
             )
     })
     @PostMapping("/products/all")
-    public ApiResponse<CrawlingResponse> crawlAllProducts() {
-        log.info("전체 상품 크롤링 API 호출");
+    public ApiResponse<CrawlingResponse> crawlAllProducts(
+            @RequestParam(defaultValue = "3") @Positive(message = "limit은 양수여야 합니다") int limit
+    ) {
+        log.info("전체 상품 크롤링 API 호출: 브랜드당 {}개", limit);
 
-        int savedCount = productCrawlingService.crawlAndSaveAllProducts();
-        CrawlingResponse response = CrawlingResponse.of(savedCount, "크롤링이 완료되었습니다");
+        var result = productCrawlingService.crawlAndSaveAllProducts(limit);
+        CrawlingResponse response = CrawlingResponse.of(
+                result.savedCount(),
+                result.failedProducts().size(),
+                result.failedProducts(),
+                "크롤링이 완료되었습니다"
+        );
 
         return ApiResponse.success(response);
     }
 
     @Operation(
             summary = "특정 브랜드 상품 크롤링",
-            description = "지정한 브랜드의 상품을 크롤링하여 DB에 저장합니다."
+            description = """
+                    지정한 브랜드의 상품을 크롤링하여 DB에 저장합니다.
+
+                    **의류 브랜드 (CLOTHING):**
+                    - 상의/아우터/하의를 각 limit개씩 크롤링합니다
+                    - 총 limit × 3개 크롤링됩니다
+                    - 예: limit=4 → 상의 4 + 아우터 4 + 하의 4 = 총 12개
+
+                    **신발 브랜드 (SHOES):**
+                    - 신발 카테고리에서 limit개 크롤링합니다
+                    - 예: limit=4 → 신발 4개
+                    """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -139,8 +174,15 @@ public class ProductCrawlingController {
         log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, style={}, limit={}",
                 brandName, brandType, style, limit);
 
-        int savedCount = productCrawlingService.crawlAndSaveBrandProducts(brandName, brandType, style, limit);
-        CrawlingResponse response = CrawlingResponse.of(savedCount, brandName, style, "크롤링이 완료되었습니다");
+        var result = productCrawlingService.crawlAndSaveBrandProducts(brandName, brandType, style, limit);
+        CrawlingResponse response = CrawlingResponse.of(
+                result.savedCount(),
+                result.failedProducts().size(),
+                brandName,
+                style,
+                result.failedProducts(),
+                "크롤링이 완료되었습니다"
+        );
 
         return ApiResponse.success(response);
     }
@@ -174,8 +216,13 @@ public class ProductCrawlingController {
     ) {
         log.info("신발 랭킹 크롤링 API 호출: category={}, limit={}", category, limit);
 
-        int savedCount = productCrawlingService.crawlAndSaveShoesRanking(category, limit);
-        CrawlingResponse response = CrawlingResponse.of(savedCount, "신발 랭킹 크롤링이 완료되었습니다");
+        var result = productCrawlingService.crawlAndSaveShoesRanking(category, limit);
+        CrawlingResponse response = CrawlingResponse.of(
+                result.savedCount(),
+                result.failedProducts().size(),
+                result.failedProducts(),
+                "신발 랭킹 크롤링이 완료되었습니다"
+        );
 
         return ApiResponse.success(response);
     }
