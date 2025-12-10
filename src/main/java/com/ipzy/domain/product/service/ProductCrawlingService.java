@@ -1,6 +1,7 @@
 package com.ipzy.domain.product.service;
 
 import com.ipzy.domain.product.dto.CrawledProductDto;
+import com.ipzy.domain.product.dto.FailedProductInfo;
 import com.ipzy.domain.product.entity.Brand;
 import com.ipzy.domain.product.entity.Product;
 import com.ipzy.domain.product.exception.ProductErrorCode;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 크롤링한 상품 데이터를 데이터베이스에 저장하는 서비스
@@ -35,10 +37,9 @@ public class ProductCrawlingService {
      * @param brandName 브랜드명
      * @param style 스타일
      * @param limit 상품 수
-     * @return 저장된 상품 수
+     * @return 크롤링 결과 (저장된 상품 수, 실패 목록)
      */
-    @Transactional
-    public int crawlAndSaveBrandProducts(String brandName, String brandType, String style, int limit) {
+    public CrawlingResult crawlAndSaveBrandProducts(String brandName, String brandType, String style, int limit) {
         log.info("브랜드 상품 크롤링 및 저장 시작: {}, brandType: {}", brandName, brandType);
 
         // 파라미터 검증
@@ -58,7 +59,7 @@ public class ProductCrawlingService {
                     "DB의 브랜드 타입이 설정되지 않았습니다: " + brandName);
         }
 
-        // 브랜드 타입에 따라 크롤러 선택
+        // 브랜드 타입에 따라 크롤러 선택 (트랜잭션 밖에서 크롤링)
         List<CrawledProductDto> crawledProducts;
         if ("CLOTHING".equals(brand.getBrandType())) {
             log.info("의류 브랜드로 무신사 크롤링 시작");
@@ -71,79 +72,143 @@ public class ProductCrawlingService {
                     "지원하지 않는 브랜드 타입입니다: " + brand.getBrandType());
         }
 
-        // 저장
-        int savedCount = 0;
-        for (CrawledProductDto dto : crawledProducts) {
-            try {
-                // 중복 체크
-                if (productRepository.existsByNameAndBrandId(dto.getName(), brand.getId())) {
-                    log.debug("이미 존재하는 상품: {}", dto.getName());
-                    continue;
-                }
-
-                Product product = convertToProduct(dto, brand);
-                productRepository.save(product);
-                savedCount++;
-
-            } catch (Exception e) {
-                log.error("상품 저장 실패: {}, 에러: {}", dto.getName(), e.getMessage());
-            }
-        }
-
-        log.info("브랜드 상품 저장 완료: {} ({}개)", brandName, savedCount);
-        return savedCount;
+        // 저장 (별도 트랜잭션)
+        return saveProductsBatch(crawledProducts, brand, brandName);
     }
 
     /**
-     * 모든 브랜드의 상품을 크롤링하여 저장
+     * 크롤링한 상품 목록을 배치로 저장 (트랜잭션 내부)
      *
-     * @return 저장된 상품 수
+     * @param dtos 크롤링한 상품 DTO 목록
+     * @param brand 브랜드 엔티티
+     * @param brandName 브랜드명 (로그용)
+     * @return 크롤링 결과
      */
     @Transactional
-    public int crawlAndSaveAllProducts() {
-        log.info("전체 상품 크롤링 및 저장 시작");
+    private CrawlingResult saveProductsBatch(List<CrawledProductDto> dtos, Brand brand, String brandName) {
+        if (dtos.isEmpty()) {
+            log.warn("크롤링된 상품이 없습니다: {}", brandName);
+            return new CrawlingResult(0, List.of());
+        }
 
-        // 전체 브랜드 크롤링
-        List<CrawledProductDto> allProducts = musinsaCrawlerService.crawlAllBrands();
+        // 1. 중복 체크 (배치 조회)
+        List<String> productNames = dtos.stream()
+                .map(CrawledProductDto::getName)
+                .toList();
 
-        // 저장
-        int savedCount = 0;
-        List<String> errors = new ArrayList<>();
+        Set<String> existingNames = productRepository.findExistingNamesByBrandIdAndNameIn(brand.getId(), productNames);
 
-        for (CrawledProductDto dto : allProducts) {
+        log.debug("중복 상품 {}개 발견: {}", existingNames.size(), existingNames);
+
+        // 2. 중복 제외 및 Entity 변환
+        List<Product> newProducts = new ArrayList<>();
+        List<FailedProductInfo> failedProducts = new ArrayList<>();
+
+        for (CrawledProductDto dto : dtos) {
             try {
-                // 브랜드 조회 (카테고리에 따라 brandType 결정)
-                String brandType = "SHOES".equals(dto.getCategory()) ? "SHOES" : "CLOTHING";
-                Brand brand = brandRepository.findByNameAndBrandType(dto.getBrandName(), brandType).orElse(null);
-                if (brand == null) {
-                    log.warn("브랜드를 찾을 수 없어 건너뜀: brandName={}, brandType={}", dto.getBrandName(), brandType);
-                    continue;
-                }
-
-                // 중복 체크
-                if (productRepository.existsByNameAndBrandId(dto.getName(), brand.getId())) {
+                // 중복 체크 (메모리에서 처리)
+                if (existingNames.contains(dto.getName())) {
                     log.debug("이미 존재하는 상품: {}", dto.getName());
+                    failedProducts.add(FailedProductInfo.of(dto.getName(), brandName, "중복 상품"));
                     continue;
                 }
 
-                // 상품 저장
                 Product product = convertToProduct(dto, brand);
-                productRepository.save(product);
-                savedCount++;
+                newProducts.add(product);
 
             } catch (Exception e) {
-                String error = String.format("상품 저장 실패: %s, 에러: %s", dto.getName(), e.getMessage());
-                log.error(error);
-                errors.add(error);
+                String reason = e.getMessage() != null ? e.getMessage() : "알 수 없는 오류";
+                log.error("상품 변환 실패: {}, 에러: {}", dto.getName(), reason);
+                failedProducts.add(FailedProductInfo.of(dto.getName(), brandName, reason));
             }
         }
 
-        log.info("전체 상품 저장 완료: 총 {}개 저장, {}개 실패", savedCount, errors.size());
-        if (!errors.isEmpty()) {
-            log.warn("저장 실패 목록: {}", errors);
+        // 3. 배치 저장
+        if (!newProducts.isEmpty()) {
+            productRepository.saveAll(newProducts);
+            log.info("브랜드 상품 배치 저장 완료: {} ({}개)", brandName, newProducts.size());
         }
 
-        return savedCount;
+        log.info("브랜드 상품 저장 완료: {} (성공: {}개, 실패: {}개)", brandName, newProducts.size(), failedProducts.size());
+        return new CrawlingResult(newProducts.size(), failedProducts);
+    }
+
+    /**
+     * 크롤링 결과 (내부용)
+     */
+    public record CrawlingResult(int savedCount, List<FailedProductInfo> failedProducts) {
+    }
+
+    /**
+     * DB에 등록된 모든 브랜드의 상품을 크롤링하여 저장
+     * 각 브랜드별로 독립적인 트랜잭션으로 처리됩니다.
+     *
+     * @param perBrandLimit 브랜드당 크롤링할 상품 수 (의류는 3의 배수로 자동 조정)
+     * @return 크롤링 결과 (저장된 상품 수, 실패 목록)
+     */
+    public CrawlingResult crawlAndSaveAllProducts(int perBrandLimit) {
+        log.info("전체 브랜드 상품 크롤링 시작: 브랜드당 {}개", perBrandLimit);
+
+        // DB에 등록된 모든 브랜드 조회
+        List<Brand> allBrands = brandRepository.findAll();
+
+        if (allBrands.isEmpty()) {
+            log.warn("등록된 브랜드가 없습니다");
+            return new CrawlingResult(0, List.of());
+        }
+
+        log.info("총 {}개 브랜드 크롤링 예정 (CLOTHING: {}개, SHOES: {}개)",
+                allBrands.size(),
+                allBrands.stream().filter(b -> "CLOTHING".equals(b.getBrandType())).count(),
+                allBrands.stream().filter(b -> "SHOES".equals(b.getBrandType())).count());
+
+        int totalSaved = 0;
+        List<FailedProductInfo> allFailedProducts = new ArrayList<>();
+        int successBrandCount = 0;
+        int failedBrandCount = 0;
+
+        // 각 브랜드별로 크롤링
+        for (Brand brand : allBrands) {
+            try {
+                log.info("브랜드 크롤링 시작: {} ({})", brand.getName(), brand.getBrandType());
+
+                CrawlingResult result = crawlAndSaveBrandProducts(
+                    brand.getName(),
+                    brand.getBrandType(),
+                    brand.getPrimaryStyle(),
+                    perBrandLimit
+                );
+
+                totalSaved += result.savedCount();
+                allFailedProducts.addAll(result.failedProducts());
+                successBrandCount++;
+
+                log.info("브랜드 크롤링 완료: {} (성공: {}개, 실패: {}개)",
+                        brand.getName(), result.savedCount(), result.failedProducts().size());
+
+                // 브랜드 간 크롤링 간격 (API 부하 방지)
+                Thread.sleep(2000);
+
+            } catch (InterruptedException e) {
+                log.error("크롤링 대기 중 인터럽트 발생", e);
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                String reason = e.getMessage() != null ? e.getMessage() : "알 수 없는 오류";
+                log.error("브랜드 크롤링 실패: {} ({}), 에러: {}", brand.getName(), brand.getBrandType(), reason, e);
+                allFailedProducts.add(FailedProductInfo.of(
+                    "브랜드 크롤링 실패",
+                    brand.getName(),
+                    reason
+                ));
+                failedBrandCount++;
+            }
+        }
+
+        log.info("전체 브랜드 크롤링 완료: 총 {}개 저장, 총 {}개 실패, 성공 브랜드 {}개, 실패 브랜드 {}개",
+                totalSaved, allFailedProducts.size(), successBrandCount, failedBrandCount);
+
+        return new CrawlingResult(totalSaved, allFailedProducts);
     }
 
     /**
@@ -214,10 +279,10 @@ public class ProductCrawlingService {
      *
      * @param shoeCategory 신발 카테고리 (sneakers, boots, sandals 등)
      * @param limit 상품 수
-     * @return 저장된 상품 수
+     * @return 크롤링 결과 (저장된 상품 수, 실패 목록)
      */
     @Transactional
-    public int crawlAndSaveShoesRanking(String shoeCategory, int limit) {
+    public CrawlingResult crawlAndSaveShoesRanking(String shoeCategory, int limit) {
         log.info("신발 랭킹 크롤링 및 저장 시작: {}", shoeCategory);
 
         // 신발 랭킹 API에서 상품 크롤링
@@ -225,11 +290,14 @@ public class ProductCrawlingService {
 
         // 저장
         int savedCount = 0;
+        List<FailedProductInfo> failedProducts = new ArrayList<>();
+
         for (CrawledProductDto dto : crawledProducts) {
             try {
                 // 브랜드명 검증
                 if (dto.getBrandName() == null || dto.getBrandName().isBlank()) {
                     log.warn("브랜드명이 없는 상품 건너뜀: {}", dto.getName());
+                    failedProducts.add(FailedProductInfo.of(dto.getName(), "Unknown", "브랜드명 없음"));
                     continue;
                 }
 
@@ -239,6 +307,7 @@ public class ProductCrawlingService {
                 // 중복 체크
                 if (productRepository.existsByNameAndBrandId(dto.getName(), brand.getId())) {
                     log.debug("이미 존재하는 상품: {}", dto.getName());
+                    failedProducts.add(FailedProductInfo.of(dto.getName(), dto.getBrandName(), "중복 상품"));
                     continue;
                 }
 
@@ -247,22 +316,23 @@ public class ProductCrawlingService {
                 savedCount++;
 
             } catch (Exception e) {
-                log.error("상품 저장 실패: {}, 에러: {}", dto.getName(), e.getMessage());
+                String reason = e.getMessage() != null ? e.getMessage() : "알 수 없는 오류";
+                log.error("상품 저장 실패: {}, 에러: {}", dto.getName(), reason);
+                failedProducts.add(FailedProductInfo.of(dto.getName(), dto.getBrandName(), reason));
             }
         }
 
-        log.info("신발 랭킹 저장 완료: {} ({}개)", shoeCategory, savedCount);
-        return savedCount;
+        log.info("신발 랭킹 저장 완료: {} (성공: {}개, 실패: {}개)", shoeCategory, savedCount, failedProducts.size());
+        return new CrawlingResult(savedCount, failedProducts);
     }
 
     /**
      * 특정 스타일의 모든 브랜드 상품 크롤링
      *
      * @param style 스타일 (hip_hop, amekaji 등)
-     * @return 저장된 상품 수
+     * @return 크롤링 결과
      */
-    @Transactional
-    public int crawlAndSaveByStyle(String style) {
+    public CrawlingResult crawlAndSaveByStyle(String style) {
         log.info("스타일별 상품 크롤링 시작: {}", style);
 
         // 해당 스타일의 브랜드 조회
@@ -270,17 +340,20 @@ public class ProductCrawlingService {
 
         if (brands.isEmpty()) {
             log.warn("해당 스타일의 브랜드가 없습니다: {}", style);
-            return 0;
+            return new CrawlingResult(0, List.of());
         }
 
         int totalSaved = 0;
+        List<FailedProductInfo> allFailedProducts = new ArrayList<>();
+
         for (Brand brand : brands) {
-            int saved = crawlAndSaveBrandProducts(brand.getName(), brand.getBrandType(), style, 1);
-            totalSaved += saved;
+            CrawlingResult result = crawlAndSaveBrandProducts(brand.getName(), brand.getBrandType(), style, 1);
+            totalSaved += result.savedCount();
+            allFailedProducts.addAll(result.failedProducts());
         }
 
-        log.info("스타일별 상품 크롤링 완료: {} (총 {}개)", style, totalSaved);
-        return totalSaved;
+        log.info("스타일별 상품 크롤링 완료: {} (총 {}개 저장, {}개 실패)", style, totalSaved, allFailedProducts.size());
+        return new CrawlingResult(totalSaved, allFailedProducts);
     }
 
     /**

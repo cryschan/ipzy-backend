@@ -71,80 +71,29 @@ public class MusinsaCrawlerService {
     private final RestClient musinsaRestClient;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 카테고리별 랭킹 상위 상품 크롤링 (간소화 버전 - 랭킹 API만 사용)
-     * 주의: 이 메서드는 가격 정보가 없는 임시 DTO를 생성하므로, 실제 사용 시 추가 정보 수집 필요
-     *
-     * @param category 카테고리 (TOP, BOTTOM, OUTER, SHOES, ACCESSORY)
-     * @param limit 가져올 상품 수
-     * @return 크롤링한 상품 리스트 (URL, 랭킹 정보만 - 가격 정보 없음)
-     */
-    public List<CrawledProductDto> crawlCategoryProducts(String category, int limit) {
-        log.info("무신사 랭킹 크롤링 시작: 카테고리={}, 수량={}", category, limit);
-        log.warn("crawlCategoryProducts()는 가격 정보가 없는 임시 DTO를 반환합니다. 실제 저장 전 가격 정보 수집 필요");
-
-        String categoryCode = CATEGORY_CODES.get(category.toUpperCase());
-        if (categoryCode == null) {
-            log.error("유효하지 않은 카테고리: {}", category);
-            return List.of();
-        }
-
-        List<CrawledProductDto> products = new ArrayList<>();
-
-        try {
-            // 랭킹 API에서 상위 N개 URL 가져오기
-            List<MusinsaRankingLinkDto> rankingLinks = fetchTopLinksByCategory(categoryCode, limit);
-
-            log.info("랭킹에서 {}개 상품 URL 수집 완료", rankingLinks.size());
-
-            // URL을 CrawledProductDto로 변환 (기본 정보만)
-            for (MusinsaRankingLinkDto link : rankingLinks) {
-                CrawledProductDto product = CrawledProductDto.builder()
-                        .brandName("Unknown")  // 브랜드는 나중에 상세 파싱에서
-                        .name(extractProductIdFromUrl(link.url()))  // 임시로 상품 ID 사용
-                        .category(category)
-                        .subCategory("")
-                        .price(null)  // 가격 정보 없음 - 나중에 수집 필요
-                        .originalPrice(null)
-                        .discountPercent(0)
-                        .thumbnailImageUrl("")
-                        .description("무신사 랭킹 " + link.rank() + "위")
-                        .colors(List.of())
-                        .purchaseUrl(link.url())
-                        .build();
-
-                products.add(product);
-            }
-
-        } catch (Exception e) {
-            log.error("카테고리 {} 크롤링 실패: {}", category, e.getMessage(), e);
-        }
-
-        log.info("크롤링 완료: {} 카테고리 {}개 상품 수집", category, products.size());
-        return products;
-    }
 
     /**
      * 브랜드명으로 상품 검색 및 크롤링 (PLP API 사용) - 의류용
+     * 의류는 상의/아우터/하의 세트로 크롤링합니다.
      *
      * @param brandName 브랜드명
      * @param style 스타일 (미사용 - 향후 확장용)
-     * @param limit 크롤링할 상품 수
-     * @return 크롤링한 상품 리스트
+     * @param limit 카테고리당 크롤링할 상품 수 (예: 4 입력 → 상의 4개 + 아우터 4개 + 하의 4개 = 총 12개)
+     * @return 크롤링한 상품 리스트 (상의/아우터/하의 각 limit개씩, 총 limit * 3개)
      */
     public List<CrawledProductDto> crawlBrandProducts(String brandName, String style, int limit) {
-        log.info("의류 브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 수량={}", brandName, limit);
+        log.info("의류 브랜드 상품 크롤링 시작 (PLP API): 브랜드={}, 카테고리당 {}개 (총 {}개 예상)",
+                 brandName, limit, limit * 3);
 
         // 브랜드 코드 변환 (예: "Musinsa Standard" -> "musinsastandard")
         String brandCode = convertToBrandCode(brandName);
 
         List<CrawledProductDto> allProducts = new ArrayList<>();
 
-        // 주요 의류 카테고리별로 크롤링
+        // 주요 의류 카테고리별로 크롤링 (상의/아우터/하의 세트)
         for (String category : List.of("TOP", "OUTER", "BOTTOM")) {
             try {
-                int perCategoryLimit = Math.max(1, limit / 3); // 최소 1개 보장
-                List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, category, perCategoryLimit);
+                List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, category, limit);
                 allProducts.addAll(products);
 
                 // 크롤링 간격
@@ -159,7 +108,8 @@ public class MusinsaCrawlerService {
             }
         }
 
-        log.info("의류 브랜드 상품 크롤링 완료: {} ({}개)", brandName, allProducts.size());
+        log.info("의류 브랜드 상품 크롤링 완료: {} ({}개 - 상의/아우터/하의 각 {}개)",
+                 brandName, allProducts.size(), limit);
         return allProducts;
     }
 
@@ -436,33 +386,6 @@ public class MusinsaCrawlerService {
         return "Unknown";
     }
 
-    /**
-     * 모든 카테고리의 랭킹 상품 크롤링
-     */
-    public List<CrawledProductDto> crawlAllBrands() {
-        log.info("전체 카테고리 랭킹 크롤링 시작");
-
-        List<CrawledProductDto> allProducts = new ArrayList<>();
-
-        // 각 카테고리별로 상위 5개씩 크롤링
-        for (String category : CATEGORY_CODES.keySet()) {
-            try {
-                List<CrawledProductDto> products = crawlCategoryProducts(category, 5);
-                allProducts.addAll(products);
-
-                // 크롤링 간격 (카테고리 간 2초 대기)
-                Thread.sleep(2000);
-
-            } catch (InterruptedException e) {
-                log.error("크롤링 대기 중 인터럽트 발생", e);
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-
-        log.info("전체 카테고리 랭킹 크롤링 완료: 총 {}개 상품 수집", allProducts.size());
-        return allProducts;
-    }
 
     /**
      * 신발 카테고리별 랭킹 크롤링 (신발 전용 API 사용)
