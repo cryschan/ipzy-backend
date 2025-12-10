@@ -140,12 +140,15 @@ public class ProductCrawlingService {
 
     /**
      * CrawledProductDto를 Product 엔티티로 변환
+     *
+     * @throws ProductException price가 null이거나 0 이하인 경우 (크롤링 시점에서 필터링되어야 함)
      */
     private Product convertToProduct(CrawledProductDto dto, Brand brand) {
-        // 필수 필드 검증 (price는 NOT NULL 컬럼)
+        // 필수 필드 검증: price는 크롤링 시점에서 이미 필터링되어야 하므로, 여기서 null이면 논리적 오류
         if (dto.getPrice() == null || dto.getPrice() <= 0) {
             throw new ProductException(ProductErrorCode.INVALID_PRODUCT_DATA,
-                    "상품 가격이 유효하지 않습니다: " + dto.getName());
+                    String.format("상품 가격이 유효하지 않습니다 (크롤링 필터링 누락 가능성): name=%s, price=%s, brand=%s",
+                            dto.getName(), dto.getPrice(), dto.getBrandName()));
         }
 
         // 카테고리 변환

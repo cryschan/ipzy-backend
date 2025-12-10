@@ -73,13 +73,15 @@ public class MusinsaCrawlerService {
 
     /**
      * 카테고리별 랭킹 상위 상품 크롤링 (간소화 버전 - 랭킹 API만 사용)
+     * 주의: 이 메서드는 가격 정보가 없는 임시 DTO를 생성하므로, 실제 사용 시 추가 정보 수집 필요
      *
      * @param category 카테고리 (TOP, BOTTOM, OUTER, SHOES, ACCESSORY)
      * @param limit 가져올 상품 수
-     * @return 크롤링한 상품 리스트 (URL, 랭킹 정보만)
+     * @return 크롤링한 상품 리스트 (URL, 랭킹 정보만 - 가격 정보 없음)
      */
     public List<CrawledProductDto> crawlCategoryProducts(String category, int limit) {
         log.info("무신사 랭킹 크롤링 시작: 카테고리={}, 수량={}", category, limit);
+        log.warn("crawlCategoryProducts()는 가격 정보가 없는 임시 DTO를 반환합니다. 실제 저장 전 가격 정보 수집 필요");
 
         String categoryCode = CATEGORY_CODES.get(category.toUpperCase());
         if (categoryCode == null) {
@@ -102,8 +104,8 @@ public class MusinsaCrawlerService {
                         .name(extractProductIdFromUrl(link.url()))  // 임시로 상품 ID 사용
                         .category(category)
                         .subCategory("")
-                        .price(0)  // 가격은 나중에
-                        .originalPrice(0)
+                        .price(null)  // 가격 정보 없음 - 나중에 수집 필요
+                        .originalPrice(null)
                         .discountPercent(0)
                         .thumbnailImageUrl("")
                         .description("무신사 랭킹 " + link.rank() + "위")
@@ -188,7 +190,7 @@ public class MusinsaCrawlerService {
      * @param brandCode 브랜드 코드
      * @param category 카테고리 (TOP, OUTER, BOTTOM 등)
      * @param limit 상품 수
-     * @return 크롤링한 상품 리스트
+     * @return 크롤링한 상품 리스트 (null 제외)
      */
     private List<CrawledProductDto> crawlBrandProductsByCategory(String brandCode, String category, int limit) {
         String categoryCode = CATEGORY_CODES_SHORT.get(category.toUpperCase());
@@ -209,10 +211,11 @@ public class MusinsaCrawlerService {
                 return List.of();
             }
 
-            // 응답을 CrawledProductDto로 변환
+            // 응답을 CrawledProductDto로 변환하고 null 필터링
             List<CrawledProductDto> products = response.getData().getList().stream()
                     .limit(limit)
                     .map(item -> convertToDto(item, category))
+                    .filter(Objects::nonNull)  // null 제거 (가격 없는 상품 필터링)
                     .toList();
 
             log.debug("브랜드 {} 카테고리 {}: {}개 상품 수집", brandCode, category, products.size());
@@ -259,20 +262,24 @@ public class MusinsaCrawlerService {
 
     /**
      * MusinsaPlpResponse.ProductItem을 CrawledProductDto로 변환
+     *
+     * @return 유효한 DTO, 가격이 없으면 null 반환
      */
     private CrawledProductDto convertToDto(MusinsaPlpResponse.ProductItem item, String category) {
-        // 필수 필드 기본값 처리
-        Integer price = item.getPrice() != null && item.getPrice() > 0 ? item.getPrice() : null;
-
-        // price가 null인 경우 경고 로그
-        if (price == null) {
-            log.warn("가격 정보가 없는 상품: brandName={}, productName={}",
+        // 필수 필드 검증: price가 없거나 0 이하면 null 반환
+        Integer price = item.getPrice();
+        if (price == null || price <= 0) {
+            log.warn("가격 정보가 없는 상품 건너뜀: brandName={}, productName={}",
                     item.getBrandName(), item.getGoodsName());
+            return null;
         }
 
-        Integer normalPrice = item.getNormalPrice() != null && item.getNormalPrice() > 0
-                ? item.getNormalPrice()
-                : price;  // normalPrice가 없으면 price 사용
+        // originalPrice 처리: normalPrice가 없거나 0 이하면 price 사용
+        Integer normalPrice = item.getNormalPrice();
+        if (normalPrice == null || normalPrice <= 0) {
+            normalPrice = price;
+        }
+
         Integer saleRate = item.getSaleRate() != null ? item.getSaleRate() : 0;
 
         return CrawledProductDto.builder()
