@@ -17,7 +17,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * Spring Security 설정 클래스
@@ -38,6 +40,8 @@ public class SecurityConfig {
     private final OAuth2FailureHandler oAuth2FailureHandler;
     // OAuth2 로그아웃 성공 시 처리 핸들러 (Provider 토큰 revoke)
     private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
+    // OAuth2 클라이언트 등록 정보 저장소
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     /**
      * Security Filter Chain 설정
@@ -90,8 +94,12 @@ public class SecurityConfig {
             // ========== OAuth2 로그인 설정 ==========
             .oauth2Login(oauth2 -> oauth2
                 // OAuth2 인증 시작 URL: /oauth2/authorization/kakao
+                // prompt=login 파라미터 추가하여 항상 카카오 로그인 화면 표시
                 .authorizationEndpoint(endpoint -> endpoint
                     .baseUri("/oauth2/authorization")
+                    .authorizationRequestResolver(
+                        new CustomAuthorizationRequestResolver(clientRegistrationRepository)
+                    )
                 )
                 // 카카오에서 인증 후 돌아오는 콜백 URL
                 .redirectionEndpoint(endpoint -> endpoint
@@ -137,15 +145,15 @@ public class SecurityConfig {
 
             // ========== 로그아웃 설정 ==========
             .logout(logout -> logout
-                // 로그아웃 요청 URL
-                .logoutUrl("/api/auth/logout")
+                // 로그아웃 요청 URL (GET 방식 허용 - 하이퍼링크로 로그아웃 가능)
+                .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout"))
                 // 서버의 세션 무효화
                 .invalidateHttpSession(true)
                 // 브라우저의 세션 쿠키 삭제
                 .deleteCookies("JSESSIONID")
                 // 비로그인 상태에서도 로그아웃 요청 허용
                 .permitAll()
-                // 로그아웃 성공 시 Provider 토큰 revoke 후 JSON 응답 반환
+                // 로그아웃 성공 시 카카오 계정 로그아웃 페이지로 리다이렉트
                 .logoutSuccessHandler(oAuth2LogoutSuccessHandler)
             );
 

@@ -31,9 +31,12 @@ public class AuthController {
             description = """
                     카카오 OAuth2 로그인을 시작합니다.
 
-                    **흐름:** `/api/auth/login/kakao` → `/oauth2/authorization/kakao` → 카카오 로그인 페이지
+                    **테스트 방법:**
+                    - [카카오 로그인 바로가기](/api/auth/login/kakao)
 
                     브라우저에서 직접 접속하세요. Swagger에서 테스트 시 리다이렉트가 정상 동작하지 않을 수 있습니다.
+
+                    **흐름:** `/api/auth/login/kakao` → 카카오 로그인 페이지 → 프론트엔드 리다이렉트
 
                     **성공 시:** 프론트엔드로 리다이렉트 (세션 쿠키 발급)
 
@@ -120,27 +123,22 @@ public class AuthController {
     @Operation(
             summary = "로그아웃",
             description = """
-                    세션을 무효화하고 쿠키를 삭제합니다. 실제 처리는 Spring Security가 수행합니다.
+                    세션을 무효화하고 카카오 계정 로그아웃 페이지로 리다이렉트합니다.
 
+                    **테스트 방법:**
+                    - [로그아웃 바로가기](/api/auth/logout)
+
+                    브라우저에서 직접 접속하세요. Swagger에서 테스트 시 CORS 에러가 발생합니다.
+
+                    **흐름:** `/api/auth/logout` → 카카오 로그아웃 → 프론트엔드 리다이렉트
                     """)
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "로그아웃 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": true,
-                                      "data": {
-                                        "message": "로그아웃 되었습니다"
-                                      }
-                                    }
-                                    """)
-                    )
+                    responseCode = "302",
+                    description = "카카오 로그아웃 페이지로 리다이렉트"
             )
     })
-    @PostMapping("/logout")
+    @GetMapping("/logout")
     public void logout() {
         // Spring Security가 /api/auth/logout을 가로채서 처리함
         // 이 메서드는 Swagger 문서화 용도
