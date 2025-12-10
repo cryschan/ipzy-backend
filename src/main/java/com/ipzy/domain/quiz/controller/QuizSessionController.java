@@ -1,5 +1,6 @@
 package com.ipzy.domain.quiz.controller;
 
+import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
 import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizCompletionResponse;
@@ -9,7 +10,6 @@ import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -41,19 +41,19 @@ public class QuizSessionController {
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     """
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "진행 상태 조회 성공",
-            content = @Content(schema = @Schema(implementation = QuizSessionProgressResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "세션을 찾을 수 없음 (QUIZ_003)"
     )
-    public QuizSessionProgressResponse getProgress(
+    public ApiResponse<QuizSessionProgressResponse> getProgress(
             @PathVariable Long sessionId
     ) {
-        return quizService.getProgress(sessionId);
+        return ApiResponse.success(quizService.getProgress(sessionId));
     }
 
     @PostMapping("/{sessionId}/complete")
@@ -79,23 +79,23 @@ public class QuizSessionController {
                     | QUIZ_006 | 400 | 퀴즈가 완료되지 않았습니다 |
                     """
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "세션 완료 처리 성공",
-            content = @Content(schema = @Schema(implementation = QuizCompletionResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
             description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_005, QUIZ_006)"
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "세션을 찾을 수 없음 (QUIZ_003)"
     )
-    public QuizCompletionResponse complete(
+    public ApiResponse<QuizCompletionResponse> complete(
             @PathVariable Long sessionId
     ) {
-        return quizService.completeSession(sessionId);
+        return ApiResponse.success(quizService.completeSession(sessionId));
     }
 
     @GetMapping("/{sessionId}/questions/{order}")
@@ -117,24 +117,24 @@ public class QuizSessionController {
                     | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 (해당 순서의 질문 없음) |
                     """
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "질문 조회 성공",
-            content = @Content(schema = @Schema(implementation = QuizQuestionResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
             description = "검증 실패 (QUIZ_002, QUIZ_004)"
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "세션 또는 퀴즈를 찾을 수 없음 (QUIZ_001, QUIZ_003)"
     )
-    public QuizQuestionResponse getSessionQuestion(
+    public ApiResponse<QuizQuestionResponse> getSessionQuestion(
             @PathVariable Long sessionId,
             @PathVariable Integer order
     ) {
-        return quizService.getQuestionByOrder(sessionId, order);
+        return ApiResponse.success(quizService.getQuestionByOrder(sessionId, order));
     }
 
     @PostMapping("/{sessionId}/answers")
@@ -161,24 +161,24 @@ public class QuizSessionController {
                     | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "답변 저장/수정 성공",
-            content = @Content(schema = @Schema(implementation = QuizAnswerResponse.class))
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
             description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_009, QUIZ_010)"
     )
-    @ApiResponse(
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_007)"
     )
-    public QuizAnswerResponse saveAnswer(
+    public ApiResponse<QuizAnswerResponse> saveAnswer(
             @PathVariable Long sessionId,
             @RequestBody QuizAnswerRequest request
     ) {
-        return quizService.saveOrUpdateAnswer(sessionId, request);
+        return ApiResponse.success(quizService.saveOrUpdateAnswer(sessionId, request));
     }
 
 }
