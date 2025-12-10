@@ -29,6 +29,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
@@ -104,32 +106,28 @@ class AuthControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/auth/logout")
-    class PostLogout {
+    @DisplayName("GET /api/auth/logout")
+    class GetLogout {
 
         @Test
-        @DisplayName("로그아웃 성공 시 200 OK와 JSON 응답 반환")
+        @DisplayName("로그아웃 성공 시 프론트엔드로 리다이렉트 (세션에 Provider 정보 없으면)")
         void logout_success() throws Exception {
             CustomUserPrincipal principal = createCustomUserPrincipal();
 
-            mockMvc.perform(post("/api/auth/logout")
-                            .with(oauth2Login().oauth2User(principal))
-                            .with(csrf()))
+            mockMvc.perform(get("/api/auth/logout")
+                            .with(oauth2Login().oauth2User(principal)))
                     .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.message").value("로그아웃 되었습니다"));
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("http://localhost:5173"));
         }
 
         @Test
-        @DisplayName("비로그인 상태에서 로그아웃 요청 시에도 200 OK 반환")
-        void logout_withoutLogin_returns200() throws Exception {
-            mockMvc.perform(post("/api/auth/logout")
-                            .with(csrf()))
+        @DisplayName("비로그인 상태에서 로그아웃 요청 시에도 프론트엔드로 리다이렉트")
+        void logout_withoutLogin_returns302() throws Exception {
+            mockMvc.perform(get("/api/auth/logout"))
                     .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.message").value("로그아웃 되었습니다"));
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("http://localhost:5173"));
         }
 
     }
