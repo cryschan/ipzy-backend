@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -86,7 +85,6 @@ public class BrandController {
                     )
             )
     })
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<BrandResponse> createBrand(@Valid @RequestBody BrandRequest request) {
         log.info("브랜드 등록 API 호출: name={}, validateMusinsa={}", request.getName(), request.isValidateMusinsa());
@@ -120,7 +118,6 @@ public class BrandController {
                     )
             )
     })
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{brandId}")
     public ApiResponse<BrandResponse> updateBrand(
             @PathVariable Long brandId,
@@ -145,7 +142,6 @@ public class BrandController {
                     description = "브랜드를 찾을 수 없음"
             )
     })
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{brandId}")
     public ApiResponse<Void> deleteBrand(@PathVariable Long brandId) {
         log.info("브랜드 삭제 API 호출: id={}", brandId);

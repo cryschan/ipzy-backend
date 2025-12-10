@@ -13,7 +13,6 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -30,7 +29,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
  */
 @Configuration  // Spring 설정 클래스임을 선언
 @EnableWebSecurity  // Spring Security 활성화
-@EnableMethodSecurity  // @PreAuthorize 등 메서드 레벨 시큐리티 활성화
 @RequiredArgsConstructor  // final 필드 생성자 자동 생성 (DI용)
 public class SecurityConfig {
 
