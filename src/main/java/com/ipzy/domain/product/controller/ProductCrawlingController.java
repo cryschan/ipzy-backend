@@ -57,7 +57,36 @@ public class ProductCrawlingController {
                                       "success": true,
                                       "data": {
                                         "savedCount": 150,
-                                        "message": "크롤링이 완료되었습니다"
+                                        "failedCount": 2,
+                                        "message": "크롤링이 완료되었습니다",
+                                        "failedProducts": [
+                                          {
+                                            "productName": "테스트 상품1",
+                                            "brandName": "Nike",
+                                            "reason": "가격 정보 없음"
+                                          },
+                                          {
+                                            "productName": "테스트 상품2",
+                                            "brandName": "Adidas",
+                                            "reason": "브랜드명이 없는 상품"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
                                       }
                                     }
                                     """)
@@ -102,6 +131,8 @@ public class ProductCrawlingController {
             description = """
                     지정한 브랜드의 상품을 크롤링하여 DB에 저장합니다.
 
+                    브랜드명과 타입으로 DB에서 브랜드를 조회하여 스타일 정보를 자동으로 가져옵니다.
+
                     **의류 브랜드 (CLOTHING):**
                     - 상의/아우터/하의를 각 limit개씩 크롤링합니다
                     - 총 limit × 3개 크롤링됩니다
@@ -123,9 +154,33 @@ public class ProductCrawlingController {
                                       "success": true,
                                       "data": {
                                         "savedCount": 10,
+                                        "failedCount": 1,
                                         "brandName": "Musinsa Standard",
                                         "style": "minimalist",
-                                        "message": "크롤링이 완료되었습니다"
+                                        "message": "크롤링이 완료되었습니다",
+                                        "failedProducts": [
+                                          {
+                                            "productName": "테스트 상품",
+                                            "brandName": "Musinsa Standard",
+                                            "reason": "가격 정보 없음"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
                                       }
                                     }
                                     """)
@@ -167,19 +222,18 @@ public class ProductCrawlingController {
     @PostMapping("/products/brand")
     public ApiResponse<CrawlingResponse> crawlBrandProducts(
             @RequestParam @NotBlank(message = "브랜드명은 필수입니다") String brandName,
-            @RequestParam(defaultValue = "CLOTHING") @NotBlank(message = "브랜드 타입은 필수입니다") String brandType,
-            @RequestParam @NotBlank(message = "스타일은 필수입니다") String style,
+            @RequestParam @NotBlank(message = "브랜드 타입은 필수입니다") String brandType,
             @RequestParam(defaultValue = "1") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
-        log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, style={}, limit={}",
-                brandName, brandType, style, limit);
+        log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, limit={}",
+                brandName, brandType, limit);
 
-        var result = productCrawlingService.crawlAndSaveBrandProducts(brandName, brandType, style, limit);
+        var result = productCrawlingService.crawlAndSaveBrandProducts(brandName, brandType, limit);
         CrawlingResponse response = CrawlingResponse.of(
                 result.savedCount(),
                 result.failedProducts().size(),
                 brandName,
-                style,
+                result.style(),
                 result.failedProducts(),
                 "크롤링이 완료되었습니다"
         );
@@ -187,43 +241,4 @@ public class ProductCrawlingController {
         return ApiResponse.success(response);
     }
 
-    @Operation(
-            summary = "신발 랭킹 크롤링",
-            description = "무신사 신발 랭킹에서 카테고리별 상품을 크롤링하여 DB에 저장합니다. 브랜드가 없으면 자동으로 생성됩니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "크롤링 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": true,
-                                      "data": {
-                                        "savedCount": 20,
-                                        "message": "신발 랭킹 크롤링이 완료되었습니다"
-                                      }
-                                    }
-                                    """)
-                    )
-            )
-    })
-    @PostMapping("/products/shoes")
-    public ApiResponse<CrawlingResponse> crawlShoesRanking(
-            @RequestParam(defaultValue = "sneakers") @NotBlank(message = "카테고리는 필수입니다") String category,
-            @RequestParam(defaultValue = "20") @Positive(message = "limit은 양수여야 합니다") int limit
-    ) {
-        log.info("신발 랭킹 크롤링 API 호출: category={}, limit={}", category, limit);
-
-        var result = productCrawlingService.crawlAndSaveShoesRanking(category, limit);
-        CrawlingResponse response = CrawlingResponse.of(
-                result.savedCount(),
-                result.failedProducts().size(),
-                result.failedProducts(),
-                "신발 랭킹 크롤링이 완료되었습니다"
-        );
-
-        return ApiResponse.success(response);
-    }
 }

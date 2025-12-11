@@ -78,5 +78,22 @@ public class MusinsaPlpResponse {
 
         @JsonProperty("isPlusDelivery")
         private Boolean isPlusDelivery;
+
+        // 카테고리 정보
+        @JsonProperty("category1stName")
+        private String category1stName;
+
+        @JsonProperty("category2ndName")
+        private String category2ndName;
+
+        @JsonProperty("category3rdName")
+        private String category3rdName;
+
+        @JsonProperty("categoryCode")
+        private String categoryCode;
+
+        // 색상 정보
+        @JsonProperty("goodsColorList")
+        private List<String> goodsColorList;
     }
 }

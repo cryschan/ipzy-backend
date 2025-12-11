@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ipzy.domain.product.dto.BrandValidationResult;
 import com.ipzy.domain.product.dto.CrawledProductDto;
 import com.ipzy.domain.product.dto.MusinsaPlpResponse;
-import com.ipzy.domain.product.dto.MusinsaRankingLinkDto;
 import com.ipzy.domain.product.exception.ProductErrorCode;
 import com.ipzy.domain.product.exception.ProductException;
 import lombok.RequiredArgsConstructor;
@@ -202,6 +201,14 @@ public class MusinsaCrawlerService {
                     .retrieve()
                     .body(String.class);
 
+            // 디버그: 원본 응답 일부 로깅 (카테고리 정보 확인용)
+            if (responseBody != null && responseBody.contains("list")) {
+                log.warn("=== 무신사 API 응답 샘플 (카테고리 필드 확인용) ===");
+                log.warn(responseBody.length() > 1000
+                        ? responseBody.substring(0, 1000) + "..."
+                        : responseBody);
+            }
+
             return objectMapper.readValue(responseBody, MusinsaPlpResponse.class);
 
         } catch (Exception e) {
@@ -234,27 +241,80 @@ public class MusinsaCrawlerService {
             return null;
         }
 
-        // originalPrice 처리: normalPrice가 없거나 0 이하면 price 사용
-        Integer normalPrice = item.getNormalPrice();
-        if (normalPrice == null || normalPrice <= 0) {
-            normalPrice = price;
+        // 썸네일 이미지 URL 가져오기
+        String thumbnailUrl = item.getThumbnail();
+
+        // 디버그: 썸네일이 없는 경우 전체 item 정보 로깅
+        if (thumbnailUrl == null || thumbnailUrl.isBlank()) {
+            log.warn("썸네일 누락 상품 디버그 - goodsName={}, goodsNo={}, goodsLinkUrl={}, thumbnail={}, brandName={}",
+                    item.getGoodsName(), item.getGoodsNo(), item.getGoodsLinkUrl(),
+                    item.getThumbnail(), item.getBrandName());
         }
 
+        // 할인율 먼저 가져오기
         Integer saleRate = item.getSaleRate() != null ? item.getSaleRate() : 0;
+
+        // originalPrice 처리
+        Integer normalPrice = item.getNormalPrice();
+        if (normalPrice == null || normalPrice <= 0) {
+            // normalPrice가 없지만 할인율이 있으면 역으로 계산
+            if (saleRate > 0) {
+                normalPrice = price * 100 / (100 - saleRate);
+                log.debug("원가 역계산: price={}, saleRate={}%, calculated normalPrice={}",
+                        price, saleRate, normalPrice);
+            } else {
+                // 할인도 없고 원가도 없으면 price 사용
+                normalPrice = price;
+            }
+        }
+
+        // subCategory: 무신사 API에서 못 가져오므로 상세 페이지에서 추출 시도
+        String subCategory = null;
+
+        // PLP API 응답에서 시도 (대부분 null이지만 혹시 모르니 먼저 시도)
+        if (item.getCategory3rdName() != null && !item.getCategory3rdName().isBlank()) {
+            subCategory = item.getCategory3rdName();
+        } else if (item.getCategory2ndName() != null && !item.getCategory2ndName().isBlank()) {
+            subCategory = item.getCategory2ndName();
+        }
+
+        // PLP API에서 못 가져왔으면 상세 페이지에서 추출
+        if (subCategory == null || subCategory.isBlank()) {
+            String productUrl = item.getGoodsLinkUrl();
+            if (productUrl != null && !productUrl.isBlank()) {
+                subCategory = fetchSubCategoryFromDetailPage(productUrl);
+                if (subCategory != null && !subCategory.isBlank()) {
+                    log.debug("상세 페이지에서 서브카테고리 추출 성공: {} -> {}",
+                            item.getGoodsName(), subCategory);
+                } else {
+                    log.warn("서브카테고리 추출 실패: goodsName={}, url={}",
+                            item.getGoodsName(), productUrl);
+                    subCategory = ""; // null 대신 빈 문자열
+                }
+            } else {
+                log.warn("상품 URL 없음: goodsName={}", item.getGoodsName());
+                subCategory = "";
+            }
+        }
+
+        // colors: API의 goodsColorList 우선 사용, 없으면 상품명에서 추출
+        List<String> colors = (item.getGoodsColorList() != null && !item.getGoodsColorList().isEmpty())
+                ? item.getGoodsColorList()
+                : extractColorsFromName(item.getGoodsName());
 
         return CrawledProductDto.builder()
                 .brandName(item.getBrandName())
                 .name(item.getGoodsName())
                 .category(category)
-                .subCategory("")
+                .subCategory(subCategory)
                 .price(price)
                 .originalPrice(normalPrice)
                 .discountPercent(saleRate)
-                .thumbnailImageUrl(item.getThumbnail())
+                .thumbnailImageUrl(thumbnailUrl)  // 이미 검증됨
                 .description(String.format("리뷰: %d개 (평점: %d점)",
                         item.getReviewCount() != null ? item.getReviewCount() : 0,
                         item.getReviewScore() != null ? item.getReviewScore() : 0))
-                .colors(extractColorsFromName(item.getGoodsName()))
+                .colors(colors)
                 .purchaseUrl(item.getGoodsLinkUrl())
                 .build();
     }
@@ -283,6 +343,7 @@ public class MusinsaCrawlerService {
         return colors;
     }
 
+
     /**
      * 브랜드명을 브랜드 코드로 변환
      * 예: "Musinsa Standard" -> "musinsastandard"
@@ -299,92 +360,6 @@ public class MusinsaCrawlerService {
                 .replace("_", "");
     }
 
-    /**
-     * 카테고리별 랭킹에서 상위 N개 상품 URL 가져오기
-     *
-     * @param categoryCode 무신사 카테고리 코드 (001000=상의, 002000=아우터, 003000=바지, 103000=신발, 101000=패션소품)
-     * @param limit 가져올 상품 수
-     * @return 랭킹 링크 리스트
-     */
-    private List<MusinsaRankingLinkDto> fetchTopLinksByCategory(String categoryCode, int limit) {
-        String rankingApi = String.format(RANKING_API_TEMPLATE, categoryCode, limit);
-        log.debug("무신사 랭킹 API 호출: categoryCode={}, limit={}", categoryCode, limit);
-
-        try {
-            String responseBody = musinsaRestClient.get()
-                    .uri(rankingApi)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .body(String.class);
-
-            JsonNode root = objectMapper.readTree(responseBody);
-            JsonNode dataNode = root.path("data");
-
-            if (dataNode.isMissingNode()) {
-                log.warn("무신사 랭킹 API가 data 필드를 반환하지 않음");
-                return List.of();
-            }
-
-            Iterator<JsonNode> amplitudeNodes = dataNode.findValues("amplitude").iterator();
-            List<MusinsaRankingLinkDto> links = new ArrayList<>();
-            Set<String> seenUrls = new HashSet<>();  // 중복 URL 체크용
-
-            while (amplitudeNodes.hasNext()) {
-                JsonNode amplitudeNode = amplitudeNodes.next();
-                JsonNode payload = amplitudeNode.path("payload");
-
-                if (!TARGET_SECTION_NAME.equals(payload.path("section_name").asText())) {
-                    continue;
-                }
-
-                String url = payload.path("url").asText();
-                if (!url.contains("/products/")) {
-                    continue;
-                }
-
-                String rankText = payload.path("index").asText();
-                if (url.isBlank() || rankText.isBlank()) {
-                    continue;
-                }
-
-                // 중복 URL 제거
-                if (seenUrls.contains(url)) {
-                    continue;
-                }
-
-                try {
-                    int rank = Integer.parseInt(rankText);
-                    links.add(new MusinsaRankingLinkDto(rank, url));
-                    seenUrls.add(url);
-                } catch (NumberFormatException e) {
-                    log.debug("랭킹 파싱 실패: {}", rankText);
-                }
-            }
-
-            // 랭킹 순으로 정렬 후 상위 N개만 반환
-            links.sort(Comparator.comparingInt(MusinsaRankingLinkDto::rank));
-            List<MusinsaRankingLinkDto> result = links.size() > limit ? links.subList(0, limit) : links;
-
-            log.debug("랭킹에서 {}개 상품 URL 추출 (요청: {})", result.size(), limit);
-            return result;
-
-        } catch (Exception e) {
-            log.error("무신사 랭킹 API 파싱 실패", e);
-            return List.of();
-        }
-    }
-
-    /**
-     * URL에서 상품 ID 추출
-     */
-    private String extractProductIdFromUrl(String url) {
-        // URL 형식: https://www.musinsa.com/products/1234567
-        String[] parts = url.split("/");
-        if (parts.length > 0) {
-            return "Product_" + parts[parts.length - 1];
-        }
-        return "Unknown";
-    }
 
 
     /**
@@ -498,12 +473,20 @@ public class MusinsaCrawlerService {
                         continue;
                     }
 
+                    Integer discountRate = info.path("discountRatio").asInt(0);
+
                     Integer normalPrice = info.path("normalPrice").asInt(0);
                     if (normalPrice <= 0) {
-                        normalPrice = price;  // normalPrice가 없으면 price 사용
+                        // normalPrice가 없지만 할인율이 있으면 역으로 계산
+                        if (discountRate > 0) {
+                            normalPrice = price * 100 / (100 - discountRate);
+                            log.debug("신발 원가 역계산: price={}, discountRate={}%, calculated normalPrice={}",
+                                    price, discountRate, normalPrice);
+                        } else {
+                            // 할인도 없고 원가도 없으면 price 사용
+                            normalPrice = price;
+                        }
                     }
-
-                    Integer discountRate = info.path("discountRatio").asInt(0);
                     String thumbnailUrl = info.path("imageUrl").asText("");
                     String productUrl = info.path("goodsLinkUrl").asText("");
                     String purchaseUrl = productUrl.startsWith("http") ? productUrl : "https://www.musinsa.com" + productUrl;
@@ -575,14 +558,13 @@ public class MusinsaCrawlerService {
                         && response.getData().getList() != null
                         && !response.getData().getList().isEmpty()) {
 
-                    int productCount = response.getData().getList().size();
                     String categoryName = getCategoryName(category);
                     String genderName = "M".equals(gender) ? "남성" : "여성";
 
-                    log.info("무신사 브랜드 검증 성공: brandCode={}, 카테고리={}_{}, 상품수={}",
-                            brandCode, genderName, categoryName, productCount);
+                    log.info("무신사 브랜드 검증 성공: brandCode={}, 카테고리={}_{}",
+                            brandCode, genderName, categoryName);
 
-                    return BrandValidationResult.success(brandCode, productCount);
+                    return BrandValidationResult.success(brandCode);
                 }
             } catch (Exception e) {
                 log.debug("브랜드 검증 실패 (다음 카테고리 시도): brandCode={}, gender={}, category={}, error={}",
@@ -605,5 +587,98 @@ public class MusinsaCrawlerService {
             case "101" -> "액세서리";
             default -> categoryCode;
         };
+    }
+
+    /**
+     * 상품 상세 페이지 HTML에서 서브카테고리 추출
+     * data-category-name 속성에서 3depth > 2depth 우선순위로 추출
+     *
+     * @param productUrl 상품 상세 페이지 URL (예: https://www.musinsa.com/products/3859411)
+     * @return 서브카테고리명, 추출 실패 시 null
+     */
+    private String fetchSubCategoryFromDetailPage(String productUrl) {
+        if (productUrl == null || productUrl.isBlank()) {
+            return null;
+        }
+
+        try {
+            log.debug("상품 상세 페이지에서 카테고리 추출 시도: {}", productUrl);
+
+            // 상세 페이지 HTML 가져오기
+            String html = musinsaRestClient.get()
+                    .uri(productUrl)
+                    .header("User-Agent", "Mozilla/5.0")
+                    .header("Referer", "https://www.musinsa.com/")
+                    .retrieve()
+                    .body(String.class);
+
+            if (html == null || html.isBlank()) {
+                log.warn("상세 페이지 HTML 응답 없음: {}", productUrl);
+                return null;
+            }
+
+            // 정규식으로 data-category-id와 data-category-name 추출
+            // 3depth 우선 시도
+            String category3rd = extractCategoryByDepth(html, "3depth");
+            if (category3rd != null && !category3rd.isBlank()) {
+                log.debug("3depth 카테고리 추출 성공: {}", category3rd);
+                return category3rd;
+            }
+
+            // 3depth 없으면 2depth 시도
+            String category2nd = extractCategoryByDepth(html, "2depth");
+            if (category2nd != null && !category2nd.isBlank()) {
+                log.debug("2depth 카테고리 추출 성공: {}", category2nd);
+                return category2nd;
+            }
+
+            log.warn("카테고리 추출 실패: {}", productUrl);
+            return null;
+
+        } catch (Exception e) {
+            log.warn("상세 페이지 카테고리 추출 중 오류: {} - {}", productUrl, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * HTML에서 특정 depth의 카테고리명 추출
+     * window.__MSS__.product.state.category 객체에서 추출
+     *
+     * @param html HTML 문자열
+     * @param depth 추출할 depth (예: "2depth", "3depth")
+     * @return 카테고리명, 없으면 null
+     */
+    private String extractCategoryByDepth(String html, String depth) {
+        try {
+            // window.__MSS__.product.state 에서 category 정보 찾기
+            String depthFieldName = switch (depth) {
+                case "3depth" -> "categoryDepth3Name";
+                case "2depth" -> "categoryDepth2Name";
+                case "1depth" -> "categoryDepth1Name";
+                default -> null;
+            };
+
+            if (depthFieldName == null) {
+                return null;
+            }
+
+            // JSON에서 해당 필드 값 추출
+            // "categoryDepth2Name":"반소매 티셔츠" 형태 매칭
+            String regex = String.format("\"%s\":\"([^\"]+)\"", depthFieldName);
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
+            java.util.regex.Matcher matcher = pattern.matcher(html);
+
+            if (matcher.find()) {
+                String categoryName = matcher.group(1);
+                // 빈 문자열이 아닌 경우에만 반환
+                if (!categoryName.isBlank()) {
+                    return categoryName;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("카테고리 추출 중 오류: {} - {}", depth, e.getMessage());
+        }
+        return null;
     }
 }
