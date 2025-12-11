@@ -29,28 +29,13 @@ public class MusinsaCrawlerService {
     private static final String PLP_API_TEMPLATE = "/api2/dp/v1/plp/goods"
             + "?gf=%s&sortCode=%s&category=%s&brand=%s&page=%d&size=%d&caller=FLAGSHIP";
 
-    private static final String RANKING_API_TEMPLATE = "/api2/hm/web/v5/pans/ranking/sections/199"
-            + "?storeCode=musinsa&gf=A&ageBand=AGE_BAND_ALL&period=DAILY"
-            + "&eventPeriod=BASIC_REALTIME&categoryCode=%s&page=1&startRank=1&offset=%d";
-
-    private static final String TARGET_SECTION_NAME = "ranking_goods_list";
-
-    // 카테고리 코드 매핑 (PLP API용 - 단순 코드)
+    // 카테고리 코드 매핑 (PLP API용)
     private static final Map<String, String> CATEGORY_CODES_SHORT = Map.of(
             "TOP", "001",         // 상의
             "OUTER", "002",       // 아우터
             "BOTTOM", "003",      // 바지/하의
             "SHOES", "103",       // 신발
             "ACCESSORY", "101"    // 패션소품
-    );
-
-    // 카테고리 코드 매핑 (랭킹 API용 - 상세 코드)
-    private static final Map<String, String> CATEGORY_CODES = Map.of(
-            "TOP", "001000",      // 상의
-            "OUTER", "002000",    // 아우터
-            "BOTTOM", "003000",   // 바지/하의
-            "SHOES", "103000",    // 신발
-            "ACCESSORY", "101000" // 패션소품
     );
 
     // 신발 카테고리 코드 매핑 (신발 랭킹 API용)
@@ -203,8 +188,8 @@ public class MusinsaCrawlerService {
 
             // 디버그: 원본 응답 일부 로깅 (카테고리 정보 확인용)
             if (responseBody != null && responseBody.contains("list")) {
-                log.warn("=== 무신사 API 응답 샘플 (카테고리 필드 확인용) ===");
-                log.warn(responseBody.length() > 1000
+                log.debug("=== 무신사 API 응답 샘플 (카테고리 필드 확인용) ===");
+                log.debug(responseBody.length() > 1000
                         ? responseBody.substring(0, 1000) + "..."
                         : responseBody);
             }
@@ -246,7 +231,7 @@ public class MusinsaCrawlerService {
 
         // 디버그: 썸네일이 없는 경우 전체 item 정보 로깅
         if (thumbnailUrl == null || thumbnailUrl.isBlank()) {
-            log.warn("썸네일 누락 상품 디버그 - goodsName={}, goodsNo={}, goodsLinkUrl={}, thumbnail={}, brandName={}",
+            log.debug("썸네일 누락 상품 디버그 - goodsName={}, goodsNo={}, goodsLinkUrl={}, thumbnail={}, brandName={}",
                     item.getGoodsName(), item.getGoodsNo(), item.getGoodsLinkUrl(),
                     item.getThumbnail(), item.getBrandName());
         }
@@ -287,12 +272,12 @@ public class MusinsaCrawlerService {
                     log.debug("상세 페이지에서 서브카테고리 추출 성공: {} -> {}",
                             item.getGoodsName(), subCategory);
                 } else {
-                    log.warn("서브카테고리 추출 실패: goodsName={}, url={}",
+                    log.debug("서브카테고리 추출 실패: goodsName={}, url={}",
                             item.getGoodsName(), productUrl);
                     subCategory = ""; // null 대신 빈 문자열
                 }
             } else {
-                log.warn("상품 URL 없음: goodsName={}", item.getGoodsName());
+                log.debug("상품 URL 없음: goodsName={}", item.getGoodsName());
                 subCategory = "";
             }
         }
@@ -613,7 +598,7 @@ public class MusinsaCrawlerService {
                     .body(String.class);
 
             if (html == null || html.isBlank()) {
-                log.warn("상세 페이지 HTML 응답 없음: {}", productUrl);
+                log.debug("상세 페이지 HTML 응답 없음: {}", productUrl);
                 return null;
             }
 
@@ -632,11 +617,11 @@ public class MusinsaCrawlerService {
                 return category2nd;
             }
 
-            log.warn("카테고리 추출 실패: {}", productUrl);
+            log.debug("카테고리 추출 실패: {}", productUrl);
             return null;
 
         } catch (Exception e) {
-            log.warn("상세 페이지 카테고리 추출 중 오류: {} - {}", productUrl, e.getMessage());
+            log.debug("상세 페이지 카테고리 추출 중 오류: {} - {}", productUrl, e.getMessage());
             return null;
         }
     }
@@ -677,7 +662,7 @@ public class MusinsaCrawlerService {
                 }
             }
         } catch (Exception e) {
-            log.warn("카테고리 추출 중 오류: {} - {}", depth, e.getMessage());
+            log.debug("카테고리 추출 중 오류: {} - {}", depth, e.getMessage());
         }
         return null;
     }
