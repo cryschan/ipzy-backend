@@ -190,7 +190,13 @@ public class SubscriptionController {
     })
     @GetMapping("/me")
     public ApiResponse<SubscriptionResponse> getMySubscription() {
-        return ApiResponse.success(null);
+        /**
+         * 완전한 구현
+         * - 인증된 사용자 정보 가져오기
+         * - SubscriptionService에서 사용자의 활성 구독 조회 메서드 구현
+         * - 구독이 없을 경우 404응답 반환
+         */
+        throw new UnsupportedOperationException("이 기능은 아직 구현되지 않았습니다.");
     }
 
     /**
@@ -300,6 +306,16 @@ public class SubscriptionController {
     })
     @PostMapping("/subscriptions")
     public ApiResponse<SubscriptionResponse> createSubscription(@RequestBody CreateSubscriptionRequest request) {
-        return ApiResponse.success(null);
+        /**
+         * 완전한 구현
+         * 토끼 추천
+         * public ApiResponse<SubscriptionResponse> createSubscription
+         * (@Valid @RequestBody CreateSubscriptionRequest request,
+         * @AuthenticationPrincipal User user) {
+         * SubscriptionResponse subscription = subscriptionService.createSubscription(user, request);
+         * return ApiResponse.success(subscription);
+         * }
+         */
+        throw new UnsupportedOperationException("이 기능은 아직 구현되지 않았습니다.");
     }
 }

@@ -14,7 +14,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class SubscriptionService {
 
-    private final SubscriptionRepository subscriptionRepository;
+    //private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionPlanService subscriptionPlanService;
 
     /**
