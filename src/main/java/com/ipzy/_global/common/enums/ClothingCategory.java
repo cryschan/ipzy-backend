@@ -5,5 +5,6 @@ public enum ClothingCategory {
     BOTTOM,
     SHOES,
     OUTER,
-    ACCESSORY
+    ACCESSORY,
+    UNKNOWN
 }

@@ -45,6 +45,17 @@ public class CustomUserPrincipal implements OAuth2User, Serializable {
     }
 
     /**
+     * Principal에서 사용자 ID 추출 (null-safe)
+     * - 비로그인 상태면 null 반환
+     *
+     * @param principal 인증 Principal (nullable)
+     * @return 사용자 ID 또는 null
+     */
+    public static Long getUserIdOrNull(CustomUserPrincipal principal) {
+        return principal != null ? principal.getUserId() : null;
+    }
+
+    /**
      * User 엔티티로부터 Principal 생성
      * - 세션 크기 최소화를 위해 필요한 필드만 attributes에 저장
      */

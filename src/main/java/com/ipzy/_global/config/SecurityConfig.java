@@ -85,8 +85,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").permitAll()
                 // Swagger UI: 개발 편의를 위해 허용
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // AI 통신 테스트 (개발용)
-                .requestMatchers("/api/recommendations/test").permitAll()
+                // 추천 API 설정
+                .requestMatchers("/api/recommendations/test").permitAll()  // 통신 테스트 (개발용)
+                .requestMatchers("/api/recommendations/sessions/*/preview-request").permitAll()  // 요청 미리보기 (개발용)
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/recommendations/sessions/*/generate").authenticated()  // 추천 생성: 로그인 필수
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/recommendations/sessions/*").permitAll()  // 추천 조회: 비로그인 허용
                 // 그 외 모든 요청: 인증 필요
                 .anyRequest().authenticated()
             )

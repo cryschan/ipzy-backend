@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
 @Table(name = "recommendations")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
 public class Recommendation extends BaseEntity {
 
     @Id
@@ -48,13 +48,16 @@ public class Recommendation extends BaseEntity {
     @Column(length = 50)
     private String style;
 
+    @Column(name = "style_board_url", length = 500)
+    private String styleBoardUrl;
+
     @OneToMany(mappedBy = "recommendation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RecommendationItem> items = new ArrayList<>();
 
     @Builder
     public Recommendation(User user, QuizSession session, Integer displayOrder,
                           Integer totalPrice, String reason, String occasion,
-                          String season, String style) {
+                          String season, String style, String styleBoardUrl) {
         this.user = user;
         this.session = session;
         this.displayOrder = displayOrder != null ? displayOrder : 1;
@@ -63,6 +66,7 @@ public class Recommendation extends BaseEntity {
         this.occasion = occasion;
         this.season = season;
         this.style = style;
+        this.styleBoardUrl = styleBoardUrl;
     }
 
     public void addItem(RecommendationItem item) {
