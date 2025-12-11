@@ -94,6 +94,25 @@ public class SubscriptionController {
                                             """
                             )
                     )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않음 (AUTH_005)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "SessionExpired",
+                                    value = """
+                                            {
+                                              "success": false,
+                                              "error": {
+                                                "code": "AUTH_005",
+                                                "message": "로그인 세션이 종료되었어요. 다시 로그인해주세요."
+                                              }
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     @GetMapping("/subscription-plans")
