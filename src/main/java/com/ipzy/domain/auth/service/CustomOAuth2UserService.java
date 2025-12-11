@@ -3,9 +3,7 @@ package com.ipzy.domain.auth.service;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.dto.oauth.OAuth2UserInfo;
 import com.ipzy.domain.user.entity.User;
-import com.ipzy.domain.user.repository.UserRepository;
-import com.ipzy._global.common.enums.UserRole;
-import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -26,10 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final OAuth2UserInfoFactory oAuth2UserInfoFactory;
 
-    // TODO: tato126 다양한 소셜 로그인 연동을 위해서는 테이블을 따로 분리해야 한다.
+    // TODO: 다양한 소셜 로그인 연동을 위해서는 테이블을 따로 분리해야 한다. (SocialAccount 테이블)
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
@@ -47,44 +45,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 필수 정보 검증
         validateUserInfo(userInfo, provider);
 
-        String providerId = userInfo.getProviderId();
-        String email = userInfo.getEmail();
-        String name = userInfo.getName();
-        String profileImage = userInfo.getProfileImageUrl();
-
-        // 이름이 없으면 이메일 앞부분으로 대체
-        if (name == null || name.isBlank()) {
-            name = email.split("@")[0];
-            log.info("{} 사용자 이름이 없어 이메일로 대체: {}", provider, name);
-        }
-
-        // TODO: tato126 사용자 조회 , 생성 로직을 분리해여 관리를 편하게 하도록 한다.
-        // 사용자 조회 또는 생성 (provider+providerId 또는 email로 조회)
-        final String finalName = name;
-        User user = userRepository.findByProviderAndProviderId(provider, providerId)
-                .or(() -> userRepository.findByEmail(email))
-                .map(existingUser -> {
-
-                    // 같은 이메일이지만 다른 Provider → 소셜 연동
-                    if (!existingUser.getProvider().equals(provider)) {
-                        existingUser.linkSocialAccount(provider, providerId);
-                        log.info("기존 계정에 {} 소셜 연동: userId={}", provider, existingUser.getId());
-                    }
-
-                    existingUser.updateOAuthInfo(finalName, profileImage);
-                    return existingUser;
-                })
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .email(email)
-                        .name(finalName)
-                        .profileImageUrl(profileImage)
-                        .provider(provider)
-                        .providerId(providerId)
-                        .role(UserRole.USER)
-                        .status(UserStatus.ACTIVE)
-                        .build()));
-
-        user.updateLastLoginAt();
+        // UserService에 위임하여 사용자 조회 또는 생성
+        User user = userService.findOrCreateByOAuth(
+                provider,
+                userInfo.getProviderId(),
+                userInfo.getEmail(),
+                userInfo.getName(),
+                userInfo.getProfileImageUrl()
+        );
 
         return CustomUserPrincipal.from(user, oauth2User.getAttributes());
     }
