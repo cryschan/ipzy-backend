@@ -24,17 +24,11 @@ public class BrandValidationResult {
      */
     private String message;
 
-    /**
-     * 검증 중 발견된 상품 수 (존재하는 경우)
-     */
-    private Integer productCount;
-
-    public static BrandValidationResult success(String brandCode, int productCount) {
+    public static BrandValidationResult success(String brandCode) {
         return BrandValidationResult.builder()
                 .exists(true)
                 .brandCode(brandCode)
-                .message(String.format("무신사에서 브랜드를 찾았습니다. (상품 %d개)", productCount))
-                .productCount(productCount)
+                .message("무신사에서 브랜드를 찾았습니다")
                 .build();
     }
 
@@ -43,7 +37,6 @@ public class BrandValidationResult {
                 .exists(false)
                 .brandCode(brandCode)
                 .message(String.format("무신사에서 브랜드를 찾을 수 없습니다: %s", reason))
-                .productCount(0)
                 .build();
     }
 }
