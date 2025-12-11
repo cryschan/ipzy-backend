@@ -2,35 +2,58 @@ package com.ipzy.domain.subscription.service;
 
 import com.ipzy.domain.subscription.dto.Response.SubscriptionPlanResponse;
 import com.ipzy.domain.subscription.entity.SubscriptionPlan;
+import com.ipzy.domain.subscription.exception.SubscriptionException;
 import com.ipzy.domain.subscription.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
 
     /**
-     * 메서드 목적: 전체 플랜 목록 조회
-     * 예상 반환값: free, basic, pro
+     * 전체 플랜 목록 조회
+     * @return 모든 플랜 목록 (Free, Basic, Pro)
+     * @throws SubscriptionException 등록된 플랜이 없을 경우
      */
     public List<SubscriptionPlanResponse> findAll() {
-        return subscriptionPlanRepository.findAll()
-                .stream()
+        List<SubscriptionPlan> plans = subscriptionPlanRepository.findAll();
+
+        if (plans.isEmpty()) {
+            throw SubscriptionException.noPlansAvailable();
+        }
+
+        return plans.stream()
                 .map(SubscriptionPlanResponse::from)
                 .toList();
     }
 
     /**
-     * 메서드 목적: 플랜 이름별 조회
+     * 플랜 이름으로 조회
+     * @param name 플랜 이름 (FREE, BASIC, PRO)
+     * @return 플랜 정보
+     * @throws SubscriptionException 플랜을 찾을 수 없을 경우
      */
     public SubscriptionPlanResponse findByName(String name) {
         SubscriptionPlan entity = subscriptionPlanRepository.findByName(name)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 플랜입니다."));
+                .orElseThrow(() -> SubscriptionException.planNotFoundByName(name));
         return SubscriptionPlanResponse.from(entity);
+    }
+
+    /**
+     * 플랜 ID로 Entity 조회 (내부용)
+     * @param planId 플랜 ID
+     * @return SubscriptionPlan 엔티티
+     * @throws SubscriptionException 플랜을 찾을 수 없을 경우
+     */
+    public SubscriptionPlan findEntityById(Long planId) {
+        return subscriptionPlanRepository.findById(planId)
+                .orElseThrow(() -> SubscriptionException.planNotFound(planId));
     }
 }
