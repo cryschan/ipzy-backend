@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * AI 추천 서비스 Mock 클라이언트
@@ -24,6 +25,9 @@ public class MockAiClient implements AiRecommendationClient {
 
     @Override
     public RecommendationResponse requestRecommendation(RecommendationRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        Objects.requireNonNull(request.answers(), "answers must not be null");
+
         log.info("==== [Mock] AI 추천 요청 시작 ====");
         log.info("세션 ID: {}, 답변 수: {}", request.sessionId(), request.answers().size());
 

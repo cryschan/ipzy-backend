@@ -41,8 +41,9 @@ public class RecommendationService {
      * 퀴즈 세션 기반 추천 생성
      *
      * @param sessionId     완료된 퀴즈 세션 ID
-     * @param currentUserId 현재 로그인한 사용자 ID (비로그인 시 null)
+     * @param currentUserId 현재 로그인한 사용자 ID (필수, null 불가)
      * @return 생성된 추천 목록
+     * @throws AuthException 인증되지 않은 사용자 (Controller에서 검증)
      */
     @Transactional
     public List<Recommendation> generateRecommendation(Long sessionId, Long currentUserId) {
@@ -100,6 +101,9 @@ public class RecommendationService {
 
     /**
      * 사용자별 추천 조회
+     * <p>
+     * TODO: 현재 Controller에서 호출되지 않음. 마이페이지 추천 히스토리 기능 구현 시 사용 예정.
+     *       사용하지 않을 경우 제거 검토 필요.
      */
     public List<Recommendation> getRecommendationsByUser(Long userId) {
         return recommendationRepository.findByUserIdWithItems(userId);
@@ -214,6 +218,11 @@ public class RecommendationService {
      * 추천에 아이템 목록 추가
      */
     private void addItemsToRecommendation(Recommendation recommendation, List<RecommendedItemDto> itemDtos) {
+        if (itemDtos == null || itemDtos.isEmpty()) {
+            log.warn("추천 아이템 목록이 비어있음");
+            return;
+        }
+
         int itemOrder = 1;
 
         for (RecommendedItemDto itemDto : itemDtos) {

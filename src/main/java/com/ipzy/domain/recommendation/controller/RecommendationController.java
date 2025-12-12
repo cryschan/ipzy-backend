@@ -2,6 +2,7 @@ package com.ipzy.domain.recommendation.controller;
 
 import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
+import com.ipzy.domain.auth.exception.AuthException;
 import com.ipzy.domain.recommendation.dto.request.RecommendationRequest;
 import com.ipzy.domain.recommendation.dto.response.RecommendationSummaryResponse;
 import com.ipzy.domain.recommendation.entity.Recommendation;
@@ -320,7 +321,12 @@ public class RecommendationController {
             @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId,
             @AuthenticationPrincipal CustomUserPrincipal principal) {
 
-        Long currentUserId = CustomUserPrincipal.getUserIdOrNull(principal);
+        // 추천 생성은 로그인 필수
+        if (principal == null) {
+            throw AuthException.unauthorized();
+        }
+
+        Long currentUserId = principal.getUserId();
         List<Recommendation> recommendations = recommendationService.generateRecommendation(sessionId, currentUserId);
 
         return ApiResponse.success(

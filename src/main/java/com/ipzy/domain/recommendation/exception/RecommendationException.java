@@ -41,6 +41,10 @@ public class RecommendationException extends BusinessException {
         return new RecommendationException(RecommendationErrorCode.AI_SERVICE_UNAVAILABLE);
     }
 
+    public static RecommendationException aiRequestTimeout() {
+        return new RecommendationException(RecommendationErrorCode.AI_REQUEST_TIMEOUT);
+    }
+
     public static RecommendationException aiInvalidResponse() {
         return new RecommendationException(RecommendationErrorCode.AI_INVALID_RESPONSE);
     }

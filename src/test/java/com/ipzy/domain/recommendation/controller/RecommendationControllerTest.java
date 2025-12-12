@@ -11,6 +11,8 @@ import com.ipzy.domain.recommendation.service.RecommendationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import com.ipzy._global.common.enums.UserRole;
+import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -19,12 +21,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,6 +58,20 @@ class RecommendationControllerTest {
 
     @MockBean
     private OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
+
+    /**
+     * 테스트용 CustomUserPrincipal 생성
+     */
+    private CustomUserPrincipal createTestPrincipal() {
+        return CustomUserPrincipal.builder()
+                .userId(1L)
+                .email("test@example.com")
+                .userName("testuser")
+                .profileImageUrl(null)
+                .role(UserRole.USER)
+                .attributes(Map.of("userId", 1L))
+                .build();
+    }
 
     @Nested
     @DisplayName("GET /api/recommendations/test")
@@ -120,7 +138,7 @@ class RecommendationControllerTest {
 
             // When & Then
             mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/generate", sessionId)
-                            .with(user("testuser"))
+                            .with(oauth2Login().oauth2User(createTestPrincipal()))
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -141,11 +159,24 @@ class RecommendationControllerTest {
 
             // When & Then
             mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/generate", sessionId)
-                            .with(user("testuser"))
+                            .with(oauth2Login().oauth2User(createTestPrincipal()))
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false));
+        }
+
+        @Test
+        @DisplayName("실패 - 비로그인 사용자 401")
+        void fail_unauthorized() throws Exception {
+            // Given
+            Long sessionId = 100L;
+
+            // When & Then - 인증 없이 요청
+            mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/generate", sessionId)
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
         }
     }
 

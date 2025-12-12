@@ -7,8 +7,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+
+import java.net.SocketTimeoutException;
 
 /**
  * Python AI 서비스 통신 클라이언트 (Production)
@@ -48,8 +53,20 @@ public class PythonAiClient implements AiRecommendationClient {
 
             return response;
         } catch (ResourceAccessException e) {
+            // 타임아웃과 연결 실패 분리
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("Python AI 서비스 타임아웃: {}", e.getMessage());
+                throw RecommendationException.aiRequestTimeout();
+            }
             log.error("Python AI 서비스 연결 실패: {}", e.getMessage());
             throw RecommendationException.aiServiceUnavailable();
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            log.error("Python AI 서비스 HTTP 에러: {} - {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw RecommendationException.aiInvalidResponse();
+        } catch (RestClientResponseException e) {
+            log.error("Python AI 서비스 응답 에러: {}", e.getMessage());
+            throw RecommendationException.aiInvalidResponse();
         }
     }
 
@@ -70,8 +87,20 @@ public class PythonAiClient implements AiRecommendationClient {
 
             return response;
         } catch (ResourceAccessException e) {
+            // 타임아웃과 연결 실패 분리
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("Python 서비스 타임아웃: {}", e.getMessage());
+                throw RecommendationException.aiRequestTimeout();
+            }
             log.error("Python 서비스 연결 실패: {}", e.getMessage());
             throw RecommendationException.aiServiceUnavailable();
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            log.error("Python 서비스 HTTP 에러: {} - {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw RecommendationException.aiInvalidResponse();
+        } catch (RestClientResponseException e) {
+            log.error("Python 서비스 응답 에러: {}", e.getMessage());
+            throw RecommendationException.aiInvalidResponse();
         }
     }
 }
