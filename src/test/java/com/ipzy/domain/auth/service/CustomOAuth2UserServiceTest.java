@@ -3,6 +3,7 @@ package com.ipzy.domain.auth.service;
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.dto.oauth.KakaoOAuth2UserInfo;
 import com.ipzy.domain.auth.dto.oauth.OAuth2UserInfo;
+import com.ipzy.domain.subscription.service.SubscriptionService;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
 import com.ipzy._global.common.enums.UserRole;
@@ -46,11 +47,18 @@ class CustomOAuth2UserServiceTest {
     @Mock
     private OAuth2UserInfoFactory oAuth2UserInfoFactory;
 
+    @Mock
+    private SubscriptionService subscriptionService;
+
     private CustomOAuth2UserService customOAuth2UserService;
 
     @BeforeEach
     void setUp() {
-        customOAuth2UserService = spy(new CustomOAuth2UserService(userRepository, oAuth2UserInfoFactory));
+        customOAuth2UserService = spy(new CustomOAuth2UserService(
+                userRepository,
+                oAuth2UserInfoFactory,
+                subscriptionService
+        ));
     }
 
     @Nested
