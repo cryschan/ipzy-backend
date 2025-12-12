@@ -51,10 +51,10 @@ com.ipzy
 
 | 문서 | 경로 |
 |------|------|
+| **코드 패턴** | `docs/reference/ipzy-code-patterns.md` |
 | 코드 컨벤션 | `docs/reference/code-conventions.md` |
 | 에러 코드 | `docs/reference/error-codes.md` |
 | ERD | `docs/reference/erd.md` |
 | Swagger 가이드 | `docs/reference/swagger-guide.md` |
-| 코드 패턴 | `docs/reference/raeperd-crud-patterns.md` |
 
 Swagger UI: http://localhost:8080/swagger-ui.html
