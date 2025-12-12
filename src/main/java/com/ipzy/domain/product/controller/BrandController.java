@@ -56,6 +56,22 @@ public class BrandController {
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
                     description = "이미 존재하는 브랜드",
                     content = @Content(
@@ -105,6 +121,22 @@ public class BrandController {
                     description = "브랜드 수정 성공"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "브랜드를 찾을 수 없음",
                     content = @Content(
@@ -141,6 +173,22 @@ public class BrandController {
                     description = "브랜드 삭제 성공"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "브랜드를 찾을 수 없음"
             )
@@ -160,6 +208,22 @@ public class BrandController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "브랜드 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
@@ -200,6 +264,22 @@ public class BrandController {
                                     }
                                     """)
                     )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @GetMapping
@@ -217,6 +297,22 @@ public class BrandController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "브랜드 목록 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @GetMapping("/style/{style}")
@@ -244,8 +340,23 @@ public class BrandController {
                                       "data": {
                                         "exists": true,
                                         "brandCode": "musinsastandard",
-                                        "message": "무신사에서 브랜드를 찾았습니다. (상품 150개)",
-                                        "productCount": 150
+                                        "message": "무신사에서 브랜드를 찾았습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "인증 실패 (추후 적용 예정)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "관리자 권한이 필요합니다"
                                       }
                                     }
                                     """)
