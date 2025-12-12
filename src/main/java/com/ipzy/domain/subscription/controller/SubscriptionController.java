@@ -1,6 +1,8 @@
 package com.ipzy.domain.subscription.controller;
 
 import com.ipzy._global.common.ApiResponse;
+import com.ipzy.domain.auth.dto.CustomUserPrincipal;
+import com.ipzy.domain.auth.exception.AuthException;
 import com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest;
 import com.ipzy.domain.subscription.dto.Response.SubscriptionPlanResponse;
 import com.ipzy.domain.subscription.dto.Response.SubscriptionResponse;
@@ -10,7 +12,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -208,14 +212,16 @@ public class SubscriptionController {
             )
     })
     @GetMapping("/me")
-    public ApiResponse<SubscriptionResponse> getMySubscription() {
-        /**
-         * 완전한 구현
-         * - 인증된 사용자 정보 가져오기
-         * - SubscriptionService에서 사용자의 활성 구독 조회 메서드 구현
-         * - 구독이 없을 경우 404응답 반환
-         */
-        throw new UnsupportedOperationException("이 기능은 아직 구현되지 않았습니다.");
+    public ApiResponse<SubscriptionResponse> getMySubscription(
+            @AuthenticationPrincipal CustomUserPrincipal principal) {
+
+        validatePrincipal(principal);
+
+        SubscriptionResponse response = subscriptionService.getMySubscription(
+            principal.getUserId()
+        );
+
+        return ApiResponse.success(response);
     }
 
     /**
@@ -324,17 +330,128 @@ public class SubscriptionController {
             )
     })
     @PostMapping("/subscriptions")
-    public ApiResponse<SubscriptionResponse> createSubscription(@RequestBody CreateSubscriptionRequest request) {
-        /**
-         * 완전한 구현
-         * 토끼 추천
-         * public ApiResponse<SubscriptionResponse> createSubscription
-         * (@Valid @RequestBody CreateSubscriptionRequest request,
-         * @AuthenticationPrincipal User user) {
-         * SubscriptionResponse subscription = subscriptionService.createSubscription(user, request);
-         * return ApiResponse.success(subscription);
-         * }
-         */
-        throw new UnsupportedOperationException("이 기능은 아직 구현되지 않았습니다.");
+    public ApiResponse<SubscriptionResponse> createSubscription(
+            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @Valid @RequestBody CreateSubscriptionRequest request) {
+
+        validatePrincipal(principal);
+
+        SubscriptionResponse response = subscriptionService.createSubscription(
+            principal.getUserId(),
+            request
+        );
+
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 구독 취소
+     */
+    @Operation(summary = "구독 취소", description = "현재 활성 구독을 취소합니다. 취소 사유는 선택사항입니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "구독 취소 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "Success",
+                                    summary = "취소된 구독 정보",
+                                    value = """
+                                            {
+                                              "success": true,
+                                              "data": {
+                                                "id": 42,
+                                                "plan": {
+                                                  "id": 2,
+                                                  "name": "PRO",
+                                                  "displayName": "Pro",
+                                                  "price": 19900,
+                                                  "currency": "KRW",
+                                                  "billingPeriod": "MONTHLY",
+                                                  "features": {
+                                                    "proxy_limit": 100,
+                                                    "ai_tokens": 10000
+                                                  },
+                                                  "description": "팀 사용자를 위한 프로 플랜",
+                                                  "badge": "인기",
+                                                  "requiresPayment": true
+                                                },
+                                                "status": "CANCELLED",
+                                                "startDate": "2024-01-01T00:00:00",
+                                                "endDate": "2024-02-01T00:00:00",
+                                                "autoRenew": false,
+                                                "isActive": false,
+                                                "isExpired": false,
+                                                "cancelledAt": "2024-01-15T10:30:00",
+                                                "cancelReason": "서비스 불만족"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않음 (AUTH_001)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "Unauthorized",
+                                    value = """
+                                            {
+                                              "success": false,
+                                              "error": {
+                                                "code": "AUTH_001",
+                                                "message": "인증이 필요합니다"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "활성 구독이 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "NotFound",
+                                    value = """
+                                            {
+                                              "success": false,
+                                              "error": {
+                                                "code": "SUBSCRIPTION_NOT_FOUND",
+                                                "message": "활성 구독이 없습니다"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @DeleteMapping("/me")
+    public ApiResponse<SubscriptionResponse> cancelSubscription(
+            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @RequestParam(required = false) String reason) {
+
+        validatePrincipal(principal);
+
+        SubscriptionResponse response = subscriptionService.cancelSubscription(
+                principal.getUserId(),
+                reason
+        );
+
+        return ApiResponse.success(response);
+    }
+
+
+    /**
+     * 사용자 인증 검증 (내부 헬퍼 메서드)
+     */
+    private void validatePrincipal(CustomUserPrincipal principal) {
+        if (principal == null) {
+            throw AuthException.unauthorized();
+        }
     }
 }

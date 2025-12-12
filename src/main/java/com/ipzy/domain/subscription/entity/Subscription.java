@@ -1,5 +1,4 @@
 package com.ipzy.domain.subscription.entity;
-
 import com.ipzy.domain.user.entity.User;
 import com.ipzy._global.common.BaseEntity;
 import com.ipzy._global.common.enums.SubscriptionStatus;
@@ -79,13 +78,25 @@ public class Subscription extends BaseEntity {
         this.status = SubscriptionStatus.ACTIVE;
     }
 
+    public void updatePlan(SubscriptionPlan plan, SubscriptionStatus status,
+                           LocalDateTime startDate, LocalDateTime endDate,
+                           boolean autoRenew) {
+        this.plan = plan;
+        this.status = status;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.autoRenew = autoRenew;
+        this.cancelledAt = null;
+        this.cancelReason = null;
+    }
+
     public boolean isActive() {
         return this.status == SubscriptionStatus.ACTIVE &&
-               LocalDateTime.now().isBefore(this.endDate);
+                LocalDateTime.now().isBefore(this.endDate);
     }
 
     public boolean isExpired() {
         return this.status == SubscriptionStatus.EXPIRED ||
-               LocalDateTime.now().isAfter(this.endDate);
+                LocalDateTime.now().isAfter(this.endDate);
     }
 }
