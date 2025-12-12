@@ -58,5 +58,8 @@ logs/
 *.p12
 secrets/
 
-### 학습 문서 ###
-docs/user/learning/
+### 보관 문서 (완료/학습용) ###
+docs/_archive/
+
+### AI 참조 문서 ###
+docs/ai/
