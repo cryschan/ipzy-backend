@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -43,6 +44,10 @@ public class SecurityConfig {
     // OAuth2 클라이언트 등록 정보 저장소
     private final ClientRegistrationRepository clientRegistrationRepository;
 
+    // 테스트 엔드포인트 활성화 여부 (기본: true, 프로덕션: false)
+    @Value("${app.security.enable-test-endpoints:true}")
+    private boolean enableTestEndpoints;
+
     /**
      * Security Filter Chain 설정
      * 모든 HTTP 요청은 이 필터 체인을 거쳐 인증/인가 처리됨
@@ -71,25 +76,32 @@ public class SecurityConfig {
             )
 
             // ========== URL별 접근 권한 설정 ==========
-            .authorizeHttpRequests(auth -> auth
+            .authorizeHttpRequests(auth -> {
                 // /api/auth/me: 로그인한 사용자만 접근 가능
-                .requestMatchers("/api/auth/me").authenticated()
+                auth.requestMatchers("/api/auth/me").authenticated();
                 // /api/auth/**: 로그인, 로그아웃 등 인증 관련 API는 누구나 접근
-                .requestMatchers("/api/auth/**").permitAll()
+                auth.requestMatchers("/api/auth/**").permitAll();
                 // 퀴즈, 상품, 브랜드 API: 비로그인도 조회 가능
-                .requestMatchers("/api/quizzes/**").permitAll()
-                .requestMatchers("/api/quiz-sessions/**").permitAll()
-                .requestMatchers("/api/products/**").permitAll()
-                .requestMatchers("/api/brands/**").permitAll()
-                // 관리자 API: 개발/테스트용 임시 허용 (TODO: 프로덕션에서는 ADMIN 권한 필요)
-                .requestMatchers("/api/admin/**").permitAll()
+                auth.requestMatchers("/api/quizzes/**").permitAll();
+                auth.requestMatchers("/api/quiz-sessions/**").permitAll();
+                auth.requestMatchers("/api/products/**").permitAll();
+                auth.requestMatchers("/api/brands/**").permitAll();
                 // Swagger UI: 개발 편의를 위해 허용
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // AI 통신 테스트 (개발용)
-                .requestMatchers("/api/recommendations/test").permitAll()
+                auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+
+                // 테스트 엔드포인트: 프로필에 따라 조건부 허용
+                if (enableTestEndpoints) {
+                    // 관리자 테스트 API
+                    auth.requestMatchers("/api/admin/**").permitAll();
+                    // AI 통신 테스트
+                    auth.requestMatchers("/api/recommendations/test").permitAll();
+                    // 사용자 테스트 API (하드 딜리트 등)
+                    auth.requestMatchers("/api/users/test/**").permitAll();
+                }
+
                 // 그 외 모든 요청: 인증 필요
-                .anyRequest().authenticated()
-            )
+                auth.anyRequest().authenticated();
+            })
 
             // ========== OAuth2 로그인 설정 ==========
             .oauth2Login(oauth2 -> oauth2

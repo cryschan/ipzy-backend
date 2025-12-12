@@ -6,10 +6,10 @@ import com.ipzy.domain.auth.exception.AuthException;
 import com.ipzy.domain.auth.session.OAuth2SessionTokenResolver;
 import com.ipzy.domain.auth.session.OAuth2SessionTokenResolver.OAuth2SessionToken;
 import com.ipzy.domain.user.dto.UpdatePreferencesRequest;
+import com.ipzy.domain.user.dto.UpdateProfileCommand;
 import com.ipzy.domain.user.dto.UpdateProfileRequest;
 import com.ipzy.domain.user.dto.UpdateStylePreferenceRequest;
 import com.ipzy.domain.user.dto.UserProfileResponse;
-import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.service.UserService;
 import com.ipzy.domain.user.service.WithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,8 +59,7 @@ public class UserController {
 
         validatePrincipal(principal);
 
-        User user = userService.getMyProfile(principal.getUserId());
-        return ApiResponse.success(UserProfileResponse.from(user));
+        return ApiResponse.success(userService.getMyProfile(principal.getUserId()));
     }
 
     @Operation(
@@ -88,13 +87,9 @@ public class UserController {
 
         validatePrincipal(principal);
 
-        User user = userService.updateProfile(
-                principal.getUserId(),
-                request.name(),
-                request.phone(),
-                request.profileImageUrl()
+        return ApiResponse.success(
+                userService.updateProfile(principal.getUserId(), UpdateProfileCommand.from(request))
         );
-        return ApiResponse.success(UserProfileResponse.from(user));
     }
 
     @Operation(
@@ -118,8 +113,9 @@ public class UserController {
 
         validatePrincipal(principal);
 
-        User user = userService.updatePreferences(principal.getUserId(), request.preferences());
-        return ApiResponse.success(UserProfileResponse.from(user));
+        return ApiResponse.success(
+                userService.updatePreferences(principal.getUserId(), request.preferences())
+        );
     }
 
     @Operation(
@@ -143,9 +139,9 @@ public class UserController {
 
         validatePrincipal(principal);
 
-        User user = userService.updateStylePreference(principal.getUserId(), request.toVo());
-
-        return ApiResponse.success(UserProfileResponse.from(user));
+        return ApiResponse.success(
+                userService.updateStylePreference(principal.getUserId(), request.toVo())
+        );
     }
 
     @Operation(

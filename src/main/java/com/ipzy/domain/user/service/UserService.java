@@ -1,6 +1,8 @@
 package com.ipzy.domain.user.service;
 
 import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.dto.UpdateProfileCommand;
+import com.ipzy.domain.user.dto.UserProfileResponse;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.exception.UserException;
 import com.ipzy.domain.user.repository.UserRepository;
@@ -18,26 +20,23 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public User getMyProfile(Long userId) {
-        return findActiveUser(userId);
-    }
-
-    @Transactional
-    public User updateProfile(Long userId, String name, String phone, String profileImageUrl) {
-
+    public UserProfileResponse getMyProfile(Long userId) {
         User user = findActiveUser(userId);
-        user.updateProfile(name, phone, profileImageUrl);
-
-        return user;
+        return UserProfileResponse.from(user);
     }
 
     @Transactional
-    public User updatePreferences(Long userId, Map<String, Object> preferences) {
+    public UserProfileResponse updateProfile(Long userId, UpdateProfileCommand command) {
+        User user = findActiveUser(userId);
+        user.updateProfile(command.name(), command.phone(), command.profileImageUrl());
+        return UserProfileResponse.from(user);
+    }
 
+    @Transactional
+    public UserProfileResponse updatePreferences(Long userId, Map<String, Object> preferences) {
         User user = findActiveUser(userId);
         user.updatePreferences(preferences);
-
-        return user;
+        return UserProfileResponse.from(user);
     }
 
     @Transactional
@@ -64,12 +63,10 @@ public class UserService {
     }
 
     @Transactional
-    public User updateStylePreference(Long userId, UserStylePreference stylePreference) {
-
+    public UserProfileResponse updateStylePreference(Long userId, UserStylePreference stylePreference) {
         User user = findActiveUser(userId);
         user.updateStylePreference(stylePreference);
-
-        return user;
+        return UserProfileResponse.from(user);
     }
 
     private User findActiveUser(Long userId) {

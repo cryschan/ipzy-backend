@@ -6,7 +6,6 @@ import com.ipzy.domain.quiz.entity.QuizAnswer;
 import com.ipzy.domain.quiz.entity.QuizOption;
 import com.ipzy.domain.quiz.entity.QuizQuestion;
 import com.ipzy.domain.quiz.entity.QuizSession;
-import com.ipzy.domain.quiz.exception.QuizErrorCode;
 import com.ipzy.domain.quiz.exception.QuizException;
 import com.ipzy.domain.quiz.repository.QuizAnswerRepository;
 import com.ipzy.domain.quiz.repository.QuizQuestionRepository;
@@ -39,7 +38,7 @@ public class QuizService {
     public QuizSessionStartResponse startQuiz(Long quizId, Long userId) {
         // 퀴즈 조회 (활성화된 퀴즈만)
         Quiz quiz = quizRepository.findByIdAndIsActiveTrue(quizId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.QUIZ_NOT_FOUND));
+                .orElseThrow(QuizException::quizNotFound);
 
         // 사용자 조회 (로그인한 경우만)
         User user = null;
@@ -63,7 +62,7 @@ public class QuizService {
     public List<QuizQuestionResponse> getQuestions(Long quizId) {
         // 퀴즈 존재 여부 확인 (활성화된 퀴즈만)
         quizRepository.findByIdAndIsActiveTrue(quizId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.QUIZ_NOT_FOUND));
+                .orElseThrow(QuizException::quizNotFound);
 
         // 질문 목록 조회 (JOIN FETCH로 옵션도 함께 조회)
         List<QuizQuestion> questions =
@@ -79,7 +78,7 @@ public class QuizService {
         // 세션 조회 (퀴즈, 답변을 JOIN FETCH로 조회)
         QuizSession session = quizSessionRepository
                 .findByIdWithAnswers(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(QuizException::sessionNotFound);
 
         // 질문 목록 조회
         List<QuizQuestion> questions = getQuestionsBySession(session);
@@ -112,7 +111,7 @@ public class QuizService {
         // 세션 조회 (퀴즈, 답변을 JOIN FETCH로 조회)
         QuizSession session = quizSessionRepository
                 .findByIdWithAnswers(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(QuizException::sessionNotFound);
 
         // 세션 완료 여부 검증
         validateSessionNotCompleted(session);
@@ -143,21 +142,19 @@ public class QuizService {
     private void validateAnswers(QuizSession session, List<QuizQuestion> questions) {
         // 세션 null 체크
         if (session == null) {
-            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
+            throw QuizException.sessionNotFound();
         }
 
         List<QuizAnswer> answers = session.getAnswers();
 
         // 답변이 null인 경우 예외 처리
         if (answers == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_COMPLETED,
-                    "답변이 없습니다");
+            throw QuizException.notCompleted("답변이 없습니다");
         }
 
         // 질문이 없는 경우 예외 처리
         if (questions == null || questions.isEmpty()) {
-            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                    "퀴즈에 질문이 없습니다");
+            throw QuizException.invalidResponse("퀴즈에 질문이 없습니다");
         }
 
         // 질문 Map 생성 (O(1) 조회를 위해)
@@ -170,30 +167,26 @@ public class QuizService {
         for (QuizAnswer answer : answers) {
             // 답변이 null인 경우 예외 처리
             if (answer == null) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "유효하지 않은 답변입니다");
+                throw QuizException.invalidResponse("유효하지 않은 답변입니다");
             }
 
             // 질문이 null인 경우 예외 처리
             if (answer.getQuestion() == null) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "답변에 해당하는 질문이 없습니다");
+                throw QuizException.invalidResponse("답변에 해당하는 질문이 없습니다");
             }
 
             Long questionId = answer.getQuestion().getId();
 
             // 중복 답변 체크 (같은 질문에 여러 답변이 있는지)
             if (answeredQuestionIds.contains(questionId)) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "같은 질문에 중복 답변이 있습니다");
+                throw QuizException.invalidResponse("같은 질문에 중복 답변이 있습니다");
             }
             answeredQuestionIds.add(questionId);
 
             // 질문 조회 (Map에서 O(1) 조회)
             QuizQuestion question = questionMap.get(questionId);
             if (question == null) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "답변에 해당하는 질문을 찾을 수 없습니다: " + questionId);
+                throw QuizException.invalidResponse("답변에 해당하는 질문을 찾을 수 없습니다: " + questionId);
             }
 
             List<String> selectedOptions = answer.getSelectedOptions();
@@ -208,7 +201,7 @@ public class QuizService {
                 .allMatch(q -> answeredQuestionIds.contains(q.getId()));
 
         if (!allRequiredAnswered) {
-            throw new QuizException(QuizErrorCode.QUIZ_REQUIRED_NOT_ANSWERED);
+            throw QuizException.requiredNotAnswered();
         }
     }
 
@@ -217,7 +210,7 @@ public class QuizService {
         // 세션 조회
         QuizSession session = quizSessionRepository
                 .findById(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(QuizException::sessionNotFound);
 
         // 세션 완료 여부 검증
         validateSessionNotCompleted(session);
@@ -229,8 +222,7 @@ public class QuizService {
         QuizQuestion question = questions.stream()
                 .filter(q -> q != null && q.getDisplayOrder() != null && q.getDisplayOrder().equals(order))
                 .findFirst()
-                .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "해당 순서의 질문을 찾을 수 없습니다: " + order));
+                .orElseThrow(() -> QuizException.invalidResponse("해당 순서의 질문을 찾을 수 없습니다: " + order));
 
         // QuizQuestionResponse로 변환
         return QuizQuestionResponse.from(question);
@@ -239,22 +231,22 @@ public class QuizService {
     @Transactional
     public QuizAnswerResponse saveOrUpdateAnswer(Long sessionId, QuizAnswerRequest request) {
         QuizSession session = quizSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(QuizException::sessionNotFound);
 
         // 세션 완료 여부 검증
         validateSessionNotCompleted(session);
 
         QuizQuestion question = quizQuestionRepository.findById(request.getQuestionId())
-                .orElseThrow(() -> new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_FOUND));
+                .orElseThrow(QuizException::questionNotFound);
 
         // 퀴즈가 null인 경우 예외 처리
         if (session.getQuiz() == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+            throw QuizException.quizNotFound();
         }
 
         // 질문이 세션의 퀴즈에 속해 있는지 검증
         if (question.getQuiz() == null || !question.getQuiz().getId().equals(session.getQuiz().getId())) {
-            throw new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_IN_SESSION);
+            throw QuizException.questionNotInSession();
         }
 
         // 옵션 검증
@@ -288,19 +280,17 @@ public class QuizService {
     private void validateOptions(QuizQuestion question, List<String> selectedOptions) {
         // 질문 null 체크
         if (question == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_QUESTION_NOT_FOUND);
+            throw QuizException.questionNotFound();
         }
 
         // 선택한 옵션이 null이거나 비어있는지 확인
         if (selectedOptions == null || selectedOptions.isEmpty()) {
-            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                    "선택한 옵션이 없습니다");
+            throw QuizException.invalidResponse("선택한 옵션이 없습니다");
         }
 
         // 질문의 옵션이 null이거나 비어있는지 확인
         if (question.getOptions() == null || question.getOptions().isEmpty()) {
-            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                    "질문에 옵션이 없습니다: " + question.getId());
+            throw QuizException.invalidResponse("질문에 옵션이 없습니다: " + question.getId());
         }
 
         List<String> available = question.getOptions().stream()
@@ -311,7 +301,7 @@ public class QuizService {
         // 옵션이 유효한지 체크
         for (String option : selectedOptions) {
             if (option == null || !available.contains(option)) {
-                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
+                throw QuizException.optionInvalid();
             }
         }
 
@@ -320,13 +310,12 @@ public class QuizService {
         if (questionType == QuizType.SINGLE) {
             // SINGLE 타입: 정확히 1개만 선택해야 함
             if (selectedOptions.size() != 1) {
-                throw new QuizException(QuizErrorCode.QUIZ_ANSWER_TOO_MANY_OPTIONS);
+                throw QuizException.tooManyOptions();
             }
         } else if (questionType == QuizType.MULTIPLE) {
             // MULTIPLE 타입: 최소 1개 이상 선택해야 함 (이미 위에서 empty 체크했지만 명시적으로)
             if (selectedOptions.size() < 1) {
-                throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "다중 선택 질문에는 최소 1개 이상의 답변이 필요합니다: " + question.getId());
+                throw QuizException.invalidResponse("다중 선택 질문에는 최소 1개 이상의 답변이 필요합니다: " + question.getId());
             }
         }
     }
@@ -338,10 +327,10 @@ public class QuizService {
      */
     private List<QuizQuestion> getQuestionsBySession(QuizSession session) {
         if (session == null) {
-            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
+            throw QuizException.sessionNotFound();
         }
         if (session.getQuiz() == null) {
-            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
+            throw QuizException.quizNotFound();
         }
         return quizQuestionRepository.findAllByQuizIdWithOptions(session.getQuiz().getId());
     }
@@ -351,10 +340,10 @@ public class QuizService {
      */
     private void validateSessionNotCompleted(QuizSession session) {
         if (session == null) {
-            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
+            throw QuizException.sessionNotFound();
         }
         if (session.getCompleted()) {
-            throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
+            throw QuizException.sessionAlreadyCompleted();
         }
     }
 

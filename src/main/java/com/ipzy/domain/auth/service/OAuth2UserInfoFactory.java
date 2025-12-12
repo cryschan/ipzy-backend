@@ -12,7 +12,7 @@ import java.util.Map;
  * <p>registrationId에 따라 적절한 OAuth2UserInfo 구현체를 반환합니다.
  */
 @Component
-public class OAuth2UserInfoFactory {
+class OAuth2UserInfoFactory {
 
     /**
      * Provider에 맞는 OAuth2UserInfo 구현체를 생성합니다.
