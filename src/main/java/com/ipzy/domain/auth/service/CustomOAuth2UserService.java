@@ -2,6 +2,7 @@ package com.ipzy.domain.auth.service;
 
 import com.ipzy.domain.auth.dto.CustomUserPrincipal;
 import com.ipzy.domain.auth.dto.oauth.OAuth2UserInfo;
+import com.ipzy.domain.subscription.service.SubscriptionService;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
 import com.ipzy._global.common.enums.UserRole;
@@ -28,6 +29,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final OAuth2UserInfoFactory oAuth2UserInfoFactory;
+    private final SubscriptionService subscriptionService;
 
     // TODO: tato126 다양한 소셜 로그인 연동을 위해서는 테이블을 따로 분리해야 한다.
     @Override
@@ -85,6 +87,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         .build()));
 
         user.updateLastLoginAt();
+        subscriptionService.ensureDefaultSubscription(user.getId());
 
         return CustomUserPrincipal.from(user, oauth2User.getAttributes());
     }
