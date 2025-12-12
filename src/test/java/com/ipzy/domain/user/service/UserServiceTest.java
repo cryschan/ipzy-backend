@@ -3,6 +3,8 @@ package com.ipzy.domain.user.service;
 import com.ipzy._global.common.enums.Gender;
 import com.ipzy._global.common.enums.UserRole;
 import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.dto.UpdateProfileCommand;
+import com.ipzy.domain.user.dto.UserProfileResponse;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.exception.UserException;
 import com.ipzy.domain.user.repository.UserRepository;
@@ -64,12 +66,12 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.getMyProfile(userId);
+            UserProfileResponse result = userService.getMyProfile(userId);
 
             // then
             assertThat(result).isNotNull();
-            assertThat(result.getEmail()).isEqualTo("test@kakao.com");
-            assertThat(result.getName()).isEqualTo("tester");
+            assertThat(result.email()).isEqualTo("test@kakao.com");
+            assertThat(result.name()).isEqualTo("tester");
         }
 
         @Test
@@ -96,18 +98,16 @@ class UserServiceTest {
 
             // given
             Long userId = 1L;
-            String newName = "updated";
-            String newPhone = "010-9999-8888";
-            String newProfileImageUrl = "https://new-image.jpg";
+            UpdateProfileCommand command = new UpdateProfileCommand("updated", "010-9999-8888", "https://new-image.jpg");
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updateProfile(userId, newName, newPhone, newProfileImageUrl);
+            UserProfileResponse result = userService.updateProfile(userId, command);
 
             // then
-            assertThat(result.getName()).isEqualTo(newName);
-            assertThat(result.getPhone()).isEqualTo(newPhone);
-            assertThat(result.getProfileImageUrl()).isEqualTo(newProfileImageUrl);
+            assertThat(result.name()).isEqualTo("updated");
+            assertThat(result.phone()).isEqualTo("010-9999-8888");
+            assertThat(result.profileImageUrl()).isEqualTo("https://new-image.jpg");
         }
 
         @Test
@@ -116,10 +116,11 @@ class UserServiceTest {
 
             // given
             Long userId = 999L;
+            UpdateProfileCommand command = new UpdateProfileCommand("name", "phone", "url");
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> userService.updateProfile(userId, "name", "phone", "url"))
+            assertThatThrownBy(() -> userService.updateProfile(userId, command))
                     .isInstanceOf(UserException.class);
         }
     }
@@ -140,11 +141,11 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updatePreferences(userId, newPreferences);
+            UserProfileResponse result = userService.updatePreferences(userId, newPreferences);
 
             // then
-            assertThat(result.getPreferences()).containsEntry("theme", "dark");
-            assertThat(result.getPreferences()).containsEntry("language", "ko");
+            assertThat(result.preferences()).containsEntry("theme", "dark");
+            assertThat(result.preferences()).containsEntry("language", "ko");
         }
 
         @Test
@@ -215,14 +216,14 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updateStylePreference(userId, stylePreference);
+            UserProfileResponse result = userService.updateStylePreference(userId, stylePreference);
 
             // then
-            assertThat(result.getStylePreference()).isNotNull();
-            assertThat(result.getStylePreference().getColors()).containsExactly("black", "white", "navy");
-            assertThat(result.getStylePreference().getAge()).isEqualTo(25);
-            assertThat(result.getStylePreference().getGender()).isEqualTo(Gender.MALE);
-            assertThat(result.getStylePreference().getStyles()).containsExactly("casual", "minimal");
+            assertThat(result.stylePreference()).isNotNull();
+            assertThat(result.stylePreference().colors()).containsExactly("black", "white", "navy");
+            assertThat(result.stylePreference().age()).isEqualTo(25);
+            assertThat(result.stylePreference().gender()).isEqualTo(Gender.MALE);
+            assertThat(result.stylePreference().styles()).containsExactly("casual", "minimal");
         }
 
         @Test
@@ -236,6 +237,39 @@ class UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> userService.updateStylePreference(userId, stylePreference))
+                    .isInstanceOf(UserException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("하드 딜리트 (테스트용)")
+    class HardDelete {
+
+        @Test
+        @DisplayName("성공 - 유저를 물리적으로 삭제한다")
+        void success() {
+
+            // given
+            Long userId = 1L;
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+            // when
+            userService.hardDelete(userId);
+
+            // then
+            verify(userRepository).delete(user);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 유저")
+        void fail_userNotFound() {
+
+            // given
+            Long userId = 999L;
+            given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> userService.hardDelete(userId))
                     .isInstanceOf(UserException.class);
         }
     }
