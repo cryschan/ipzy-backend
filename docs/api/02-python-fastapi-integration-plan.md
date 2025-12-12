@@ -20,6 +20,26 @@
 - Python AI 서비스로부터 **코디 추천 결과**를 받아 저장
 - **TDD 방식**으로 개발하여 안정성 확보
 
+### 1.1.1 공유 PostgreSQL 고려사항
+
+> Python이 동일 DB에 직접 접근하므로 아래 사항 필수 검토
+
+| 항목 | 정책 | 비고 |
+|------|------|------|
+| **DB 계정 분리** | `ipzy_spring` / `ipzy_python` 별도 계정 | 권한 분리, 감사 추적 |
+| **Python 권한** | `SELECT` only on `products` | 읽기 전용, 쓰기 금지 |
+| **마이그레이션 책임** | **Spring (Flyway) 단일화** | Python은 스키마 변경 금지 |
+| **읽기 replica** | 부하 분산 시 Python은 replica 사용 | 장애 격리 |
+| **인덱스 관리** | Python 쿼리 패턴 분석 후 인덱스 추가 | 슬로우쿼리 모니터링 |
+
+```sql
+-- Python 전용 계정 생성 예시
+CREATE USER ipzy_python WITH PASSWORD '...';
+GRANT SELECT ON products TO ipzy_python;
+GRANT SELECT ON brands TO ipzy_python;
+-- INSERT/UPDATE/DELETE 권한 없음
+```
+
 ### 1.2 현재 상태
 | 항목 | 상태 | 파일 위치 |
 |------|------|-----------|
@@ -35,7 +55,7 @@
 
 ### 1.4 아키텍처 개요
 
-```
+```text
 ┌─────────────┐                     ┌─────────────┐
 │   Spring    │                     │   Python    │
 │   Boot      │  RecommendationReq  │   FastAPI   │
@@ -60,7 +80,7 @@
 
 ### 1.5 데이터 흐름
 
-```
+```text
 [1] 퀴즈 완료
         │
         ▼
@@ -94,7 +114,7 @@
 
 ### 2.1 기존 패턴 (user/auth 도메인 참고)
 
-```
+```text
 Controller → Service → Repository
     ↓           ↓
    DTO       Entity

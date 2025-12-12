@@ -94,7 +94,25 @@ public class RecommendationController {
 
 ## 3. 프로젝트 응답 형식
 
-### 3.1 ApiResponse 구조
+### 3.1 ApiResponse 래퍼 클래스
+
+> **중요**: 프로젝트 응답 래퍼와 Swagger 애노테이션의 이름 충돌 주의
+
+| 클래스 | 용도 | import |
+|--------|------|--------|
+| `com.ipzy._global.common.ApiResponse` | **프로젝트 응답 래퍼** (Controller 반환 타입) | 사용 가능 |
+| `io.swagger.v3.oas.annotations.responses.ApiResponse` | **Swagger 문서화** | **import 금지, FQCN 사용** |
+
+```java
+// 올바른 사용 예시
+import com.ipzy._global.common.ApiResponse;  // 프로젝트 래퍼 - OK
+
+// Swagger는 항상 FQCN으로 사용
+@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", ...)
+public ApiResponse<RecommendationResponse> generate(...) { ... }
+```
+
+### 3.2 응답 JSON 구조
 
 ```java
 // 성공 응답
@@ -113,7 +131,7 @@ public class RecommendationController {
 }
 ```
 
-### 3.2 HTTP 상태 코드 매핑
+### 3.3 HTTP 상태 코드 매핑
 
 | HTTP | 용도 | 에러 코드 예시 |
 |------|------|---------------|
@@ -253,9 +271,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+// 주의: 프로젝트에 ApiResponse 응답 래퍼가 있으면 이름 충돌 발생
+// Swagger 애노테이션은 FQCN 사용 권장:
+// @io.swagger.v3.oas.annotations.responses.ApiResponse
 ```
 
 ---

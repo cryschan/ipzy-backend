@@ -24,6 +24,43 @@
 
 ---
 
+## 보안 고려사항
+
+> `guestToken`은 **베어러 자격증명**처럼 동작합니다.
+> 토큰 탈취 시 세션 접근 및 계정 연결이 가능하므로 보안 정책 필수.
+
+### 저장 방식
+
+| 방식 | 장점 | 단점 | 권장 |
+|------|------|------|:----:|
+| HttpOnly Cookie | XSS 방어, 자동 전송 | CSRF 대응 필요 | **권장** |
+| localStorage | 구현 간단 | XSS 취약 | 비권장 |
+| sessionStorage | 탭 격리 | 새 탭 시 재발급 | - |
+
+### 보안 정책
+
+| 항목 | 정책 |
+|------|------|
+| **만료** | 7일 또는 회원가입 시 폐기 |
+| **1회성 연결** | `assignUser()` 호출 후 재연결 불가 |
+| **로그 마스킹** | guestToken 로그 출력 금지 (앞 8자리만 허용) |
+| **전송** | HTTPS 필수 |
+| **Rate Limit** | 토큰 기반 요청 분당 60회 제한 (브루트포스 방지) |
+
+### 구현 예시
+
+```java
+// 로그 마스킹
+private String maskToken(String token) {
+    if (token == null || token.length() < 8) return "****";
+    return token.substring(0, 8) + "****";
+}
+
+log.info("세션 조회: guestToken={}", maskToken(guestToken));
+```
+
+---
+
 ## 영향 범위 분석
 
 ### 1. 엔티티 (2개) - 스키마 변경
@@ -81,7 +118,8 @@ public class QuizSession extends BaseEntity {
 
     // 기존 필드들...
 
-    @Column(name = "guest_token", length = 36, unique = true)
+    // DDL은 Flyway로 단일 관리 (unique 제약은 여기서 선언하지 않음)
+    @Column(name = "guest_token", length = 36)
     private String guestToken;  // 비로그인 시 UUID 저장
 
     @Builder
@@ -159,38 +197,72 @@ public class QuizSessionStartResponse {
 
 ### 4. DB 마이그레이션
 
+> **DDL 소스 단일화**: 제약 조건은 Flyway에서만 관리 (엔티티 `@Column(unique=true)` 사용 금지)
+
 ```sql
 -- V{version}__add_guest_token_to_quiz_sessions.sql
+
+-- 1. 컬럼 추가
 ALTER TABLE quiz_sessions ADD COLUMN guest_token VARCHAR(36);
 
--- 유니크 인덱스 (null 허용)
+-- 2. 유니크 인덱스 (null 허용, PostgreSQL 부분 인덱스)
 CREATE UNIQUE INDEX idx_quiz_sessions_guest_token
 ON quiz_sessions(guest_token)
 WHERE guest_token IS NOT NULL;
 
--- 기존 익명 세션에 토큰 부여 (선택적)
-UPDATE quiz_sessions
-SET guest_token = gen_random_uuid()::text
-WHERE user_id IS NULL AND guest_token IS NULL;
+-- 3. 기존 익명 세션 backfill (선택)
+-- 방법 A: PostgreSQL 확장 사용 (pgcrypto 필요)
+-- CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- UPDATE quiz_sessions SET guest_token = gen_random_uuid()::text WHERE user_id IS NULL;
+
+-- 방법 B (권장): 앱에서 배치 처리
+-- gen_random_uuid()는 pgcrypto 확장 필요, 환경에 따라 실패 가능
+-- 앱에서 UUID.randomUUID().toString()으로 생성 권장
+```
+
+#### UUID 생성 전략
+
+| 방법 | 장점 | 단점 | 권장 |
+|------|------|------|:----:|
+| 앱에서 생성 (`UUID.randomUUID()`) | 환경 독립적, H2 호환 | 마이그레이션에서 직접 불가 | **권장** |
+| PostgreSQL `gen_random_uuid()` | DB에서 직접 생성 | pgcrypto 확장 필요 | - |
+| PostgreSQL `uuid-ossp` | 표준 | 별도 확장 설치 | - |
+
+#### H2 테스트 환경 호환
+
+```sql
+-- H2용 마이그레이션 (부분 인덱스 미지원)
+-- src/test/resources/db/migration/V{version}__add_guest_token_to_quiz_sessions.sql
+ALTER TABLE quiz_sessions ADD COLUMN guest_token VARCHAR(36);
+CREATE UNIQUE INDEX idx_quiz_sessions_guest_token ON quiz_sessions(guest_token);
 ```
 
 ---
 
 ## 사이드 이펙트
 
-### 1. API 응답 변경 (Breaking Change)
+### 1. API 응답 변경
+
+> **참고**: 응답에 필드 추가는 일반적으로 **하위 호환** (Breaking Change 아님)
+> 진짜 Breaking Change는 요청 파라미터 변경 시 발생
+
+| 변경 유형 | 내용 | Breaking? |
+|----------|------|:---------:|
+| 응답 필드 추가 (`guestToken`) | 새 필드 추가 | **No** |
+| 요청 파라미터 변경 (향후) | `sessionId` → `guestToken` | **Yes** |
 
 ```json
 // Before
 { "sessionId": 1, "userId": null, "quizId": 1, ... }
 
-// After
+// After (하위 호환)
 { "sessionId": 1, "guestToken": "uuid-...", "userId": null, "quizId": 1, ... }
 ```
 
-**프론트엔드 대응 필요:**
-- `guestToken` 저장 로직 추가 (localStorage/cookie)
+**프론트엔드 대응:**
+- `guestToken` 저장 로직 추가 (HttpOnly Cookie 권장)
 - 추천 요청 시 `guestToken` 전달
+- 병행 지원 기간: `sessionId`와 `guestToken` 모두 허용 (2주)
 
 ### 2. 기존 데이터 처리
 
