@@ -57,12 +57,11 @@ public class SubscriptionService {
     /**
      * 내 구독 조회
      * @param userId 사용자 ID
-     * @return 활성 구독 정보
-     * @throws SubscriptionException 활성 구독이 없을 경우
+     * @return 구독 정보 (상태 무관: FREE, ACTIVE, EXPIRED 등 모두 조회 가능)
      */
     @Transactional
     public SubscriptionResponse getMySubscription(Long userId) {
-        Subscription subscription = findActiveSubscription(userId);
+        Subscription subscription = ensureDefaultSubscription(userId);
         return SubscriptionResponse.from(subscription);
     }
 
@@ -129,24 +128,6 @@ public class SubscriptionService {
     }
 
     /**
-     * 사용자의 활성 구독 조회 (내부용)
-     * @param userId 사용자 ID
-     * @return 활성 구독 엔티티
-     * @throws SubscriptionException 활성 구독이 없을 경우
-     */
-    private Subscription findActiveSubscription(Long userId) {
-        User user = findUserById(userId);
-        Subscription subscription = getOrCreateSubscription(user);
-        expireIfNeeded(subscription);
-
-        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
-            throw SubscriptionException.subscriptionNotFound(userId);
-        }
-
-        return subscription;
-    }
-
-    /**
      * 사용자 조회 (내부용)
      * @param userId 사용자 ID
      * @return User 엔티티
@@ -157,11 +138,39 @@ public class SubscriptionService {
                 .orElseThrow(() -> UserException.notFound(userId));
     }
 
+    /**
+     * 사용자의 구독을 조회하거나 생성 (상태 무관)
+     * - FREE, EXPIRED, ACTIVE 등 모든 상태 허용
+     * - expireIfNeeded로 자동 만료 처리
+     * - 구독이 없으면 FREE 플랜으로 자동 생성
+     *
+     * @param userId 사용자 ID
+     * @return 구독 엔티티 (상태 무관)
+     */
     @Transactional
     public Subscription ensureDefaultSubscription(Long userId) {
         User user = findUserById(userId);
         Subscription subscription = getOrCreateSubscription(user);
         expireIfNeeded(subscription);
+        return subscription;
+    }
+
+    /**
+     * ACTIVE 상태의 구독만 조회 (엄격한 검증)
+     * - 구독 취소 등 ACTIVE 상태가 필수인 작업에만 사용
+     * - FREE, EXPIRED 상태는 예외 발생
+     *
+     * @param userId 사용자 ID
+     * @return ACTIVE 상태의 구독 엔티티
+     * @throws SubscriptionException 활성 구독이 없을 경우
+     */
+    private Subscription findActiveSubscription(Long userId) {
+        Subscription subscription = ensureDefaultSubscription(userId);
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw SubscriptionException.subscriptionNotFound(userId);
+        }
+
         return subscription;
     }
 
