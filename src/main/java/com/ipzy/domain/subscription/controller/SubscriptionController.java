@@ -119,7 +119,7 @@ public class SubscriptionController {
                     )
             )
     })
-    @GetMapping("/subscription-plans")
+    @GetMapping("/plans")
     public ApiResponse<List<SubscriptionPlanResponse>> getPlans() {
         List<SubscriptionPlanResponse> plans = subscriptionService.findAllPlans();
         return ApiResponse.success(plans);
@@ -218,7 +218,7 @@ public class SubscriptionController {
         validatePrincipal(principal);
 
         SubscriptionResponse response = subscriptionService.getMySubscription(
-            principal.getUserId()
+                principal.getUserId()
         );
 
         return ApiResponse.success(response);
@@ -337,8 +337,8 @@ public class SubscriptionController {
         validatePrincipal(principal);
 
         SubscriptionResponse response = subscriptionService.createSubscription(
-            principal.getUserId(),
-            request
+                principal.getUserId(),
+                request
         );
 
         return ApiResponse.success(response);
@@ -430,7 +430,7 @@ public class SubscriptionController {
                     )
             )
     })
-    @DeleteMapping("/me")
+    @DeleteMapping("/cancel")
     public ApiResponse<SubscriptionResponse> cancelSubscription(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestParam(required = false) String reason) {
@@ -444,7 +444,6 @@ public class SubscriptionController {
 
         return ApiResponse.success(response);
     }
-
 
     /**
      * 사용자 인증 검증 (내부 헬퍼 메서드)
