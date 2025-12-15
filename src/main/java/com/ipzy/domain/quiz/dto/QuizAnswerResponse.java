@@ -23,7 +23,7 @@ public class QuizAnswerResponse {
 
     public static QuizAnswerResponse from(QuizAnswer answer) {
         if (answer == null) {
-            return null;
+            throw new IllegalArgumentException("답변이 저장되지 않았습니다.");
         }
         if (answer.getQuestion() == null) {
             throw new IllegalArgumentException("답변에 해당하는 질문이 없습니다");
