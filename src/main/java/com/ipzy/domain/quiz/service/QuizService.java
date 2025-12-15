@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -356,6 +358,29 @@ public class QuizService {
         if (session.getCompleted()) {
             throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
         }
+    }
+
+    /**
+     * 만료된 미완료 세션을 삭제합니다.
+     * 
+     * @param expiration 만료 시간
+     * @return 삭제된 세션 수
+     */
+    @Transactional
+    public int cleanupExpiredSessions(Duration expiration) {
+        LocalDateTime cutoff = LocalDateTime.now().minus(expiration);
+
+        List<QuizSession> expiredSessions =
+                quizSessionRepository.findByCompletedFalseAndCreatedAtBefore(cutoff);
+
+        if (expiredSessions.isEmpty()) {
+            return 0;
+        }
+
+        // CASCADE로 QuizAnswer도 자동 삭제됨 (QuizSession.cascade = CascadeType.ALL, orphanRemoval = true)
+        quizSessionRepository.deleteAll(expiredSessions);
+
+        return expiredSessions.size();
     }
 
 }

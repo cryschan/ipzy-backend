@@ -50,6 +50,15 @@ app:
     logout-redirect-uri: ${FRONTEND_URL:http://localhost:5173}
   swagger:
     server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
+  quiz:
+    session:
+      cleanup:
+        # 스케줄러 활성화 여부
+        enabled: ${QUIZ_SESSION_CLEANUP_ENABLED:true}
+        # Cron 표현식 (매일 오전 4시 실행)
+        cron: ${QUIZ_SESSION_CLEANUP_CRON:0 0 4 * * *}
+        # 만료 시간 (PT1H = 1시간, PT30M = 30분, PT24H = 24시간)
+        expiration: ${QUIZ_SESSION_CLEANUP_EXPIRATION:PT1H}
 
 # AI 서비스 설정
 ai:
@@ -71,7 +80,7 @@ server:
       timeout: ${SESSION_TIMEOUT:30m}
       cookie:
         http-only: true
-        secure: false  # 로컬 개발용 (HTTP)
+        secure: false # 로컬 개발용 (HTTP)
         same-site: lax
 
 ---
@@ -83,7 +92,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-
 ---
 spring:
   config:
@@ -97,7 +105,7 @@ server:
   servlet:
     session:
       cookie:
-        secure: true  # 프로덕션 HTTPS 필수
+        secure: true # 프로덕션 HTTPS 필수
 
 logging:
   level:
