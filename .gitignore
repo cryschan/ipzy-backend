@@ -58,5 +58,14 @@ logs/
 *.p12
 secrets/
 
-### 학습 문서 ###
-docs/user/learning/
+### 보관 문서 (완료/학습용) ###
+docs/_archive/
+
+### AI 참조 문서 ###
+docs/ai/
+
+### Claude 개인 스킬 (팀 공유 제외) ###
+.claude/skills/
+
+### MCP 설정 (DB 연결 정보 포함) ###
+.mcp.json

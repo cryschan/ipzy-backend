@@ -1,0 +1,17 @@
+# 보관 문서 (완료/학습용)
+docs/_archive/
+
+# AI 설정 가이드 (사용자 직접 참조)
+docs/ai/
+
+# 빌드 산출물
+build/
+.gradle/
+
+# IDE 설정
+.idea/
+*.iml
+
+# 환경 설정
+.env
+.env.*
