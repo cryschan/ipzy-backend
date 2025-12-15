@@ -42,6 +42,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
     public void run(String... args) {
         try {
             // 초기화 모드에 따른 처리
+            if (!InitMode.isValid(initMode)) {
+                log.warn("알 수 없는 초기화 모드: {}. SKIP 모드로 처리합니다. (에러 코드: {})", 
+                        initMode, QuizErrorCode.QUIZ_SESSION_INIT_MODE_INVALID.getCode());
+            }
             InitMode mode = InitMode.fromString(initMode);
             log.info("QuizSession 초기화 모드: {}", mode);
 
@@ -228,7 +232,20 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
                 return valueOf(value.toUpperCase());
             } catch (IllegalArgumentException e) {
                 // 알 수 없는 모드는 SKIP으로 처리
+                // 에러 코드는 호출하는 쪽에서 로깅
                 return SKIP;
+            }
+        }
+        
+        static boolean isValid(String value) {
+            if (value == null || value.isBlank()) {
+                return false;
+            }
+            try {
+                valueOf(value.toUpperCase());
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
             }
         }
     }

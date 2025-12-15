@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
- * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_012)
+ * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_015)
  */
 @Getter
 @RequiredArgsConstructor
@@ -23,7 +23,10 @@ public enum QuizErrorCode implements ErrorCode {
     QUIZ_OPTION_INVALID(HttpStatus.BAD_REQUEST, "QUIZ_009", "유효하지 않은 옵션입니다"),
     QUIZ_ANSWER_TOO_MANY_OPTIONS(HttpStatus.BAD_REQUEST, "QUIZ_010", "단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다"),
     QUIZ_SESSION_INIT_QUIZ_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_011", "퀴즈 세션 초기화 실패: 퀴즈 데이터가 없습니다"),
-    QUIZ_SESSION_INIT_QUESTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_012", "퀴즈 세션 초기화 실패: 퀴즈에 질문이 없습니다");
+    QUIZ_SESSION_INIT_QUESTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_012", "퀴즈 세션 초기화 실패: 퀴즈에 질문이 없습니다"),
+    QUIZ_ANSWER_NULL(HttpStatus.BAD_REQUEST, "QUIZ_013", "답변이 저장되지 않았습니다"),
+    QUIZ_ANSWER_QUESTION_NULL(HttpStatus.BAD_REQUEST, "QUIZ_014", "답변에 해당하는 질문이 없습니다"),
+    QUIZ_SESSION_INIT_MODE_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_015", "퀴즈 세션 초기화 모드가 유효하지 않습니다");
 
     private final HttpStatus status;
     private final String code;
