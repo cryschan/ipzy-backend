@@ -43,14 +43,14 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         try {
             // 초기화 모드에 따른 처리
             if (!InitMode.isValid(initMode)) {
-                log.warn("알 수 없는 초기화 모드: {}. SKIP 모드로 처리합니다. (에러 코드: {})", 
+                log.warn("알 수 없는 초기화 모드: {}. SKIP 모드로 처리합니다. (에러 코드: {})",
                         initMode, QuizErrorCode.QUIZ_SESSION_INIT_MODE_INVALID.getCode());
             }
             InitMode mode = InitMode.fromString(initMode);
             log.info("QuizSession 초기화 모드: {}", mode);
 
             long existingSessionCount = quizSessionRepository.count();
-            
+
             if (existingSessionCount > 0) {
                 switch (mode) {
                     case SKIP:
@@ -96,7 +96,7 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
             int sessionCount = 0;
 
             // ========== 완료된 세션들 생성 ==========
-            
+
             // 세션 1: 회원 세션 - 데이트, 깔끔하게, 없음, 30만원
             if (!activeUsers.isEmpty()) {
                 QuizSession session1 = createCompletedSession(
@@ -189,17 +189,17 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
             // 트랜잭션 롤백을 위해 예외 재발생
             throw e;
         } catch (Exception e) {
-            log.error("퀴즈 세션 초기화 중 예상치 못한 오류 발생 (에러 코드: {})", 
+            log.error("퀴즈 세션 초기화 중 예상치 못한 오류 발생 (에러 코드: {})",
                     QuizErrorCode.QUIZ_SESSION_INIT_FAILED.getCode(), e);
             // 트랜잭션 롤백을 위해 QuizException으로 래핑하여 재발생
-            throw new QuizException(QuizErrorCode.QUIZ_SESSION_INIT_FAILED, 
+            throw new QuizException(QuizErrorCode.QUIZ_SESSION_INIT_FAILED,
                     "퀴즈 세션 초기화 중 예상치 못한 오류: " + e.getMessage());
         }
     }
 
     /**
      * 모든 QuizSession과 관련 QuizAnswer를 삭제합니다.
-     * 
+     * <p>
      * CASCADE 설정(cascade = CascadeType.ALL, orphanRemoval = true)으로 인해
      * QuizSession 삭제 시 연관된 QuizAnswer도 자동으로 삭제됩니다.
      */
@@ -207,7 +207,7 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         // CASCADE 설정으로 인해 세션 삭제만으로 충분
         // QuizSession.answers에 cascade = CascadeType.ALL, orphanRemoval = true 설정됨
         quizSessionRepository.deleteAll();
-        
+
         log.info("모든 퀴즈 세션 데이터 삭제 완료 (CASCADE로 답변도 자동 삭제됨)");
     }
 
@@ -219,12 +219,12 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
          * 기존 QuizSession 데이터를 모두 삭제하고 새로 생성
          */
         CLEAN,
-        
+
         /**
          * 기존 QuizSession 데이터를 유지하고 추가로 생성
          */
         APPEND,
-        
+
         /**
          * 기존 QuizSession 데이터가 있으면 초기화하지 않음 (기본값)
          */
@@ -242,10 +242,16 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
                 return SKIP;
             }
         }
-        
+
+        /**
+         * 초기화 모드 값이 유효한지 확인합니다.
+         *
+         * @param value 확인할 값
+         * @return 유효한 모드이거나 null/blank인 경우 true (null/blank는 SKIP 기본값이므로 유효함)
+         */
         static boolean isValid(String value) {
             if (value == null || value.isBlank()) {
-                return false;
+                return true; // null/blank는 SKIP 기본값이므로 유효함
             }
             try {
                 valueOf(value.toUpperCase());
@@ -258,14 +264,14 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
 
     /**
      * 완료된 퀴즈 세션을 생성합니다.
-     * 
-     * @param quiz 퀴즈
-     * @param user 사용자 (null이면 비회원 세션)
+     *
+     * @param quiz      퀴즈
+     * @param user      사용자 (null이면 비회원 세션)
      * @param questions 질문 목록
-     * @param q1Answer Q1 답변 (옵션 value 목록)
-     * @param q2Answer Q2 답변 (옵션 value 목록)
-     * @param q3Answer Q3 답변 (옵션 value 목록)
-     * @param q4Answer Q4 답변 (옵션 value 목록)
+     * @param q1Answer  Q1 답변 (옵션 value 목록)
+     * @param q2Answer  Q2 답변 (옵션 value 목록)
+     * @param q3Answer  Q3 답변 (옵션 value 목록)
+     * @param q4Answer  Q4 답변 (옵션 value 목록)
      * @return 생성된 세션
      */
     private QuizSession createCompletedSession(Quiz quiz, User user, List<QuizQuestion> questions,
@@ -293,18 +299,11 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         quizSessionRepository.save(session);
 
         // 각 질문에 대한 답변 생성
-        if (!questions.isEmpty()) {
-            createAnswer(session, questions.get(0), q1Answer); // Q1
-        }
-        if (questions.size() > 1) {
-            createAnswer(session, questions.get(1), q2Answer); // Q2
-        }
-        if (questions.size() > 2) {
-            createAnswer(session, questions.get(2), q3Answer); // Q3
-        }
-        if (questions.size() > 3) {
-            createAnswer(session, questions.get(3), q4Answer); // Q4
-        }
+        // questions.size() >= 4 검증을 이미 완료했으므로 안전하게 접근 가능
+        createAnswer(session, questions.get(0), q1Answer); // Q1
+        createAnswer(session, questions.get(1), q2Answer); // Q2
+        createAnswer(session, questions.get(2), q3Answer); // Q3
+        createAnswer(session, questions.get(3), q4Answer); // Q4
 
         // 세션 완료 처리
         session.complete();
@@ -315,9 +314,9 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
 
     /**
      * 진행 중인 퀴즈 세션을 생성합니다 (일부 질문만 답변).
-     * 
-     * @param quiz 퀴즈
-     * @param user 사용자 (null이면 비회원 세션)
+     *
+     * @param quiz      퀴즈
+     * @param user      사용자 (null이면 비회원 세션)
      * @param questions 질문 목록
      * @return 생성된 세션
      */
@@ -344,9 +343,9 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
 
     /**
      * 답변을 생성합니다.
-     * 
-     * @param session 세션
-     * @param question 질문
+     *
+     * @param session              세션
+     * @param question             질문
      * @param selectedOptionValues 선택한 옵션 value 목록
      */
     private void createAnswer(QuizSession session, QuizQuestion question, List<String> selectedOptionValues) {
