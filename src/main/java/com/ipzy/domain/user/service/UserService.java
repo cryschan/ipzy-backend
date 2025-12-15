@@ -1,16 +1,19 @@
 package com.ipzy.domain.user.service;
 
+import com.ipzy._global.common.enums.UserRole;
 import com.ipzy._global.common.enums.UserStatus;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.exception.UserException;
 import com.ipzy.domain.user.repository.UserRepository;
 import com.ipzy.domain.user.vo.UserStylePreference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -72,8 +75,89 @@ public class UserService {
         return user;
     }
 
-    private User findActiveUser(Long userId) {
+    /**
+     * 활성 사용자 조회 (삭제되지 않은 사용자)
+     *
+     * @param userId 사용자 ID
+     * @return 활성 상태의 사용자
+     * @throws UserException 사용자가 없거나 삭제된 경우
+     */
+    public User findActiveUser(Long userId) {
         return userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)
                 .orElseThrow(() -> UserException.notFound(userId));
+    }
+
+    /**
+     * OAuth 로그인 시 사용자 조회 또는 생성
+     * <p>
+     * 조회 우선순위:
+     * 1. provider + providerId로 조회
+     * 2. email로 조회 (다른 Provider로 가입한 경우 소셜 연동)
+     * 3. 없으면 새 사용자 생성
+     *
+     * @param provider     OAuth 제공자 (KAKAO, NAVER, GOOGLE 등)
+     * @param providerId   제공자별 사용자 고유 ID
+     * @param email        사용자 이메일
+     * @param name         사용자 이름 (없으면 이메일 앞부분으로 대체됨)
+     * @param profileImage 프로필 이미지 URL
+     * @return 조회되거나 생성된 사용자
+     */
+    @Transactional
+    public User findOrCreateByOAuth(String provider, String providerId,
+                                    String email, String name, String profileImage) {
+
+        // 이름이 없으면 이메일 앞부분으로 대체
+        String finalName = (name == null || name.isBlank())
+                ? email.split("@")[0]
+                : name;
+
+        if (!finalName.equals(name)) {
+            log.info("{} 사용자 이름이 없어 이메일로 대체: {}", provider, finalName);
+        }
+
+        // 1. provider+providerId로 조회 → 2. email로 조회 → 3. 새 사용자 생성
+        User user = userRepository.findByProviderAndProviderId(provider, providerId)
+                .or(() -> userRepository.findByEmail(email))
+                .map(existingUser -> updateExistingUser(existingUser, provider, providerId, finalName, profileImage))
+                .orElseGet(() -> createNewUser(provider, providerId, email, finalName, profileImage));
+
+        user.updateLastLoginAt();
+
+        return user;
+    }
+
+    /**
+     * 기존 사용자 정보 업데이트 (소셜 연동 포함)
+     */
+    private User updateExistingUser(User existingUser, String provider, String providerId,
+                                    String name, String profileImage) {
+
+        // 같은 이메일이지만 다른 Provider → 소셜 연동
+        if (!existingUser.getProvider().equals(provider)) {
+            existingUser.linkSocialAccount(provider, providerId);
+            log.info("기존 계정에 {} 소셜 연동: userId={}", provider, existingUser.getId());
+        }
+
+        existingUser.updateOAuthInfo(name, profileImage);
+        return existingUser;
+    }
+
+    /**
+     * 새 사용자 생성
+     */
+    private User createNewUser(String provider, String providerId,
+                               String email, String name, String profileImage) {
+
+        log.info("새 사용자 생성: provider={}, email={}", provider, email);
+
+        return userRepository.save(User.builder()
+                .email(email)
+                .name(name)
+                .profileImageUrl(profileImage)
+                .provider(provider)
+                .providerId(providerId)
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build());
     }
 }

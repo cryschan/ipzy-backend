@@ -21,8 +21,7 @@ public class UserException extends BusinessException {
     }
 
     public static UserException notFound(Long userId) {
-        return new UserException(UserErrorCode.USER_NOT_FOUND,
-                "사용자를 찾을 수 없습니다: " + userId);
+        return new UserException(UserErrorCode.USER_NOT_FOUND, "ID: " + userId);
     }
 
     public static UserException profileUpdateFailed() {

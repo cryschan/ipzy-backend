@@ -6,11 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
- * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_016)
- * 
+ * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_017)
+ *
  * 에러 코드 분류:
  * - 퀴즈 관련: QUIZ_001, QUIZ_006
- * - 세션 관련: QUIZ_003, QUIZ_004
+ * - 세션 관련: QUIZ_003, QUIZ_004, QUIZ_017
  * - 질문 관련: QUIZ_007, QUIZ_008
  * - 답변 관련: QUIZ_005, QUIZ_010, QUIZ_013, QUIZ_014
  * - 옵션 관련: QUIZ_009
@@ -28,6 +28,7 @@ public enum QuizErrorCode implements ErrorCode {
     // ========== 세션 관련 ==========
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_003", "퀴즈 세션을 찾을 수 없습니다"),
     SESSION_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "QUIZ_004", "이미 완료된 퀴즈 세션입니다"),
+    SESSION_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "QUIZ_017", "이미 사용자가 연결된 세션입니다"),
 
     // ========== 질문 관련 ==========
     QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_007", "퀴즈 질문을 찾을 수 없습니다"),
