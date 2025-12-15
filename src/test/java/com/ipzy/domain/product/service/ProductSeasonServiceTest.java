@@ -50,6 +50,7 @@ class ProductSeasonServiceTest {
                 .category(ClothingCategory.TOP)
                 .price(30000)
                 .thumbnailImageUrl("https://example.com/image1.jpg")
+                .removedBackgroundImageUrl("https://example.com/image1_nobg.jpg")
                 .seasons(new String[]{"2025_SS"})
                 .isActive(false)
                 .build();
@@ -61,6 +62,7 @@ class ProductSeasonServiceTest {
                 .category(ClothingCategory.OUTER)
                 .price(200000)
                 .thumbnailImageUrl("https://example.com/image2.jpg")
+                .removedBackgroundImageUrl("https://example.com/image2_nobg.jpg")
                 .seasons(new String[]{"2025_FW"})
                 .isActive(false)
                 .build();
@@ -72,6 +74,7 @@ class ProductSeasonServiceTest {
                 .category(ClothingCategory.BOTTOM)
                 .price(80000)
                 .thumbnailImageUrl("https://example.com/image3.jpg")
+                .removedBackgroundImageUrl("https://example.com/image3_nobg.jpg")
                 .seasons(new String[]{"ALL"})
                 .isActive(false)
                 .build();
@@ -169,6 +172,7 @@ class ProductSeasonServiceTest {
                     .category(ClothingCategory.TOP)
                     .price(50000)
                     .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                     .seasons(new String[]{productSeasonService.getCurrentSeason()})
                     .isActive(false)
                     .build();
@@ -195,6 +199,7 @@ class ProductSeasonServiceTest {
                     .category(ClothingCategory.SHOES)
                     .price(100000)
                     .thumbnailImageUrl("https://example.com/shoes.jpg")
+                    .removedBackgroundImageUrl("https://example.com/shoes_nobg.jpg")
                     .seasons(new String[]{"ALL"})
                     .isActive(false)
                     .build();
@@ -218,6 +223,7 @@ class ProductSeasonServiceTest {
                     .category(ClothingCategory.ACCESSORY)
                     .price(20000)
                     .thumbnailImageUrl("https://example.com/accessory.jpg")
+                    .removedBackgroundImageUrl("https://example.com/accessory_nobg.jpg")
                     .seasons(null)
                     .isActive(false)
                     .build();

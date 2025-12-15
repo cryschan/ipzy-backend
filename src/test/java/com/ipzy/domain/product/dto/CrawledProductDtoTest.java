@@ -25,7 +25,7 @@ class CrawledProductDtoTest {
                 .originalPrice(119000)
                 .discountPercent(0)
                 .thumbnailImageUrl("https://example.com/image.jpg")
-                .description("클래식한 스니커즈")
+                .review("클래식한 스니커즈")
                 .colors(List.of("white", "black"))
                 .purchaseUrl("https://example.com/product")
                 .build();
@@ -39,7 +39,7 @@ class CrawledProductDtoTest {
         assertThat(dto.getOriginalPrice()).isEqualTo(119000);
         assertThat(dto.getDiscountPercent()).isEqualTo(0);
         assertThat(dto.getThumbnailImageUrl()).isNotBlank();
-        assertThat(dto.getDescription()).isNotBlank();
+        assertThat(dto.getReview()).isNotBlank();
         assertThat(dto.getColors()).hasSize(2);
         assertThat(dto.getPurchaseUrl()).isNotBlank();
     }
@@ -158,22 +158,22 @@ class CrawledProductDtoTest {
     }
 
     @Test
-    @DisplayName("설명이 null인 경우")
-    void descriptionIsNull() {
+    @DisplayName("리뷰 정보가 null인 경우")
+    void reviewIsNull() {
         // given & when
         CrawledProductDto dto = CrawledProductDto.builder()
                 .brandName("브랜드")
                 .name("상품명")
                 .category("TOP")
                 .price(50000)
-                .description(null) // null
+                .review(null) // null
                 .thumbnailImageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
-        assertThat(dto.getDescription()).isNull();
-        System.out.println("⚠️ DTO의 description이 null입니다.");
-        System.out.println("→ Product 엔티티는 description이 null 가능합니다.");
+        assertThat(dto.getReview()).isNull();
+        System.out.println("⚠️ DTO의 review가 null입니다.");
+        System.out.println("→ Product 엔티티의 review가 null 가능합니다.");
     }
 
     @Test

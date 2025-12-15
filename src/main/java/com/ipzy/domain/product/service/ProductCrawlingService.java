@@ -245,6 +245,11 @@ public class ProductCrawlingService {
         int originalPrice = dto.getOriginalPrice() != null ? dto.getOriginalPrice() : dto.getPrice();
         int discountPercent = dto.getDiscountPercent() != null ? dto.getDiscountPercent() : 0;
 
+        // TODO: 파이썬 서버에서 누끼 이미지를 받아와야 함 (현재는 임시로 thumbnailImageUrl 사용)
+        String removedBackgroundImageUrl = dto.getRemovedBackgroundImageUrl() != null
+                ? dto.getRemovedBackgroundImageUrl()
+                : thumbnailImageUrl; // 임시: 파이썬 API 구현 전까지 썸네일 사용
+
         return Product.builder()
                 .brand(brand)
                 .name(dto.getName())
@@ -255,7 +260,8 @@ public class ProductCrawlingService {
                 .originalPrice(originalPrice)
                 .discountPercent(discountPercent)
                 .thumbnailImageUrl(thumbnailImageUrl)
-                .description(dto.getDescription())
+                .removedBackgroundImageUrl(removedBackgroundImageUrl)
+                .review(dto.getReview())
                 .colors(dto.getColors() != null ? dto.getColors().toArray(new String[0]) : null)
                 .seasons(seasons) // 시즌 정보 추가
                 .isActive(true)

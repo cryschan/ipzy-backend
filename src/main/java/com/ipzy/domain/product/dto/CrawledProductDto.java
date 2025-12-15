@@ -20,7 +20,8 @@ public class CrawledProductDto {
     private Integer originalPrice;
     private Integer discountPercent;
     private String thumbnailImageUrl;
-    private String description;
+    private String removedBackgroundImageUrl;
+    private String review;
     private List<String> colors;
     private String purchaseUrl;
 }

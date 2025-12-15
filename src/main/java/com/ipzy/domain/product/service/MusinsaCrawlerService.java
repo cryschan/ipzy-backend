@@ -54,6 +54,7 @@ public class MusinsaCrawlerService {
 
     private final RestClient musinsaRestClient;
     private final ObjectMapper objectMapper;
+    private final ImageProcessingService imageProcessingService;
 
 
     /**
@@ -94,6 +95,10 @@ public class MusinsaCrawlerService {
 
         log.info("의류 브랜드 상품 크롤링 완료: {} ({}개 - 상의/아우터/하의 각 {}개)",
                  brandName, allProducts.size(), limit);
+
+        // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
+        // processRemoveBackgroundBatch(allProducts);
+
         return allProducts;
     }
 
@@ -115,6 +120,10 @@ public class MusinsaCrawlerService {
         List<CrawledProductDto> products = crawlBrandProductsByCategory(brandCode, "SHOES", limit);
 
         log.info("신발 브랜드 상품 크롤링 완료: {} ({}개)", brandName, products.size());
+
+        // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
+        // processRemoveBackgroundBatch(products);
+
         return products;
     }
 
@@ -296,7 +305,7 @@ public class MusinsaCrawlerService {
                 .originalPrice(normalPrice)
                 .discountPercent(saleRate)
                 .thumbnailImageUrl(thumbnailUrl)  // 이미 검증됨
-                .description(String.format("리뷰: %d개 (평점: %d점)",
+                .review(String.format("리뷰: %d개 (평점: %d점)",
                         item.getReviewCount() != null ? item.getReviewCount() : 0,
                         item.getReviewScore() != null ? item.getReviewScore() : 0))
                 .colors(colors)
@@ -488,7 +497,7 @@ public class MusinsaCrawlerService {
                             .originalPrice(normalPrice)
                             .discountPercent(discountRate)
                             .thumbnailImageUrl(thumbnailUrl)
-                            .description("")
+                            .review("")
                             .colors(colors)
                             .purchaseUrl(purchaseUrl)
                             .build();
@@ -499,6 +508,9 @@ public class MusinsaCrawlerService {
             }
 
             log.info("신발 랭킹 크롤링 완료: {}개 상품 수집", products.size());
+
+            // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
+            // processRemoveBackgroundBatch(products);
 
         } catch (Exception e) {
             log.error("신발 랭킹 크롤링 실패: category={}, error={}", shoeCategory, e.getMessage(), e);
@@ -665,5 +677,59 @@ public class MusinsaCrawlerService {
             log.debug("카테고리 추출 중 오류: {} - {}", depth, e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * 크롤링한 상품들의 누끼 이미지를 배치로 처리
+     * ImageProcessingService를 사용하여 파이썬 서버에서 누끼 제거 후 DTO에 설정
+     *
+     * @param products 크롤링한 상품 리스트
+     */
+    private void processRemoveBackgroundBatch(List<CrawledProductDto> products) {
+        if (products == null || products.isEmpty()) {
+            log.debug("누끼 처리할 상품이 없습니다");
+            return;
+        }
+
+        try {
+            log.info("누끼 이미지 배치 처리 시작: {}개 상품", products.size());
+
+            // 썸네일 URL만 수집 (null 제외)
+            List<String> thumbnailUrls = products.stream()
+                    .map(CrawledProductDto::getThumbnailImageUrl)
+                    .filter(Objects::nonNull)
+                    .filter(url -> !url.isBlank())
+                    .distinct() // 중복 제거
+                    .toList();
+
+            if (thumbnailUrls.isEmpty()) {
+                log.warn("유효한 썸네일 URL이 없습니다");
+                return;
+            }
+
+            // 파이썬 서버에 배치 요청
+            Map<String, String> urlMap = imageProcessingService.removeBackgroundBatch(thumbnailUrls);
+
+            // 결과를 각 DTO에 설정
+            int successCount = 0;
+            for (CrawledProductDto product : products) {
+                String thumbnailUrl = product.getThumbnailImageUrl();
+                if (thumbnailUrl != null && urlMap.containsKey(thumbnailUrl)) {
+                    product.setRemovedBackgroundImageUrl(urlMap.get(thumbnailUrl));
+                    successCount++;
+                } else {
+                    // 누끼 처리 실패 시 원본 썸네일 사용
+                    product.setRemovedBackgroundImageUrl(thumbnailUrl);
+                    log.debug("누끼 처리 실패, 원본 사용: {}", product.getName());
+                }
+            }
+
+            log.info("누끼 이미지 배치 처리 완료: {}개 성공 / {}개 요청", successCount, products.size());
+
+        } catch (Exception e) {
+            log.error("누끼 이미지 배치 처리 중 오류 발생: {}", e.getMessage(), e);
+            // 실패 시 모든 상품에 원본 썸네일 설정
+            products.forEach(p -> p.setRemovedBackgroundImageUrl(p.getThumbnailImageUrl()));
+        }
     }
 }

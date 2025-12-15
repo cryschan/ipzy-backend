@@ -51,7 +51,8 @@ class ProductServiceTest {
                 .originalPrice(159000)
                 .discountPercent(18)
                 .thumbnailImageUrl("https://example.com/image1.jpg")
-                .description("리뷰: 100개")
+                .removedBackgroundImageUrl("https://example.com/image1_nobg.jpg")
+                .review("리뷰: 100개")
                 .colors(new String[]{"블랙", "화이트"})
                 .seasons(new String[]{"ALL"})
                 .isActive(true)
@@ -66,6 +67,7 @@ class ProductServiceTest {
                 .primaryStyle("sneakers")
                 .price(159000)
                 .thumbnailImageUrl("https://example.com/image2.jpg")
+                .removedBackgroundImageUrl("https://example.com/image2_nobg.jpg")
                 .seasons(new String[]{"2024_FW"})
                 .isActive(false)
                 .build();
@@ -76,6 +78,7 @@ class ProductServiceTest {
                 .category(ClothingCategory.SHOES)
                 .price(100000)
                 .thumbnailImageUrl("https://example.com/deleted.jpg")
+                .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                 .isActive(false)
                 .build();
         deletedProduct.softDelete();
@@ -160,6 +163,7 @@ class ProductServiceTest {
                     .category(ClothingCategory.SHOES)
                     .price(100000)
                     .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                     .isActive(true)
                     .build();
             deletedActiveProduct.softDelete();
@@ -224,6 +228,7 @@ class ProductServiceTest {
                     .category(ClothingCategory.SHOES)
                     .price(100000)
                     .thumbnailImageUrl("https://example.com/test.jpg")
+                    .removedBackgroundImageUrl("https://example.com/test_nobg.jpg")
                     .colors(null)
                     .seasons(null)
                     .isActive(true)
