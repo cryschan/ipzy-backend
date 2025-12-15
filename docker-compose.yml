@@ -50,5 +50,50 @@ services:
       # Frontend URL
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
+  ai:
+    build:
+      context: ../ipzy-ai
+      dockerfile: Dockerfile
+    container_name: ipzy-ai
+    depends_on:
+      - postgres
+      - app
+    ports:
+      - "${AI_SERVER_PORT:-8000}:8000"
+    environment:
+      # Server Configuration
+      - PROJECT_NAME=${PROJECT_NAME:-Fashion Coordination AI}
+      - API_PREFIX=${API_PREFIX:-/api}
+
+      # LLM Configuration
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - LLM_MODEL=${LLM_MODEL:-gemini-1.5-flash}
+
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_REGION=${AWS_REGION:-ap-northeast-2}
+      - S3_IMAGE_PREFIX=${S3_IMAGE_PREFIX:-background-removed}
+
+      # Backend Integration
+      - BACKEND_API_URL=http://app:8080
+      - BACKEND_API_KEY=${BACKEND_API_KEY}
+
+      # AI Settings
+      - MAX_RECOMMENDATIONS=${MAX_RECOMMENDATIONS:-3}
+      - MAX_PRODUCTS_PER_CATEGORY=${MAX_PRODUCTS_PER_CATEGORY:-5}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ai_data:/app/data
+      - ai_outputs:/app/outputs
+    restart: on-failure
+
 volumes:
   postgres_data:
+  ai_data:
+  ai_outputs:
