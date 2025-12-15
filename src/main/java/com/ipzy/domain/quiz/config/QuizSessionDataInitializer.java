@@ -186,8 +186,14 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
             log.info("퀴즈 세션 데이터 초기화가 완료되었습니다. (새로 생성된 세션 {}개)", sessionCount);
         } catch (QuizException e) {
             log.error("퀴즈 세션 초기화 실패: {} (에러 코드: {})", e.getMessage(), e.getErrorCode().getCode(), e);
+            // 트랜잭션 롤백을 위해 예외 재발생
+            throw e;
         } catch (Exception e) {
-            log.error("퀴즈 세션 초기화 중 예상치 못한 오류 발생", e);
+            log.error("퀴즈 세션 초기화 중 예상치 못한 오류 발생 (에러 코드: {})", 
+                    QuizErrorCode.QUIZ_SESSION_INIT_FAILED.getCode(), e);
+            // 트랜잭션 롤백을 위해 QuizException으로 래핑하여 재발생
+            throw new QuizException(QuizErrorCode.QUIZ_SESSION_INIT_FAILED, 
+                    "퀴즈 세션 초기화 중 예상치 못한 오류: " + e.getMessage());
         }
     }
 
@@ -263,8 +269,22 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
      * @return 생성된 세션
      */
     private QuizSession createCompletedSession(Quiz quiz, User user, List<QuizQuestion> questions,
-                                                List<String> q1Answer, List<String> q2Answer,
-                                                List<String> q3Answer, List<String> q4Answer) {
+                                               List<String> q1Answer, List<String> q2Answer,
+                                               List<String> q3Answer, List<String> q4Answer) {
+        // 방어적 체크: 완료 세션 생성은 4개의 질문을 전제로 함
+        final int REQUIRED_QUESTION_COUNT = 4;
+        if (questions == null || questions.size() < REQUIRED_QUESTION_COUNT) {
+            log.error("완료 세션 생성 실패: 질문 개수가 부족합니다. (필요: {}, 현재: {}, 퀴즈 ID: {}, 에러 코드: {})",
+                    REQUIRED_QUESTION_COUNT,
+                    questions == null ? 0 : questions.size(),
+                    quiz != null ? quiz.getId() : null,
+                    QuizErrorCode.QUIZ_SESSION_INIT_QUESTION_NOT_FOUND.getCode());
+            throw new QuizException(
+                    QuizErrorCode.QUIZ_SESSION_INIT_QUESTION_NOT_FOUND,
+                    "완료 세션을 생성하기 위한 최소 질문 수보다 적습니다"
+            );
+        }
+
         // 세션 생성
         QuizSession session = QuizSession.builder()
                 .quiz(quiz)
