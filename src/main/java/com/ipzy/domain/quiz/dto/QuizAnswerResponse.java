@@ -1,6 +1,8 @@
 package com.ipzy.domain.quiz.dto;
 
 import com.ipzy.domain.quiz.entity.QuizAnswer;
+import com.ipzy.domain.quiz.exception.QuizErrorCode;
+import com.ipzy.domain.quiz.exception.QuizException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,10 +25,10 @@ public class QuizAnswerResponse {
 
     public static QuizAnswerResponse from(QuizAnswer answer) {
         if (answer == null) {
-            return null;
+            throw new QuizException(QuizErrorCode.QUIZ_ANSWER_NULL);
         }
         if (answer.getQuestion() == null) {
-            throw new IllegalArgumentException("답변에 해당하는 질문이 없습니다");
+            throw new QuizException(QuizErrorCode.QUIZ_ANSWER_QUESTION_NULL);
         }
         return QuizAnswerResponse.builder()
                 .questionId(answer.getQuestion().getId())
