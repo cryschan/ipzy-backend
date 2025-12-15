@@ -11,6 +11,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - ipzy-network
     restart: on-failure
 
   app:
@@ -49,6 +51,61 @@ services:
 
       # Frontend URL
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+    networks:
+      - ipzy-network
+
+  ai:
+    build:
+      context: ../ipzy-ai
+      dockerfile: Dockerfile
+    container_name: ipzy-ai
+    depends_on:
+      - postgres
+    ports:
+      - "${AI_SERVER_PORT:-8000}:8000"
+    environment:
+      # AI Service Configuration
+      - PROJECT_NAME=${PROJECT_NAME:-Fashion Coordination AI}
+      - API_PREFIX=${API_PREFIX:-/api}
+
+      # API Keys
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+      # Backend Integration
+      - BACKEND_API_URL=http://app:8080
+      - BACKEND_API_KEY=${BACKEND_API_KEY}
+
+      # PostgreSQL (공유 DB)
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${DB_NAME:-ipzy_db}
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+
+      # Image Processing
+      - IMAGE_OUTPUT_DIR=/app/outputs/composites
+
+      # AI Settings
+      - MAX_RECOMMENDATIONS=${MAX_RECOMMENDATIONS:-3}
+      - MAX_PRODUCTS_PER_CATEGORY=${MAX_PRODUCTS_PER_CATEGORY:-5}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - LLM_MODEL=${LLM_MODEL:-gemini-1.5-flash}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ai_data:/app/data
+      - ai_outputs:/app/outputs
+    networks:
+      - ipzy-network
+    restart: on-failure
+
+networks:
+  ipzy-network:
+    name: ipzy-network
 
 volumes:
   postgres_data:
+  ai_data:
+  ai_outputs:
