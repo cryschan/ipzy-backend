@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: ipzy-postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-ipzy_db}
@@ -10,6 +10,7 @@ services:
       - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     restart: on-failure
 
   app:
