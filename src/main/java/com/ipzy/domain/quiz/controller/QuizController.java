@@ -97,7 +97,6 @@ public class QuizController {
                     
                     **참고:**
                     - 퀴즈 목록만 필요한 경우 `GET /api/quizzes` API를 사용하세요.
-                    - 세션별 단일 질문 조회가 필요한 경우 `GET /api/quiz-sessions/{sessionId}/questions/{order}` API를 사용하세요.
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(

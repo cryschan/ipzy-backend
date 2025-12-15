@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -348,11 +349,12 @@ public class QuizService {
     /**
      * 만료된 미완료 세션을 삭제합니다.
      *
-     * @param expiration 만료 시간
+     * @param expiration 만료 시간 (null이면 안 됨)
      * @return 삭제된 세션 수
      */
     @Transactional
     public int cleanupExpiredSessions(Duration expiration) {
+        Objects.requireNonNull(expiration, "만료 시간(expiration)은 null일 수 없습니다");
         LocalDateTime cutoff = LocalDateTime.now().minus(expiration);
 
         List<QuizSession> expiredSessions =
