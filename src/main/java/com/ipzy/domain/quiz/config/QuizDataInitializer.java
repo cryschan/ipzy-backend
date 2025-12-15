@@ -8,12 +8,14 @@ import com.ipzy._global.common.enums.QuizType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(1) // QuizSessionDataInitializer보다 먼저 실행
 public class QuizDataInitializer implements CommandLineRunner {
 
     private final QuizRepository quizRepository;

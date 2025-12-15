@@ -1,6 +1,8 @@
 package com.ipzy.domain.quiz.dto;
 
 import com.ipzy.domain.quiz.entity.QuizSession;
+import com.ipzy.domain.quiz.exception.QuizErrorCode;
+import com.ipzy.domain.quiz.exception.QuizException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,10 +33,10 @@ public class QuizSessionStartResponse {
 
     public static QuizSessionStartResponse from(QuizSession session) {
         if (session == null) {
-            throw new IllegalArgumentException("QuizSession cannot be null");
+            throw new QuizException(QuizErrorCode.SESSION_NOT_FOUND);
         }
         if (session.getQuiz() == null) {
-            throw new IllegalArgumentException("QuizSession must have a quiz");
+            throw new QuizException(QuizErrorCode.QUIZ_NOT_FOUND);
         }
         return new QuizSessionStartResponse(
                 session.getId(),
