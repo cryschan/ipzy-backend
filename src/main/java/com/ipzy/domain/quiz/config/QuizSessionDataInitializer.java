@@ -4,6 +4,8 @@ import com.ipzy.domain.quiz.entity.Quiz;
 import com.ipzy.domain.quiz.entity.QuizAnswer;
 import com.ipzy.domain.quiz.entity.QuizQuestion;
 import com.ipzy.domain.quiz.entity.QuizSession;
+import com.ipzy.domain.quiz.exception.QuizErrorCode;
+import com.ipzy.domain.quiz.exception.QuizException;
 import com.ipzy.domain.quiz.repository.QuizAnswerRepository;
 import com.ipzy.domain.quiz.repository.QuizQuestionRepository;
 import com.ipzy.domain.quiz.repository.QuizRepository;
@@ -38,145 +40,151 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        // 초기화 모드에 따른 처리
-        InitMode mode = InitMode.fromString(initMode);
-        log.info("QuizSession 초기화 모드: {}", mode);
+        try {
+            // 초기화 모드에 따른 처리
+            InitMode mode = InitMode.fromString(initMode);
+            log.info("QuizSession 초기화 모드: {}", mode);
 
-        long existingSessionCount = quizSessionRepository.count();
-        
-        if (existingSessionCount > 0) {
-            switch (mode) {
-                case SKIP:
-                    log.info("퀴즈 세션 데이터가 이미 존재합니다 ({}개). SKIP 모드로 초기화를 건너뜁니다.", existingSessionCount);
-                    return;
-                case CLEAN:
-                    log.info("기존 퀴즈 세션 데이터를 삭제합니다 ({}개)...", existingSessionCount);
-                    deleteAllSessions();
-                    break;
-                case APPEND:
-                    log.info("기존 퀴즈 세션 데이터를 유지하고 추가로 생성합니다 (기존 {}개)...", existingSessionCount);
-                    break;
+            long existingSessionCount = quizSessionRepository.count();
+            
+            if (existingSessionCount > 0) {
+                switch (mode) {
+                    case SKIP:
+                        log.info("퀴즈 세션 데이터가 이미 존재합니다 ({}개). SKIP 모드로 초기화를 건너뜁니다.", existingSessionCount);
+                        return;
+                    case CLEAN:
+                        log.info("기존 퀴즈 세션 데이터를 삭제합니다 ({}개)...", existingSessionCount);
+                        deleteAllSessions();
+                        break;
+                    case APPEND:
+                        log.info("기존 퀴즈 세션 데이터를 유지하고 추가로 생성합니다 (기존 {}개)...", existingSessionCount);
+                        break;
+                }
             }
-        }
 
-        // 퀴즈가 없으면 초기화하지 않음
-        List<Quiz> quizzes = quizRepository.findAll();
-        if (quizzes.isEmpty()) {
-            log.warn("퀴즈 데이터가 없습니다. QuizDataInitializer를 먼저 실행해주세요.");
-            return;
-        }
+            // 퀴즈가 없으면 초기화 실패
+            List<Quiz> quizzes = quizRepository.findAll();
+            if (quizzes.isEmpty()) {
+                log.error("퀴즈 데이터가 없습니다. QuizDataInitializer를 먼저 실행해주세요.");
+                throw new QuizException(QuizErrorCode.QUIZ_SESSION_INIT_QUIZ_NOT_FOUND);
+            }
 
-        // 첫 번째 활성화된 퀴즈 사용 (QuizDataInitializer에서 생성한 퀴즈)
-        Quiz quiz = quizzes.stream()
-                .filter(Quiz::getIsActive)
-                .findFirst()
-                .orElse(quizzes.get(0)); // 활성화된 퀴즈가 없으면 첫 번째 퀴즈 사용
+            // 첫 번째 활성화된 퀴즈 사용 (QuizDataInitializer에서 생성한 퀴즈)
+            Quiz quiz = quizzes.stream()
+                    .filter(Quiz::getIsActive)
+                    .findFirst()
+                    .orElse(quizzes.get(0)); // 활성화된 퀴즈가 없으면 첫 번째 퀴즈 사용
 
-        log.info("퀴즈 세션 데이터를 초기화합니다... (퀴즈 ID: {})", quiz.getId());
+            log.info("퀴즈 세션 데이터를 초기화합니다... (퀴즈 ID: {})", quiz.getId());
 
-        // 질문 목록 조회 (displayOrder 순서대로)
-        List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(quiz.getId());
-        if (questions.isEmpty()) {
-            log.warn("퀴즈에 질문이 없습니다. 세션 초기화를 건너뜁니다.");
-            return;
-        }
+            // 질문 목록 조회 (displayOrder 순서대로)
+            List<QuizQuestion> questions = quizQuestionRepository.findAllByQuizIdWithOptions(quiz.getId());
+            if (questions.isEmpty()) {
+                log.error("퀴즈에 질문이 없습니다. 세션 초기화를 할 수 없습니다. (퀴즈 ID: {})", quiz.getId());
+                throw new QuizException(QuizErrorCode.QUIZ_SESSION_INIT_QUESTION_NOT_FOUND);
+            }
 
-        // 사용자 조회 (활성 사용자 목록)
-        List<User> activeUsers = userRepository.findAll().stream()
-                .filter(u -> u.getDeletedAt() == null)
-                .toList();
+            // 사용자 조회 (활성 사용자 목록)
+            List<User> activeUsers = userRepository.findAll().stream()
+                    .filter(u -> u.getDeletedAt() == null)
+                    .toList();
 
-        int sessionCount = 0;
+            int sessionCount = 0;
 
-        // ========== 완료된 세션들 생성 ==========
-        
-        // 세션 1: 회원 세션 - 데이트, 깔끔하게, 없음, 30만원
-        if (!activeUsers.isEmpty()) {
-            QuizSession session1 = createCompletedSession(
-                    quiz, activeUsers.get(0), questions,
+            // ========== 완료된 세션들 생성 ==========
+            
+            // 세션 1: 회원 세션 - 데이트, 깔끔하게, 없음, 30만원
+            if (!activeUsers.isEmpty()) {
+                QuizSession session1 = createCompletedSession(
+                        quiz, activeUsers.get(0), questions,
+                        List.of("date"),      // Q1
+                        List.of("clean"),     // Q2
+                        List.of("none"),      // Q3
+                        List.of("300000")     // Q4
+                );
+                log.info("회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session1.getId());
+                sessionCount++;
+            }
+
+            // 세션 2: 비회원 세션 - 데이트, 깔끔하게, 없음, 30만원
+            QuizSession session2 = createCompletedSession(
+                    quiz, null, questions,
                     List.of("date"),      // Q1
                     List.of("clean"),     // Q2
                     List.of("none"),      // Q3
                     List.of("300000")     // Q4
             );
-            log.info("회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session1.getId());
+            log.info("비회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session2.getId());
             sessionCount++;
-        }
 
-        // 세션 2: 비회원 세션 - 데이트, 깔끔하게, 없음, 30만원
-        QuizSession session2 = createCompletedSession(
-                quiz, null, questions,
-                List.of("date"),      // Q1
-                List.of("clean"),     // Q2
-                List.of("none"),      // Q3
-                List.of("300000")     // Q4
-        );
-        log.info("비회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session2.getId());
-        sessionCount++;
+            // 세션 3: 회원 세션 - 회사, 멋있게, 마른 편, 50만원
+            if (!activeUsers.isEmpty()) {
+                User user = activeUsers.size() > 1 ? activeUsers.get(1) : activeUsers.get(0);
+                QuizSession session3 = createCompletedSession(
+                        quiz, user, questions,
+                        List.of("work"),       // Q1
+                        List.of("stylish"),    // Q2
+                        List.of("thin"),       // Q3
+                        List.of("500000")      // Q4
+                );
+                log.info("회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session3.getId());
+                sessionCount++;
+            }
 
-        // 세션 3: 회원 세션 - 회사, 멋있게, 마른 편, 50만원
-        if (!activeUsers.isEmpty()) {
-            User user = activeUsers.size() > 1 ? activeUsers.get(1) : activeUsers.get(0);
-            QuizSession session3 = createCompletedSession(
-                    quiz, user, questions,
+            // 세션 4: 비회원 세션 - 소개팅/모임, 편하게, 통통한 편, 10만원
+            QuizSession session4 = createCompletedSession(
+                    quiz, null, questions,
+                    List.of("meeting"),       // Q1
+                    List.of("comfortable"),   // Q2
+                    List.of("chubby"),        // Q3
+                    List.of("100000")         // Q4
+            );
+            log.info("비회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session4.getId());
+            sessionCount++;
+
+            // 세션 5: 회원 세션 - 외출, 힙하게, 키, 무관
+            if (!activeUsers.isEmpty()) {
+                User user = activeUsers.size() > 2 ? activeUsers.get(2) : activeUsers.get(0);
+                QuizSession session5 = createCompletedSession(
+                        quiz, user, questions,
+                        List.of("outdoor"),    // Q1
+                        List.of("hip"),        // Q2
+                        List.of("height"),     // Q3
+                        List.of("unlimited")   // Q4
+                );
+                log.info("회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session5.getId());
+                sessionCount++;
+            }
+
+            // 세션 6: 비회원 세션 - 회사, 깔끔하게, 없음, 10만원
+            QuizSession session6 = createCompletedSession(
+                    quiz, null, questions,
                     List.of("work"),       // Q1
-                    List.of("stylish"),    // Q2
-                    List.of("thin"),       // Q3
-                    List.of("500000")      // Q4
+                    List.of("clean"),     // Q2
+                    List.of("none"),      // Q3
+                    List.of("100000")      // Q4
             );
-            log.info("회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session3.getId());
+            log.info("비회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session6.getId());
             sessionCount++;
-        }
 
-        // 세션 4: 비회원 세션 - 소개팅/모임, 편하게, 통통한 편, 10만원
-        QuizSession session4 = createCompletedSession(
-                quiz, null, questions,
-                List.of("meeting"),       // Q1
-                List.of("comfortable"),   // Q2
-                List.of("chubby"),        // Q3
-                List.of("100000")         // Q4
-        );
-        log.info("비회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session4.getId());
-        sessionCount++;
-
-        // 세션 5: 회원 세션 - 외출, 힙하게, 키, 무관
-        if (!activeUsers.isEmpty()) {
-            User user = activeUsers.size() > 2 ? activeUsers.get(2) : activeUsers.get(0);
-            QuizSession session5 = createCompletedSession(
-                    quiz, user, questions,
-                    List.of("outdoor"),    // Q1
-                    List.of("hip"),        // Q2
-                    List.of("height"),     // Q3
-                    List.of("unlimited")   // Q4
-            );
-            log.info("회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session5.getId());
+            // 세션 7: 진행 중인 세션 (답변 일부만) - 비회원
+            QuizSession session7 = createInProgressSession(quiz, null, questions);
+            log.info("진행 중인 비회원 퀴즈 세션 생성 완료 (세션 ID: {})", session7.getId());
             sessionCount++;
+
+            // 세션 8: 진행 중인 세션 (답변 일부만) - 회원
+            if (!activeUsers.isEmpty()) {
+                QuizSession session8 = createInProgressSession(quiz, activeUsers.get(0), questions);
+                log.info("진행 중인 회원 퀴즈 세션 생성 완료 (세션 ID: {})", session8.getId());
+                sessionCount++;
+            }
+
+            log.info("퀴즈 세션 데이터 초기화가 완료되었습니다. (새로 생성된 세션 {}개)", sessionCount);
+        } catch (QuizException e) {
+            log.error("퀴즈 세션 초기화 실패: {} (에러 코드: {})", e.getMessage(), e.getErrorCode().getCode(), e);
+        } catch (Exception e) {
+            log.error("퀴즈 세션 초기화 중 예상치 못한 오류 발생", e);
         }
-
-        // 세션 6: 비회원 세션 - 회사, 깔끔하게, 없음, 10만원
-        QuizSession session6 = createCompletedSession(
-                quiz, null, questions,
-                List.of("work"),       // Q1
-                List.of("clean"),     // Q2
-                List.of("none"),      // Q3
-                List.of("100000")      // Q4
-        );
-        log.info("비회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session6.getId());
-        sessionCount++;
-
-        // 세션 7: 진행 중인 세션 (답변 일부만) - 비회원
-        QuizSession session7 = createInProgressSession(quiz, null, questions);
-        log.info("진행 중인 비회원 퀴즈 세션 생성 완료 (세션 ID: {})", session7.getId());
-        sessionCount++;
-
-        // 세션 8: 진행 중인 세션 (답변 일부만) - 회원
-        if (!activeUsers.isEmpty()) {
-            QuizSession session8 = createInProgressSession(quiz, activeUsers.get(0), questions);
-            log.info("진행 중인 회원 퀴즈 세션 생성 완료 (세션 ID: {})", session8.getId());
-            sessionCount++;
-        }
-
-        log.info("퀴즈 세션 데이터 초기화가 완료되었습니다. (새로 생성된 세션 {}개)", sessionCount);
     }
 
     /**
