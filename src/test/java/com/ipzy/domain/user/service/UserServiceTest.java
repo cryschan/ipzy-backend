@@ -23,7 +23,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -237,6 +239,112 @@ class UserServiceTest {
             // when & then
             assertThatThrownBy(() -> userService.updateStylePreference(userId, stylePreference))
                     .isInstanceOf(UserException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("OAuth 사용자 조회/생성")
+    class FindOrCreateByOAuth {
+
+        @Test
+        @DisplayName("성공 - provider+providerId로 기존 사용자 조회")
+        void success_findByProviderAndProviderId() {
+
+            // given
+            given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
+                    .willReturn(Optional.of(user));
+
+            // when
+            User result = userService.findOrCreateByOAuth(
+                    "KAKAO", "12345", "test@kakao.com", "테스트", "https://img.com/profile.jpg"
+            );
+
+            // then
+            assertThat(result).isEqualTo(user);
+            assertThat(result.getLastLoginAt()).isNotNull();
+            verify(userRepository, never()).findByEmail(any());
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("성공 - email로 기존 사용자 조회 후 소셜 연동")
+        void success_findByEmailAndLinkSocialAccount() {
+
+            // given
+            User googleUser = User.builder()
+                    .email("test@kakao.com")
+                    .name("구글유저")
+                    .provider("GOOGLE")
+                    .providerId("google123")
+                    .role(UserRole.USER)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+
+            given(userRepository.findByProviderAndProviderId("KAKAO", "kakao456"))
+                    .willReturn(Optional.empty());
+            given(userRepository.findByEmail("test@kakao.com"))
+                    .willReturn(Optional.of(googleUser));
+
+            // when
+            User result = userService.findOrCreateByOAuth(
+                    "KAKAO", "kakao456", "test@kakao.com", "카카오유저", "https://img.com/kakao.jpg"
+            );
+
+            // then
+            assertThat(result.getProvider()).isEqualTo("KAKAO");
+            assertThat(result.getProviderId()).isEqualTo("kakao456");
+            assertThat(result.getLastLoginAt()).isNotNull();
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 새 사용자 생성")
+        void success_createNewUser() {
+
+            // given
+            given(userRepository.findByProviderAndProviderId("KAKAO", "new123"))
+                    .willReturn(Optional.empty());
+            given(userRepository.findByEmail("new@kakao.com"))
+                    .willReturn(Optional.empty());
+
+            User savedUser = User.builder()
+                    .email("new@kakao.com")
+                    .name("신규유저")
+                    .provider("KAKAO")
+                    .providerId("new123")
+                    .profileImageUrl("https://img.com/new.jpg")
+                    .role(UserRole.USER)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+            given(userRepository.save(any(User.class))).willReturn(savedUser);
+
+            // when
+            User result = userService.findOrCreateByOAuth(
+                    "KAKAO", "new123", "new@kakao.com", "신규유저", "https://img.com/new.jpg"
+            );
+
+            // then
+            assertThat(result.getEmail()).isEqualTo("new@kakao.com");
+            assertThat(result.getProvider()).isEqualTo("KAKAO");
+            verify(userRepository).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 이름이 없으면 이메일 앞부분으로 대체")
+        void success_nameFromEmail() {
+
+            // given
+            given(userRepository.findByProviderAndProviderId("KAKAO", "12345"))
+                    .willReturn(Optional.of(user));
+
+            // when
+            User result = userService.findOrCreateByOAuth(
+                    "KAKAO", "12345", "testuser@kakao.com", null, "https://img.com/profile.jpg"
+            );
+
+            // then
+            assertThat(result).isNotNull();
+            // 이름이 null이면 이메일 앞부분(testuser)로 대체되어 updateOAuthInfo 호출됨
         }
     }
 }

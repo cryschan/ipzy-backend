@@ -24,8 +24,7 @@ public class AuthException extends BusinessException {
     }
 
     public static AuthException oauthFailed(String reason) {
-        return new AuthException(AuthErrorCode.OAUTH_FAILED,
-                "OAuth 인증에 실패했습니다: " + reason);
+        return new AuthException(AuthErrorCode.OAUTH_FAILED, reason);
     }
 
     public static AuthException adminRequired() {
@@ -53,7 +52,6 @@ public class AuthException extends BusinessException {
     }
 
     public static AuthException oauthInvalidResponse(String reason) {
-        return new AuthException(AuthErrorCode.OAUTH_INVALID_RESPONSE,
-                "OAuth 응답을 처리할 수 없습니다: " + reason);
+        return new AuthException(AuthErrorCode.OAUTH_INVALID_RESPONSE, reason);
     }
 }
