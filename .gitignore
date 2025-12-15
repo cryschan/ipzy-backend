@@ -63,3 +63,6 @@ docs/_archive/
 
 ### AI 참조 문서 ###
 docs/ai/
+
+### Claude 개인 스킬 (팀 공유 제외) ###
+.claude/skills/
