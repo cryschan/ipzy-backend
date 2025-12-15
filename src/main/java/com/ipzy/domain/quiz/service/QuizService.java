@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -354,7 +353,9 @@ public class QuizService {
      */
     @Transactional
     public int cleanupExpiredSessions(Duration expiration) {
-        Objects.requireNonNull(expiration, "만료 시간(expiration)은 null일 수 없습니다");
+        if (expiration == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_CLEANUP_EXPIRATION_NULL);
+        }
         LocalDateTime cutoff = LocalDateTime.now().minus(expiration);
 
         List<QuizSession> expiredSessions =

@@ -21,7 +21,8 @@ public enum QuizErrorCode implements ErrorCode {
     QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_007", "퀴즈 질문을 찾을 수 없습니다"),
     QUIZ_QUESTION_NOT_IN_SESSION(HttpStatus.BAD_REQUEST, "QUIZ_008", "해당 질문이 세션의 퀴즈에 속하지 않습니다"),
     QUIZ_OPTION_INVALID(HttpStatus.BAD_REQUEST, "QUIZ_009", "유효하지 않은 옵션입니다"),
-    QUIZ_ANSWER_TOO_MANY_OPTIONS(HttpStatus.BAD_REQUEST, "QUIZ_010", "단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다");
+    QUIZ_ANSWER_TOO_MANY_OPTIONS(HttpStatus.BAD_REQUEST, "QUIZ_010", "단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다"),
+    QUIZ_CLEANUP_EXPIRATION_NULL(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_011", "세션 정리 만료 시간이 설정되지 않았습니다");
 
     private final HttpStatus status;
     private final String code;
