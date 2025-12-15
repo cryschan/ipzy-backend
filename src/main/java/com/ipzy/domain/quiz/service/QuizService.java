@@ -37,6 +37,15 @@ public class QuizService {
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
 
+    @Transactional(readOnly = true)
+    public List<QuizListResponse> getActiveQuizzes() {
+        return quizRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .filter(quiz -> quiz != null) // null 필터링 (방어적 코딩)
+                .map(QuizListResponse::from)
+                .toList();
+    }
+
     @Transactional
     public QuizSessionStartResponse startQuiz(Long quizId, Long userId) {
         // 퀴즈 조회 (활성화된 퀴즈만)
@@ -214,30 +223,6 @@ public class QuizService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public QuizQuestionResponse getQuestionByOrder(Long sessionId, Integer order) {
-        // 세션 조회
-        QuizSession session = quizSessionRepository
-                .findById(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
-
-        // 세션 완료 여부 검증
-        validateSessionNotCompleted(session);
-
-        // 질문 목록 조회
-        List<QuizQuestion> questions = getQuestionsBySession(session);
-
-        // displayOrder로 질문 찾기
-        QuizQuestion question = questions.stream()
-                .filter(q -> q != null && q.getDisplayOrder() != null && q.getDisplayOrder().equals(order))
-                .findFirst()
-                .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "해당 순서의 질문을 찾을 수 없습니다: " + order));
-
-        // QuizQuestionResponse로 변환
-        return QuizQuestionResponse.from(question);
-    }
-
     @Transactional
     public QuizAnswerResponse saveOrUpdateAnswer(Long sessionId, QuizAnswerRequest request) {
         QuizSession session = quizSessionRepository.findById(sessionId)
@@ -362,7 +347,7 @@ public class QuizService {
 
     /**
      * 만료된 미완료 세션을 삭제합니다.
-     * 
+     *
      * @param expiration 만료 시간
      * @return 삭제된 세션 수
      */
