@@ -18,7 +18,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -95,10 +94,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         if (!activeUsers.isEmpty()) {
             QuizSession session1 = createCompletedSession(
                     quiz, activeUsers.get(0), questions,
-                    Arrays.asList("date"),      // Q1
-                    Arrays.asList("clean"),     // Q2
-                    Arrays.asList("none"),      // Q3
-                    Arrays.asList("300000")     // Q4
+                    List.of("date"),      // Q1
+                    List.of("clean"),     // Q2
+                    List.of("none"),      // Q3
+                    List.of("300000")     // Q4
             );
             log.info("회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session1.getId());
             sessionCount++;
@@ -107,10 +106,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         // 세션 2: 비회원 세션 - 데이트, 깔끔하게, 없음, 30만원
         QuizSession session2 = createCompletedSession(
                 quiz, null, questions,
-                Arrays.asList("date"),      // Q1
-                Arrays.asList("clean"),     // Q2
-                Arrays.asList("none"),      // Q3
-                Arrays.asList("300000")     // Q4
+                List.of("date"),      // Q1
+                List.of("clean"),     // Q2
+                List.of("none"),      // Q3
+                List.of("300000")     // Q4
         );
         log.info("비회원 퀴즈 세션 1 생성 완료 (세션 ID: {})", session2.getId());
         sessionCount++;
@@ -120,10 +119,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
             User user = activeUsers.size() > 1 ? activeUsers.get(1) : activeUsers.get(0);
             QuizSession session3 = createCompletedSession(
                     quiz, user, questions,
-                    Arrays.asList("work"),       // Q1
-                    Arrays.asList("stylish"),    // Q2
-                    Arrays.asList("thin"),       // Q3
-                    Arrays.asList("500000")      // Q4
+                    List.of("work"),       // Q1
+                    List.of("stylish"),    // Q2
+                    List.of("thin"),       // Q3
+                    List.of("500000")      // Q4
             );
             log.info("회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session3.getId());
             sessionCount++;
@@ -132,10 +131,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         // 세션 4: 비회원 세션 - 소개팅/모임, 편하게, 통통한 편, 10만원
         QuizSession session4 = createCompletedSession(
                 quiz, null, questions,
-                Arrays.asList("meeting"),       // Q1
-                Arrays.asList("comfortable"),   // Q2
-                Arrays.asList("chubby"),        // Q3
-                Arrays.asList("100000")         // Q4
+                List.of("meeting"),       // Q1
+                List.of("comfortable"),   // Q2
+                List.of("chubby"),        // Q3
+                List.of("100000")         // Q4
         );
         log.info("비회원 퀴즈 세션 2 생성 완료 (세션 ID: {})", session4.getId());
         sessionCount++;
@@ -145,10 +144,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
             User user = activeUsers.size() > 2 ? activeUsers.get(2) : activeUsers.get(0);
             QuizSession session5 = createCompletedSession(
                     quiz, user, questions,
-                    Arrays.asList("outdoor"),    // Q1
-                    Arrays.asList("hip"),        // Q2
-                    Arrays.asList("height"),     // Q3
-                    Arrays.asList("unlimited")   // Q4
+                    List.of("outdoor"),    // Q1
+                    List.of("hip"),        // Q2
+                    List.of("height"),     // Q3
+                    List.of("unlimited")   // Q4
             );
             log.info("회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session5.getId());
             sessionCount++;
@@ -157,10 +156,10 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         // 세션 6: 비회원 세션 - 회사, 깔끔하게, 없음, 10만원
         QuizSession session6 = createCompletedSession(
                 quiz, null, questions,
-                Arrays.asList("work"),       // Q1
-                Arrays.asList("clean"),     // Q2
-                Arrays.asList("none"),      // Q3
-                Arrays.asList("100000")      // Q4
+                List.of("work"),       // Q1
+                List.of("clean"),     // Q2
+                List.of("none"),      // Q3
+                List.of("100000")      // Q4
         );
         log.info("비회원 퀴즈 세션 3 생성 완료 (세션 ID: {})", session6.getId());
         sessionCount++;
@@ -182,20 +181,16 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
 
     /**
      * 모든 QuizSession과 관련 QuizAnswer를 삭제합니다.
+     * 
+     * CASCADE 설정(cascade = CascadeType.ALL, orphanRemoval = true)으로 인해
+     * QuizSession 삭제 시 연관된 QuizAnswer도 자동으로 삭제됩니다.
      */
     private void deleteAllSessions() {
-        // 모든 세션 조회
-        List<QuizSession> allSessions = quizSessionRepository.findAll();
+        // CASCADE 설정으로 인해 세션 삭제만으로 충분
+        // QuizSession.answers에 cascade = CascadeType.ALL, orphanRemoval = true 설정됨
+        quizSessionRepository.deleteAll();
         
-        // 각 세션의 답변 삭제 (CASCADE로 자동 삭제되지만 명시적으로 처리)
-        for (QuizSession session : allSessions) {
-            quizAnswerRepository.deleteAll(session.getAnswers());
-        }
-        
-        // 세션 삭제
-        quizSessionRepository.deleteAll(allSessions);
-        
-        log.info("모든 퀴즈 세션 데이터 삭제 완료");
+        log.info("모든 퀴즈 세션 데이터 삭제 완료 (CASCADE로 답변도 자동 삭제됨)");
     }
 
     /**
@@ -253,7 +248,7 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         quizSessionRepository.save(session);
 
         // 각 질문에 대한 답변 생성
-        if (questions.size() > 0) {
+        if (!questions.isEmpty()) {
             createAnswer(session, questions.get(0), q1Answer); // Q1
         }
         if (questions.size() > 1) {
@@ -290,11 +285,11 @@ public class QuizSessionDataInitializer implements CommandLineRunner {
         quizSessionRepository.save(session);
 
         // 일부 질문만 답변 (진행 중 상태)
-        if (questions.size() > 0) {
-            createAnswer(session, questions.get(0), Arrays.asList("work")); // Q1만 답변
+        if (!questions.isEmpty()) {
+            createAnswer(session, questions.get(0), List.of("work")); // Q1만 답변
         }
         if (questions.size() > 1) {
-            createAnswer(session, questions.get(1), Arrays.asList("comfortable")); // Q2만 답변
+            createAnswer(session, questions.get(1), List.of("comfortable")); // Q2만 답변
         }
         // Q3, Q4는 답변하지 않음 (진행 중)
 
