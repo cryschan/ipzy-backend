@@ -66,3 +66,6 @@ docs/ai/
 
 ### Claude 개인 스킬 (팀 공유 제외) ###
 .claude/skills/
+
+### MCP 설정 (DB 연결 정보 포함) ###
+.mcp.json
