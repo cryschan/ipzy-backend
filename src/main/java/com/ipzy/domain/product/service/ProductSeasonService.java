@@ -112,20 +112,6 @@ public class ProductSeasonService {
     }
 
     /**
-     * 특정 시즌의 상품들 조회
-     *
-     * @param season 시즌 (예: "2025_SS")
-     * @return 해당 시즌 상품 목록
-     */
-    public List<Product> getProductsBySeason(String season) {
-        List<Product> allProducts = productRepository.findByIsActiveTrue();
-
-        return allProducts.stream()
-                .filter(product -> isSeasonalProduct(product, season))
-                .toList();
-    }
-
-    /**
      * 상품에 시즌 정보 추가
      * 크롤링 시 카테고리별로 적절한 시즌 자동 설정
      *
