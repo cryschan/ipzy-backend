@@ -1,11 +1,12 @@
 package com.ipzy.domain.quiz.scheduler;
 
 import com.ipzy.domain.quiz.service.QuizService;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -18,7 +19,6 @@ import java.time.Duration;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(
         name = "app.quiz.session.cleanup.enabled",
         havingValue = "true",
@@ -27,9 +27,31 @@ import java.time.Duration;
 public class QuizSessionCleanupScheduler {
 
     private final QuizService quizService;
+    private final TaskScheduler taskScheduler;
 
     @Value("${app.quiz.session.cleanup.expiration:PT1H}")
     private String expirationDuration;
+
+    @Value("${app.quiz.session.cleanup.cron:0 0 4 * * *}")
+    private String cronExpression;
+
+    public QuizSessionCleanupScheduler(QuizService quizService, TaskScheduler taskScheduler) {
+        this.quizService = quizService;
+        this.taskScheduler = taskScheduler;
+    }
+
+    @PostConstruct
+    public void scheduleCleanup() {
+        try {
+            CronTrigger cronTrigger = new CronTrigger(cronExpression);
+            log.info("[QuizSessionCleanup] 스케줄 등록 - Cron 표현식: {}", cronExpression);
+            
+            taskScheduler.schedule(this::cleanupExpiredQuizSessions, cronTrigger);
+        } catch (Exception e) {
+            log.error("[QuizSessionCleanup] Cron 표현식 파싱 실패 - 값: {}, 에러: {}", 
+                    cronExpression, e.getMessage(), e);
+        }
+    }
 
     /**
      * 만료된 미완료 퀴즈 세션을 정리합니다.
@@ -37,7 +59,6 @@ public class QuizSessionCleanupScheduler {
      * 실행 주기: app.quiz.session.cleanup.cron 설정값 (기본: 매일 오전 4시)
      * 만료 기준: app.quiz.session.cleanup.expiration 설정값 (기본: 1시간)
      */
-    @Scheduled(cron = "${app.quiz.session.cleanup.cron:0 0 4 * * *}")
     public void cleanupExpiredQuizSessions() {
         long startTime = System.currentTimeMillis();
         

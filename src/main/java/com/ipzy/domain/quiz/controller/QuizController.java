@@ -61,11 +61,28 @@ public class QuizController {
     @PostMapping("/{quizId}/sessions")
     @Operation(
             summary = "퀴즈 세션 시작",
-            description = "특정 퀴즈의 세션을 시작합니다. 비로그인 사용자도 접근 가능합니다."
+            description = """
+                    특정 퀴즈의 세션을 시작합니다. 비로그인 사용자도 접근 가능합니다.
+                    
+                    **동작:**
+                    - 활성화된 퀴즈에 대해 새로운 세션을 생성합니다
+                    - 로그인한 사용자의 경우 세션에 사용자를 연결합니다
+                    - 비로그인 사용자의 경우 익명 세션으로 생성됩니다
+                    
+                    **에러 코드:**
+                    | 코드 | HTTP | 설명 |
+                    |------|------|------|
+                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
+                    """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
+            description = "세션 시작 성공",
             content = @Content(schema = @Schema(implementation = ApiResponse.class))
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
     )
     public ApiResponse<QuizSessionStartResponse> startQuiz(
             @PathVariable Long quizId,

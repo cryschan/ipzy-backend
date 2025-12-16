@@ -71,11 +71,11 @@ public class QuizSessionController {
                     | 코드 | HTTP | 설명 |
                     |------|------|------|
                     | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
-                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
+                    | QUIZ_002 | 400 | 퀴즈가 완료되지 않았습니다 |
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
-                    | QUIZ_005 | 400 | 필수 질문에 답변하지 않았습니다 |
-                    | QUIZ_006 | 400 | 퀴즈가 완료되지 않았습니다 |
+                    | QUIZ_008 | 400 | 필수 질문에 답변하지 않았습니다 |
+                    | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -85,7 +85,7 @@ public class QuizSessionController {
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_005, QUIZ_006)"
+            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_013)"
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
@@ -111,14 +111,14 @@ public class QuizSessionController {
                     **에러 코드:**
                     | 코드 | HTTP | 설명 |
                     |------|------|------|
+                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
-                    | QUIZ_007 | 404 | 퀴즈 질문을 찾을 수 없습니다 |
-                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
-                    | QUIZ_008 | 400 | 해당 질문이 세션의 퀴즈에 속하지 않습니다 |
-                    | QUIZ_009 | 400 | 유효하지 않은 옵션입니다 |
-                    | QUIZ_010 | 400 | 단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다 |
-                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
+                    | QUIZ_006 | 404 | 퀴즈 질문을 찾을 수 없습니다 |
+                    | QUIZ_007 | 400 | 해당 질문이 세션의 퀴즈에 속하지 않습니다 |
+                    | QUIZ_009 | 400 | 단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다 |
+                    | QUIZ_012 | 400 | 유효하지 않은 옵션입니다 |
+                    | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -128,11 +128,11 @@ public class QuizSessionController {
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_009, QUIZ_010)"
+            description = "검증 실패 (QUIZ_004, QUIZ_007, QUIZ_009, QUIZ_012, QUIZ_013)"
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
-            description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_007)"
+            description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_006)"
     )
     public ApiResponse<QuizAnswerResponse> saveAnswer(
             @PathVariable Long sessionId,
