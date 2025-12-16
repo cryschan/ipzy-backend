@@ -29,6 +29,8 @@ class RecommendationSummaryResponseTest {
                     .reason("밝은 색감의 캐주얼 룩입니다.")
                     .totalPrice(130000)
                     .styleBoardUrl("https://example.com/style_board1.jpg")
+                    .imageWidth(1200)
+                    .imageHeight(1600)
                     .build();
             ReflectionTestUtils.setField(recommendation, "id", 1L);
 
@@ -41,6 +43,10 @@ class RecommendationSummaryResponseTest {
                     .priceSnapshot(50000)
                     .imageUrlSnapshot("https://example.com/top.jpg")
                     .linkUrlSnapshot("https://example.com/product1")
+                    .positionX(60)
+                    .positionY(100)
+                    .positionWidth(480)
+                    .positionHeight(576)
                     .build();
 
             RecommendationItem item2 = RecommendationItem.builder()
@@ -52,6 +58,10 @@ class RecommendationSummaryResponseTest {
                     .priceSnapshot(80000)
                     .imageUrlSnapshot("https://example.com/bottom.jpg")
                     .linkUrlSnapshot("https://example.com/product2")
+                    .positionX(0)
+                    .positionY(800)
+                    .positionWidth(600)
+                    .positionHeight(720)
                     .build();
 
             recommendation.addItem(item1);
@@ -61,15 +71,29 @@ class RecommendationSummaryResponseTest {
             RecommendationSummaryResponse response = RecommendationSummaryResponse.from(recommendation);
 
             // Then
-            assertThat(response.recommendationId()).isEqualTo(1L);
             assertThat(response.displayOrder()).isEqualTo(1);
             assertThat(response.occasion()).isEqualTo("데이트");
             assertThat(response.season()).isEqualTo("봄");
             assertThat(response.style()).isEqualTo("캐주얼");
             assertThat(response.reason()).isEqualTo("밝은 색감의 캐주얼 룩입니다.");
-            assertThat(response.totalPrice()).isEqualTo(130000);
-            assertThat(response.styleBoardUrl()).isEqualTo("https://example.com/style_board1.jpg");
-            assertThat(response.items()).hasSize(2);
+            assertThat(response.status()).isEqualTo("completed");
+            assertThat(response.jobId()).isEqualTo("rec-1");
+            assertThat(response.error()).isNull();
+
+            // result 검증
+            assertThat(response.result()).isNotNull();
+            assertThat(response.result().success()).isTrue();
+            assertThat(response.result().totalPrice()).isEqualTo(130000);
+            assertThat(response.result().compositeImageUrl()).isEqualTo("https://example.com/style_board1.jpg");
+            assertThat(response.result().imageWidth()).isEqualTo(1200);
+            assertThat(response.result().imageHeight()).isEqualTo(1600);
+            assertThat(response.result().items()).hasSize(2);
+
+            // item position 검증
+            RecommendationItemResponse firstItem = response.result().items().get(0);
+            assertThat(firstItem.position()).isNotNull();
+            assertThat(firstItem.position().x()).isEqualTo(60);
+            assertThat(firstItem.position().y()).isEqualTo(100);
         }
 
         @Test
@@ -91,9 +115,9 @@ class RecommendationSummaryResponseTest {
             RecommendationSummaryResponse response = RecommendationSummaryResponse.from(recommendation);
 
             // Then
-            assertThat(response.recommendationId()).isEqualTo(2L);
-            assertThat(response.items()).isEmpty();
-            assertThat(response.totalPrice()).isEqualTo(0);
+            assertThat(response.jobId()).isEqualTo("rec-2");
+            assertThat(response.result().items()).isEmpty();
+            assertThat(response.result().totalPrice()).isEqualTo(0);
         }
     }
 }

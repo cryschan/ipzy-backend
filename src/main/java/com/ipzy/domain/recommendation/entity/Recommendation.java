@@ -51,13 +51,20 @@ public class Recommendation extends BaseEntity {
     @Column(name = "style_board_url", length = 500)
     private String styleBoardUrl;
 
+    @Column(name = "image_width")
+    private Integer imageWidth;
+
+    @Column(name = "image_height")
+    private Integer imageHeight;
+
     @OneToMany(mappedBy = "recommendation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RecommendationItem> items = new ArrayList<>();
 
     @Builder
     public Recommendation(User user, QuizSession session, Integer displayOrder,
                           Integer totalPrice, String reason, String occasion,
-                          String season, String style, String styleBoardUrl) {
+                          String season, String style, String styleBoardUrl,
+                          Integer imageWidth, Integer imageHeight) {
         this.user = user;
         this.session = session;
         this.displayOrder = displayOrder != null ? displayOrder : 1;
@@ -67,6 +74,8 @@ public class Recommendation extends BaseEntity {
         this.season = season;
         this.style = style;
         this.styleBoardUrl = styleBoardUrl;
+        this.imageWidth = imageWidth;
+        this.imageHeight = imageHeight;
     }
 
     public void addItem(RecommendationItem item) {

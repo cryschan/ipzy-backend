@@ -41,47 +41,67 @@ public class RecommendationService {
      * 퀴즈 세션 기반 추천 생성
      *
      * @param sessionId     완료된 퀴즈 세션 ID
-     * @param currentUserId 현재 로그인한 사용자 ID (필수, null 불가)
+     * @param currentUserId 현재 로그인한 사용자 ID (필수)
      * @return 생성된 추천 목록
-     * @throws AuthException 인증되지 않은 사용자 (Controller에서 검증)
      */
     @Transactional
     public List<Recommendation> generateRecommendation(Long sessionId, Long currentUserId) {
-
         log.info("추천 생성 시작: sessionId={}, currentUserId={}", sessionId, currentUserId);
 
-        // 1. 세션 조회 및 검증
-        QuizSession session = findCompletedSession(sessionId);
-
-        // 2. 사용자 조회 (Security에서 이미 인증됨)
-        User currentUser = userService.findActiveUser(currentUserId);
-
-        // 3. 익명 세션이면 현재 사용자에게 연결
-        if (session.isAnonymous()) {
-            session.assignUser(currentUser);
-            log.info("익명 세션을 사용자에게 연결: sessionId={}, userId={}", sessionId, currentUserId);
-        } else {
-            // 4. 다른 사용자의 세션이면 거부
-            validateSessionOwnership(session, currentUserId);
-        }
-
-        // 5. 중복 생성 방지
+        // 중복 생성 방지
         if (recommendationRepository.existsBySessionId(sessionId)) {
             throw RecommendationException.recommendationAlreadyExists(sessionId);
         }
 
-        // 6. AI 추천 요청 (퀴즈 답변만 전송)
-        RecommendationRequest request = RecommendationRequest.of(session);
-        RecommendationResponse response = aiClient.requestRecommendation(request);
-
-        // 7. Entity 변환
-        List<Recommendation> recommendations = convertToEntities(session, response);
-
-        // 8. 저장
-        List<Recommendation> savedRecommendations = recommendationRepository.saveAll(recommendations);
+        List<Recommendation> savedRecommendations = createRecommendation(sessionId, currentUserId);
 
         log.info("추천 생성 완료: sessionId={}, 추천 수={}", sessionId, savedRecommendations.size());
         return savedRecommendations;
+    }
+
+    /**
+     * 퀴즈 세션 기반 추천 재생성 (재시도)
+     * - 같은 세션으로 여러 번 추천 생성 가능 (중복 체크 없음)
+     *
+     * @param sessionId     완료된 퀴즈 세션 ID
+     * @param currentUserId 현재 로그인한 사용자 ID (필수)
+     * @return 생성된 추천 목록
+     */
+    @Transactional
+    public List<Recommendation> regenerateRecommendation(Long sessionId, Long currentUserId) {
+        log.info("추천 재생성 시작: sessionId={}, currentUserId={}", sessionId, currentUserId);
+
+        List<Recommendation> savedRecommendations = createRecommendation(sessionId, currentUserId);
+
+        log.info("추천 재생성 완료: sessionId={}, 추천 수={}", sessionId, savedRecommendations.size());
+        return savedRecommendations;
+    }
+
+    /**
+     * 추천 생성 공통 로직
+     */
+    private List<Recommendation> createRecommendation(Long sessionId, Long currentUserId) {
+        // 1. 세션 조회 및 검증
+        QuizSession session = findCompletedSession(sessionId);
+
+        // 2. 사용자 조회
+        User currentUser = userService.findActiveUser(currentUserId);
+
+        // 3. 익명 세션이면 현재 사용자에게 연결, 아니면 소유권 검증
+        if (session.isAnonymous()) {
+            session.assignUser(currentUser);
+            log.info("익명 세션을 사용자에게 연결: sessionId={}, userId={}", sessionId, currentUserId);
+        } else {
+            validateSessionOwnership(session, currentUserId);
+        }
+
+        // 4. AI 추천 요청
+        RecommendationRequest request = RecommendationRequest.of(session);
+        RecommendationResponse response = aiClient.requestRecommendation(request);
+
+        // 5. Entity 변환 및 저장
+        List<Recommendation> recommendations = convertToEntities(session, response);
+        return recommendationRepository.saveAll(recommendations);
     }
 
     /**
@@ -100,10 +120,10 @@ public class RecommendationService {
     }
 
     /**
-     * 사용자별 추천 조회
-     * <p>
-     * TODO: 현재 Controller에서 호출되지 않음. 마이페이지 추천 히스토리 기능 구현 시 사용 예정.
-     *       사용하지 않을 경우 제거 검토 필요.
+     * 사용자별 추천 조회 (마이페이지 추천 히스토리)
+     *
+     * @param userId 사용자 ID
+     * @return 해당 사용자의 추천 목록
      */
     public List<Recommendation> getRecommendationsByUser(Long userId) {
         return recommendationRepository.findByUserIdWithItems(userId);
