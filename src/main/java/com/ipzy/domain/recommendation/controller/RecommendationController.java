@@ -427,7 +427,17 @@ public class RecommendationController {
                                             "image_width": 1200,
                                             "image_height": 1600,
                                             "total_price": 189000,
-                                            "items": [...]
+                                            "items": [
+                                              {
+                                                "product_id": 205,
+                                                "category": "TOP",
+                                                "name": "슬림핏 셔츠",
+                                                "brand": "유니클로",
+                                                "price": 49000,
+                                                "link_url": "https://example.com/product2",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
                                           },
                                           "error": null
                                         }
@@ -445,7 +455,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC302",
+                                        "code": "REC_007",
                                         "message": "퀴즈가 완료되지 않았습니다"
                                       }
                                     }
@@ -477,7 +487,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC401",
+                                        "code": "REC_009",
                                         "message": "해당 세션에 접근 권한이 없습니다"
                                       }
                                     }
@@ -486,18 +496,68 @@ public class RecommendationController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "세션 없음",
+                    description = "세션 또는 사용자 없음",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": false,
-                                      "error": {
-                                        "code": "REC301",
-                                        "message": "퀴즈 세션을 찾을 수 없습니다"
-                                      }
-                                    }
-                                    """)
+                            examples = {
+                                    @ExampleObject(
+                                            name = "세션 없음",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_006",
+                                                        "message": "퀴즈 세션을 찾을 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "USER_001",
+                                                        "message": "사용자를 찾을 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "AI 서비스 처리 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "AI 응답 처리 오류",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_004",
+                                                        "message": "AI 서비스 응답을 처리할 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "빈 추천 결과",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_010",
+                                                        "message": "AI 서비스에서 추천 결과가 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -509,7 +569,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC101",
+                                        "code": "REC_002",
                                         "message": "AI 서비스에 연결할 수 없습니다"
                                       }
                                     }
@@ -525,7 +585,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC102",
+                                        "code": "REC_003",
                                         "message": "AI 서비스 응답 시간이 초과되었습니다"
                                       }
                                     }
@@ -583,7 +643,17 @@ public class RecommendationController {
                                             "image_width": 1200,
                                             "image_height": 1600,
                                             "total_price": 237000,
-                                            "items": [...]
+                                            "items": [
+                                              {
+                                                "product_id": 118,
+                                                "category": "TOP",
+                                                "name": "오버핏 옥스포드 셔츠",
+                                                "brand": "무신사 스탠다드",
+                                                "price": 59000,
+                                                "link_url": "https://example.com/product1",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
                                           },
                                           "error": null
                                         }
