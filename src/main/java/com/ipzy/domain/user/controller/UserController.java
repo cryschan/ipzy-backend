@@ -14,6 +14,8 @@ import com.ipzy.domain.user.service.UserService;
 import com.ipzy.domain.user.service.WithdrawalService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,11 +49,58 @@ public class UserController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "성공"
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "userId": 1,
+                                        "email": "user@kakao.com",
+                                        "name": "홍길동",
+                                        "phone": "010-1234-5678",
+                                        "profileImageUrl": "https://k.kakaocdn.net/profile.jpg",
+                                        "preferences": {
+                                          "style": ["casual", "minimal"],
+                                          "colors": ["black", "white", "navy"]
+                                        }
+                                      }
+                                    }
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "인증되지 않음 (AUTH_001)"
+                    description = "인증되지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "인증이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "USER_001",
+                                        "message": "사용자를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @GetMapping("/me")
@@ -71,15 +120,58 @@ public class UserController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "성공"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청"
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "userId": 1,
+                                        "email": "user@kakao.com",
+                                        "name": "김철수",
+                                        "phone": "010-9999-8888",
+                                        "profileImageUrl": "https://k.kakaocdn.net/new-profile.jpg",
+                                        "preferences": {
+                                          "style": ["casual", "minimal"],
+                                          "colors": ["black", "white", "navy"]
+                                        }
+                                      }
+                                    }
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "인증되지 않음 (AUTH_001)"
+                    description = "인증되지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "인증이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "USER_001",
+                                        "message": "사용자를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @PutMapping("/me")
@@ -162,11 +254,68 @@ public class UserController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "이미 탈퇴한 계정 (USER_003) 또는 관리자 계정 (USER_004)"
+                    description = "이미 탈퇴한 계정 또는 관리자 계정",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이미 탈퇴한 계정",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "USER_003",
+                                                        "message": "이미 탈퇴한 사용자입니다"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "관리자 계정",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "USER_004",
+                                                        "message": "관리자는 일반 탈퇴할 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "인증되지 않음 (AUTH_001)"
+                    description = "인증되지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "인증이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "USER_001",
+                                        "message": "사용자를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @DeleteMapping("/me")
@@ -210,7 +359,19 @@ public class UserController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "사용자를 찾을 수 없음"
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "USER_001",
+                                        "message": "사용자를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     @DeleteMapping("/test/{userId}/hard-delete")

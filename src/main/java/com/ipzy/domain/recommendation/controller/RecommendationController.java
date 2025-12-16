@@ -102,7 +102,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC302",
+                                        "code": "REC_007",
                                         "message": "퀴즈가 완료되지 않았습니다"
                                       }
                                     }
@@ -118,7 +118,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC401",
+                                        "code": "REC_009",
                                         "message": "해당 세션에 접근 권한이 없습니다"
                                       }
                                     }
@@ -134,7 +134,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC301",
+                                        "code": "REC_006",
                                         "message": "퀴즈 세션을 찾을 수 없습니다"
                                       }
                                     }
@@ -212,7 +212,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC302",
+                                        "code": "REC_007",
                                         "message": "퀴즈가 완료되지 않았습니다"
                                       }
                                     }
@@ -244,7 +244,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC401",
+                                        "code": "REC_009",
                                         "message": "해당 세션에 접근 권한이 없습니다"
                                       }
                                     }
@@ -253,18 +253,35 @@ public class RecommendationController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "세션 없음",
+                    description = "세션 또는 사용자 없음",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": false,
-                                      "error": {
-                                        "code": "REC301",
-                                        "message": "퀴즈 세션을 찾을 수 없습니다"
-                                      }
-                                    }
-                                    """)
+                            examples = {
+                                    @ExampleObject(
+                                            name = "세션 없음",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_006",
+                                                        "message": "퀴즈 세션을 찾을 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "USER_001",
+                                                        "message": "사용자를 찾을 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -276,7 +293,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC303",
+                                        "code": "REC_008",
                                         "message": "이미 추천이 생성된 세션입니다"
                                       }
                                     }
@@ -292,11 +309,44 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC101",
+                                        "code": "REC_002",
                                         "message": "AI 서비스에 연결할 수 없습니다"
                                       }
                                     }
                                     """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "AI 서비스 처리 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "AI 응답 처리 오류",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_004",
+                                                        "message": "AI 서비스 응답을 처리할 수 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "빈 추천 결과",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "error": {
+                                                        "code": "REC_010",
+                                                        "message": "AI 서비스에서 추천 결과가 없습니다"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -308,7 +358,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC102",
+                                        "code": "REC_003",
                                         "message": "AI 서비스 응답 시간이 초과되었습니다"
                                       }
                                     }
@@ -363,7 +413,20 @@ public class RecommendationController {
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
                                           "totalPrice": 237000,
-                                          "items": [...]
+                                          "styleBoardUrl": "https://example.com/style1.jpg",
+                                          "items": [
+                                            {
+                                              "itemId": 1,
+                                              "productId": 101,
+                                              "category": "TOP",
+                                              "displayOrder": 1,
+                                              "productName": "오버핏 셔츠",
+                                              "brand": "무신사 스탠다드",
+                                              "price": 59000,
+                                              "imageUrl": "https://example.com/img1.jpg",
+                                              "linkUrl": "https://example.com/product1"
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -379,7 +442,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC401",
+                                        "code": "REC_009",
                                         "message": "해당 세션에 접근 권한이 없습니다"
                                       }
                                     }
@@ -395,7 +458,7 @@ public class RecommendationController {
                                     {
                                       "success": false,
                                       "error": {
-                                        "code": "REC301",
+                                        "code": "REC_006",
                                         "message": "퀴즈 세션을 찾을 수 없습니다"
                                       }
                                     }
