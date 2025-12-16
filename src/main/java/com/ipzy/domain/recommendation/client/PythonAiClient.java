@@ -37,7 +37,7 @@ public class PythonAiClient implements AiRecommendationClient {
 
         try {
             RecommendationResponse response = pythonAiRestClient.post()
-                    .uri("/api/v1/recommend")
+                    .uri("/api/recommend")
                     .body(request)
                     .retrieve()
                     .body(RecommendationResponse.class);
