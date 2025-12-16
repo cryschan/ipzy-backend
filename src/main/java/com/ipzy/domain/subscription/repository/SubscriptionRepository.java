@@ -54,6 +54,13 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     );
 
     /**
+     * 사용자의 유효한 구독 조회 (편의 메서드)
+     */
+    default Optional<Subscription> findValidSubscription(User user) {
+        return findValidSubscription(user, SubscriptionStatus.UNIQUE_CONSTRAINT_STATUSES);
+    }
+
+    /**
      * 사용자의 모든 구독 히스토리 조회
      */
     List<Subscription> findAllByUserOrderByCreatedAtDesc(User user);

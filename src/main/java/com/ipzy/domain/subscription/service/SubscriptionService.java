@@ -1,5 +1,7 @@
 package com.ipzy.domain.subscription.service;
 
+import com.ipzy._global.common.enums.BillingPeriod;
+import com.ipzy._global.common.enums.SubscriptionStatus;
 import com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest;
 import com.ipzy.domain.subscription.dto.Response.SubscriptionPlanResponse;
 import com.ipzy.domain.subscription.dto.Response.SubscriptionResponse;
@@ -9,8 +11,6 @@ import com.ipzy.domain.subscription.exception.SubscriptionException;
 import com.ipzy.domain.subscription.repository.SubscriptionRepository;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.repository.UserRepository;
-import com.ipzy._global.common.enums.BillingPeriod;
-import com.ipzy._global.common.enums.SubscriptionStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,51 +54,50 @@ public class SubscriptionService {
     }
 
     /**
-     * 사용자의 유효한 구독 조회 (ACTIVE 또는 PENDING)
+     * ⭐ 내 구독 조회 (순수 조회만)
+     * - 읽기 작업에서 데이터 변경하지 않음
+     * - 구독이 없으면 예외 발생
+     * - 만료 처리하지 않음 (읽기 전용)
+     *
      * @param userId 사용자 ID
-     * @return 구독 정보
+     * @return 구독 정보 (ACTIVE, PENDING, EXPIRED 등 모든 상태)
+     * @throws SubscriptionException 구독이 없을 경우
      */
     public SubscriptionResponse getMySubscription(Long userId) {
         User user = findUserById(userId);
 
         Subscription subscription = subscriptionRepository
-                .findValidSubscription(user, SubscriptionStatus.UNIQUE_CONSTRAINT_STATUSES)
+                .findTopByUserOrderByCreatedAtDesc(user)
                 .orElseThrow(() -> SubscriptionException.subscriptionNotFound(userId));
-
-        // 만료 확인 및 처리
-        expireIfNeeded(subscription);
 
         return SubscriptionResponse.from(subscription);
     }
 
     /**
-     * 사용자의 구독을 조회하거나 생성 (비관적 락 사용)
+     * 사용자의 구독을 조회하거나 생성 (UserService 전용)
+     * - 회원가입 시에만 호출
+     * - 비관적 락으로 동시성 제어
+     * - 구독이 없으면 FREE 플랜 생성
+     * - 만료된 구독 자동 처리
      *
-     * 동시성 문제 해결:
-     * 1. 비관적 락(PESSIMISTIC_WRITE)으로 동시 접근 제어
-     * 2. SELECT ... FOR UPDATE로 다른 트랜잭션의 읽기/쓰기 차단
-     * 3. 트랜잭션 내에서 안전하게 구독 생성
+     * @param userId 사용자 ID
+     * @return 구독 엔티티
      */
     @Transactional
     public Subscription ensureDefaultSubscription(Long userId) {
         User user = findUserById(userId);
 
-        // ⭐ 비관적 락을 사용하여 유효한 구독 조회
-        Optional<Subscription> validSubscription =
-            subscriptionRepository.findValidSubscriptionWithLock(
-                user,
-                SubscriptionStatus.UNIQUE_CONSTRAINT_STATUSES
-            );
+        Optional<Subscription> latest = subscriptionRepository
+                .findTopByUserOrderByCreatedAtDesc(user);
 
-        if (validSubscription.isPresent()) {
-            Subscription subscription = validSubscription.get();
+        if (latest.isPresent()) {
+            Subscription subscription = latest.get();
             expireIfNeeded(subscription);
             return subscription;
         }
 
-        // 락을 획득한 상태에서 구독이 없으면 FREE 플랜 생성
-        // 다른 트랜잭션은 락이 해제될 때까지 대기하므로 중복 생성 방지
-        log.info("사용자의 유효한 구독이 없어 FREE 플랜 생성: userId={}", userId);
+        // 구독이 없으면 FREE 플랜 생성
+        log.info("사용자의 구독이 없어 FREE 플랜 생성: userId={}", userId);
         return startFreeSubscription(user);
     }
 
@@ -109,30 +108,14 @@ public class SubscriptionService {
     public SubscriptionResponse createSubscription(Long userId, CreateSubscriptionRequest request) {
         User user = findUserById(userId);
 
-        // ⭐ 비관적 락을 사용하여 유효한 구독 조회 (동시성 제어)
-        Optional<Subscription> existingValid =
-            subscriptionRepository.findValidSubscriptionWithLock(
-                user,
-                SubscriptionStatus.UNIQUE_CONSTRAINT_STATUSES
+        // 기존 구독 조회 또는 생성
+        Subscription subscription = ensureDefaultSubscription(userId);
+
+        // PENDING 상태인 경우 경고
+        if (subscription.getStatus().isPending()) {
+            throw SubscriptionException.paymentPending(
+                "이미 결제 대기 중인 구독이 있습니다."
             );
-
-        Subscription subscription;
-
-        if (existingValid.isPresent()) {
-            subscription = existingValid.get();
-
-            // PENDING 상태인 경우 경고
-            if (subscription.getStatus().isPending()) {
-                throw SubscriptionException.paymentPending(
-                    "이미 결제 대기 중인 구독이 있습니다."
-                );
-            }
-
-            expireIfNeeded(subscription);
-
-        } else {
-            // 유효한 구독이 없으면 새로 생성
-            subscription = startFreeSubscription(user);
         }
 
         // 플랜 변경
@@ -160,10 +143,9 @@ public class SubscriptionService {
     public SubscriptionResponse cancelSubscription(Long userId, String reason) {
         User user = findUserById(userId);
 
-        // ⭐ 비관적 락을 사용하여 ACTIVE 구독만 조회
         Subscription subscription = subscriptionRepository
-            .findValidSubscriptionWithLock(user, SubscriptionStatus.UNIQUE_CONSTRAINT_STATUSES)
-            .filter(s -> s.getStatus().isActive())  // ACTIVE만
+            .findTopByUserOrderByCreatedAtDesc(user)
+            .filter(s -> s.getStatus().isActive())
             .orElseThrow(() -> SubscriptionException.subscriptionNotFound(userId));
 
         subscription.cancel(reason);
@@ -176,7 +158,7 @@ public class SubscriptionService {
      */
     private Subscription startFreeSubscription(User user) {
         SubscriptionPlan freePlan = subscriptionPlanService
-                .findByNameEntity(DEFAULT_FREE_PLAN_NAME);
+                .findEntityByName(DEFAULT_FREE_PLAN_NAME);
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endDate = calculateEndDate(freePlan, now);
