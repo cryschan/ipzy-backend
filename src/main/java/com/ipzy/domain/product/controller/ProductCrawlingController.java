@@ -2,8 +2,10 @@ package com.ipzy.domain.product.controller;
 
 import com.ipzy.domain.product.dto.CrawlingResponse;
 import com.ipzy.domain.product.service.ProductCrawlingService;
+import com.ipzy.domain.product.service.ProductService;
 import com.ipzy._global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductCrawlingController {
 
     private final ProductCrawlingService productCrawlingService;
+    private final ProductService productService;
 
     @Operation(
             summary = "전체 브랜드 상품 크롤링",
@@ -111,6 +114,7 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/all")
     public ApiResponse<CrawlingResponse> crawlAllProducts(
+            @Parameter(description = "브랜드당 크롤링할 상품 개수 (의류: 카테고리별 개수, 신발: 총 개수)", example = "3")
             @RequestParam(defaultValue = "3") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("전체 상품 크롤링 API 호출: 브랜드당 {}개", limit);
@@ -221,8 +225,11 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/brand")
     public ApiResponse<CrawlingResponse> crawlBrandProducts(
+            @Parameter(description = "크롤링할 브랜드명 (예: Nike, Adidas)", example = "Nike")
             @RequestParam @NotBlank(message = "브랜드명은 필수입니다") String brandName,
+            @Parameter(description = "브랜드 타입 (CLOTHING 또는 SHOES)", example = "SHOES")
             @RequestParam @NotBlank(message = "브랜드 타입은 필수입니다") String brandType,
+            @Parameter(description = "크롤링할 상품 개수", example = "5")
             @RequestParam(defaultValue = "1") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, limit={}",
@@ -239,6 +246,75 @@ public class ProductCrawlingController {
         );
 
         return ApiResponse.success(response);
+    }
+
+    @Operation(
+            summary = "상품 삭제",
+            description = """
+                    특정 상품을 삭제합니다 (Soft Delete).
+
+                    실제로 DB에서 삭제되지 않고, deletedAt 필드가 설정되어 논리 삭제됩니다.
+                    - isActive가 false로 변경됩니다
+                    - 조회 API에서 자동으로 제외됩니다
+                    - 복구가 가능합니다
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": "상품이 삭제되었습니다"
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "PROD_001",
+                                        "message": "상품을 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 삭제된 상품",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "PROD_012",
+                                        "message": "이미 삭제된 상품입니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            )
+    })
+    @DeleteMapping("/products/{productId}")
+    public ApiResponse<String> deleteProduct(
+            @Parameter(description = "삭제할 상품 ID", example = "1")
+            @PathVariable Long productId) {
+        log.info("상품 삭제 API 호출: productId={}", productId);
+
+        productService.deleteProduct(productId);
+
+        return ApiResponse.success("상품이 삭제되었습니다");
     }
 
 }

@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,8 +51,9 @@ class ProductServiceTest {
                 .price(129000)
                 .originalPrice(159000)
                 .discountPercent(18)
-                .thumbnailImageUrl("https://example.com/image1.jpg")
-                .description("리뷰: 100개")
+                .imageUrl("https://example.com/image1.jpg")
+                .removedBackgroundImageUrl("https://example.com/image1_nobg.jpg")
+                .review("리뷰: 100개")
                 .colors(new String[]{"블랙", "화이트"})
                 .seasons(new String[]{"ALL"})
                 .isActive(true)
@@ -65,7 +67,8 @@ class ProductServiceTest {
                 .subCategory("스니커즈")
                 .primaryStyle("sneakers")
                 .price(159000)
-                .thumbnailImageUrl("https://example.com/image2.jpg")
+                .imageUrl("https://example.com/image2.jpg")
+                .removedBackgroundImageUrl("https://example.com/image2_nobg.jpg")
                 .seasons(new String[]{"2024_FW"})
                 .isActive(false)
                 .build();
@@ -75,7 +78,8 @@ class ProductServiceTest {
                 .name("삭제된 상품")
                 .category(ClothingCategory.SHOES)
                 .price(100000)
-                .thumbnailImageUrl("https://example.com/deleted.jpg")
+                .imageUrl("https://example.com/deleted.jpg")
+                .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                 .isActive(false)
                 .build();
         deletedProduct.softDelete();
@@ -159,7 +163,8 @@ class ProductServiceTest {
                     .name("삭제된 활성 상품")
                     .category(ClothingCategory.SHOES)
                     .price(100000)
-                    .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .imageUrl("https://example.com/deleted.jpg")
+                    .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                     .isActive(true)
                     .build();
             deletedActiveProduct.softDelete();
@@ -208,7 +213,7 @@ class ProductServiceTest {
             assertThat(response.getPrice()).isEqualTo(activeProduct.getPrice());
             assertThat(response.getOriginalPrice()).isEqualTo(activeProduct.getOriginalPrice());
             assertThat(response.getDiscountPercent()).isEqualTo(activeProduct.getDiscountPercent());
-            assertThat(response.getThumbnailImageUrl()).isEqualTo(activeProduct.getThumbnailImageUrl());
+            assertThat(response.getImageUrl()).isEqualTo(activeProduct.getImageUrl());
             assertThat(response.getColors()).containsExactly("블랙", "화이트");
             assertThat(response.getSeasons()).containsExactly("ALL");
             assertThat(response.getIsActive()).isTrue();
@@ -223,7 +228,8 @@ class ProductServiceTest {
                     .name("테스트 상품")
                     .category(ClothingCategory.SHOES)
                     .price(100000)
-                    .thumbnailImageUrl("https://example.com/test.jpg")
+                    .imageUrl("https://example.com/test.jpg")
+                    .removedBackgroundImageUrl("https://example.com/test_nobg.jpg")
                     .colors(null)
                     .seasons(null)
                     .isActive(true)
@@ -235,6 +241,63 @@ class ProductServiceTest {
             // then
             assertThat(response.getColors()).isEmpty();
             assertThat(response.getSeasons()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("상품 삭제")
+    class DeleteProduct {
+
+        @Test
+        @DisplayName("성공 - 상품을 soft delete 처리한다")
+        void success() {
+            // given
+            Long productId = 1L;
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.of(activeProduct));
+
+            // when
+            productService.deleteProduct(productId);
+
+            // then
+            assertThat(activeProduct.isDeleted()).isTrue();
+            assertThat(activeProduct.getIsActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("실패 - 상품이 존재하지 않으면 예외를 던진다")
+        void fail_whenNotFound() {
+            // given
+            Long productId = 999L;
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> productService.deleteProduct(productId))
+                    .isInstanceOf(com.ipzy.domain.product.exception.ProductException.class)
+                    .hasMessageContaining(com.ipzy.domain.product.exception.ProductErrorCode.PRODUCT_NOT_FOUND.getMessage());
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 삭제된 상품이면 예외를 던진다")
+        void fail_whenAlreadyDeleted() {
+            // given
+            Long productId = 1L;
+            Product alreadyDeleted = Product.builder()
+                    .brand(brand)
+                    .name("이미 삭제된 상품")
+                    .category(ClothingCategory.SHOES)
+                    .price(100000)
+                    .imageUrl("https://example.com/deleted.jpg")
+                    .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
+                    .isActive(true)
+                    .build();
+            alreadyDeleted.softDelete();
+
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.of(alreadyDeleted));
+
+            // when & then
+            assertThatThrownBy(() -> productService.deleteProduct(productId))
+                    .isInstanceOf(com.ipzy.domain.product.exception.ProductException.class)
+                    .hasMessageContaining(com.ipzy.domain.product.exception.ProductErrorCode.PRODUCT_ALREADY_DELETED.getMessage());
         }
     }
 }
