@@ -48,11 +48,14 @@ public class Product extends BaseEntity {
     @Column(name = "discount_percent")
     private Integer discountPercent = 0;
 
-    @Column(name = "thumbnail_image_url", nullable = false, length = 500)
-    private String thumbnailImageUrl;
+    @Column(name = "image_url", nullable = false, length = 500)
+    private String imageUrl;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "removed_background_image_url", nullable = true, length = 500)
+    private String removedBackgroundImageUrl;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String review;
 
     @Type(StringArrayType.class)
     @Column(columnDefinition = "text[]")
@@ -74,8 +77,8 @@ public class Product extends BaseEntity {
     @Builder
     public Product(Brand brand, String name, ClothingCategory category, String subCategory,
                    String primaryStyle, Integer price, Integer originalPrice, Integer discountPercent,
-                   String thumbnailImageUrl, String description,
-                   String[] colors, String[] seasons,
+                   String imageUrl, String removedBackgroundImageUrl,
+                   String review, String[] colors, String[] seasons,
                    Boolean isActive, String purchaseUrl) {
         this.brand = brand;
         this.name = name;
@@ -85,8 +88,9 @@ public class Product extends BaseEntity {
         this.price = price;
         this.originalPrice = originalPrice;
         this.discountPercent = discountPercent != null ? discountPercent : 0;
-        this.thumbnailImageUrl = thumbnailImageUrl != null ? thumbnailImageUrl : "";
-        this.description = description;
+        this.imageUrl = imageUrl != null ? imageUrl : "";
+        this.removedBackgroundImageUrl = removedBackgroundImageUrl;
+        this.review = review;
         this.colors = colors;
         this.seasons = seasons;
         this.isActive = isActive != null ? isActive : true;
