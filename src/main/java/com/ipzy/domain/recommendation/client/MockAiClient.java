@@ -1,15 +1,19 @@
 package com.ipzy.domain.recommendation.client;
 
 import com.ipzy.domain.recommendation.dto.request.RecommendationRequest;
+import com.ipzy.domain.recommendation.dto.response.ItemPositionDto;
 import com.ipzy.domain.recommendation.dto.response.OutfitRecommendationDto;
+import com.ipzy.domain.recommendation.dto.response.OutfitResultDto;
 import com.ipzy.domain.recommendation.dto.response.RecommendationResponse;
 import com.ipzy.domain.recommendation.dto.response.RecommendedItemDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * AI 추천 서비스 Mock 클라이언트
@@ -63,36 +67,60 @@ public class MockAiClient implements AiRecommendationClient {
     }
 
     private OutfitRecommendationDto createCasualOutfit() {
-        return new OutfitRecommendationDto(
-                1,
-                "데이트",
-                "봄",
-                "캐주얼",
-                "밝은 색감의 캐주얼 룩으로 데이트에 적합합니다.",
-                237000,
+        List<RecommendedItemDto> items = List.of(
+                new RecommendedItemDto(1L, "TOP", "오버핏 옥스포드 셔츠", "무신사 스탠다드", 59000,
+                        "https://example.com/image1.jpg", "https://example.com/product1",
+                        new ItemPositionDto(60, 100, 480, 576)),
+                new RecommendedItemDto(2L, "BOTTOM", "와이드 슬랙스 팬츠", "커버낫", 79000,
+                        "https://example.com/image2.jpg", "https://example.com/product2",
+                        new ItemPositionDto(0, 800, 600, 720)),
+                new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000,
+                        "https://example.com/image3.jpg", "https://example.com/product3",
+                        new ItemPositionDto(704, 1100, 392, 392))
+        );
+
+        OutfitResultDto result = new OutfitResultDto(
+                true,
+                "Composite image created successfully",
                 "https://example.com/style_board1.jpg",
-                List.of(
-                        new RecommendedItemDto(1L, "TOP", "오버핏 옥스포드 셔츠", "무신사 스탠다드", 59000, "https://example.com/image1.jpg", "https://example.com/product1"),
-                        new RecommendedItemDto(2L, "BOTTOM", "와이드 슬랙스 팬츠", "커버낫", 79000, "https://example.com/image2.jpg", "https://example.com/product2"),
-                        new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/image3.jpg", "https://example.com/product3")
-                )
+                1200, 1600, 237000, items
+        );
+
+        String now = Instant.now().toString();
+        return new OutfitRecommendationDto(
+                1, "데이트", "봄", "캐주얼",
+                "밝은 색감의 캐주얼 룩으로 데이트에 적합합니다.",
+                "completed", UUID.randomUUID().toString(), now, now,
+                result, null
         );
     }
 
     private OutfitRecommendationDto createBusinessCasualOutfit() {
-        return new OutfitRecommendationDto(
-                2,
-                "출근",
-                "봄",
-                "비즈니스 캐주얼",
-                "깔끔한 비즈니스 캐주얼 룩입니다.",
-                245000,
+        List<RecommendedItemDto> items = List.of(
+                new RecommendedItemDto(4L, "TOP", "슬림핏 셔츠", "유니클로", 49000,
+                        "https://example.com/image4.jpg", "https://example.com/product4",
+                        new ItemPositionDto(60, 100, 480, 576)),
+                new RecommendedItemDto(5L, "BOTTOM", "슬랙스", "지오다노", 69000,
+                        "https://example.com/image5.jpg", "https://example.com/product5",
+                        new ItemPositionDto(0, 800, 600, 720)),
+                new RecommendedItemDto(6L, "SHOES", "로퍼", "탠디", 127000,
+                        "https://example.com/image6.jpg", "https://example.com/product6",
+                        new ItemPositionDto(704, 1100, 392, 392))
+        );
+
+        OutfitResultDto result = new OutfitResultDto(
+                true,
+                "Composite image created successfully",
                 "https://example.com/style_board2.jpg",
-                List.of(
-                        new RecommendedItemDto(4L, "TOP", "슬림핏 셔츠", "유니클로", 49000, "https://example.com/image4.jpg", "https://example.com/product4"),
-                        new RecommendedItemDto(5L, "BOTTOM", "슬랙스", "지오다노", 69000, "https://example.com/image5.jpg", "https://example.com/product5"),
-                        new RecommendedItemDto(6L, "SHOES", "로퍼", "탠디", 127000, "https://example.com/image6.jpg", "https://example.com/product6")
-                )
+                1200, 1600, 245000, items
+        );
+
+        String now = Instant.now().toString();
+        return new OutfitRecommendationDto(
+                2, "출근", "봄", "비즈니스 캐주얼",
+                "깔끔한 비즈니스 캐주얼 룩입니다.",
+                "completed", UUID.randomUUID().toString(), now, now,
+                result, null
         );
     }
 }
