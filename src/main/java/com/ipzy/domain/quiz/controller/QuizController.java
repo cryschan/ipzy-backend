@@ -8,7 +8,8 @@ import com.ipzy.domain.quiz.dto.QuizSessionStartResponse;
 import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -48,11 +49,34 @@ public class QuizController {
                     - 질문과 옵션 정보가 필요한 경우 `GET /api/quizzes/{quizId}/questions` API를 사용하세요.
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "퀴즈 목록 조회 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "퀴즈 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "quizId": 1,
+                                          "title": "스타일 퀴즈",
+                                          "description": "나만의 스타일을 찾아보세요",
+                                          "displayOrder": 1
+                                        },
+                                        {
+                                          "quizId": 2,
+                                          "title": "계절별 코디 퀴즈",
+                                          "description": "계절에 맞는 코디를 추천받아보세요",
+                                          "displayOrder": 2
+                                        }
+                                      ]
+                                    }
+                                    """)
+                    )
+            )
+    })
     public ApiResponse<List<QuizListResponse>> getQuizzes() {
         return ApiResponse.success(quizService.getActiveQuizzes());
     }
@@ -75,15 +99,53 @@ public class QuizController {
                     | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "세션 시작 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "세션 시작 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "로그인 사용자",
+                                            summary = "로그인한 사용자의 세션 생성",
+                                            value = """
+                                                    {
+                                                      "success": true,
+                                                      "data": {
+                                                        "sessionId": 1,
+                                                        "userId": 1,
+                                                        "quizId": 1,
+                                                        "completed": false,
+                                                        "createdAt": "2025-01-15T10:23:45"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "비로그인 사용자",
+                                            summary = "비로그인 사용자의 익명 세션 생성",
+                                            value = """
+                                                    {
+                                                      "success": true,
+                                                      "data": {
+                                                        "sessionId": 2,
+                                                        "userId": null,
+                                                        "quizId": 1,
+                                                        "completed": false,
+                                                        "createdAt": "2025-01-15T10:23:45"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
+            )
+    })
     public ApiResponse<QuizSessionStartResponse> startQuiz(
             @PathVariable Long quizId,
             @AuthenticationPrincipal CustomUserPrincipal principal
@@ -116,11 +178,72 @@ public class QuizController {
                     - 퀴즈 목록만 필요한 경우 `GET /api/quizzes` API를 사용하세요.
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "질문 목록 조회 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "질문 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "questionId": 1,
+                                          "text": "어떻게 보이고 싶어요?",
+                                          "type": "SINGLE",
+                                          "required": true,
+                                          "displayOrder": 1,
+                                          "options": [
+                                            {
+                                              "optionId": 101,
+                                              "text": "깔끔하게",
+                                              "value": "clean",
+                                              "imageUrl": "https://cdn.ipzy.com/options/clean.png",
+                                              "displayOrder": 1
+                                            },
+                                            {
+                                              "optionId": 102,
+                                              "text": "세련되게",
+                                              "value": "sophisticated",
+                                              "imageUrl": "https://cdn.ipzy.com/options/sophisticated.png",
+                                              "displayOrder": 2
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "questionId": 2,
+                                          "text": "선호하는 스타일을 선택해주세요 (복수 선택 가능)",
+                                          "type": "MULTIPLE",
+                                          "required": false,
+                                          "displayOrder": 2,
+                                          "options": [
+                                            {
+                                              "optionId": 201,
+                                              "text": "미니멀",
+                                              "value": "minimal",
+                                              "imageUrl": null,
+                                              "displayOrder": 1
+                                            },
+                                            {
+                                              "optionId": 202,
+                                              "text": "캐주얼",
+                                              "value": "casual",
+                                              "imageUrl": null,
+                                              "displayOrder": 2
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
+            )
+    })
     public ApiResponse<List<QuizQuestionResponse>> getQuestions(
             @PathVariable Long quizId
     ) {

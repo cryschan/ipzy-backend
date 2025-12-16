@@ -8,7 +8,8 @@ import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
 import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -40,15 +41,40 @@ public class QuizSessionController {
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "진행 상태 조회 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션을 찾을 수 없음 (QUIZ_003)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "진행 상태 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "sessionId": 12,
+                                        "totalQuestions": 4,
+                                        "answeredCount": 2,
+                                        "completed": false,
+                                        "answers": [
+                                          {
+                                            "questionId": 1,
+                                            "selectedOptions": ["clean"]
+                                          },
+                                          {
+                                            "questionId": 2,
+                                            "selectedOptions": ["minimal", "casual"]
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션을 찾을 수 없음 (QUIZ_003)"
+            )
+    })
     public ApiResponse<QuizSessionProgressResponse> getProgress(
             @PathVariable Long sessionId
     ) {
@@ -78,19 +104,33 @@ public class QuizSessionController {
                     | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "세션 완료 처리 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_013)"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션을 찾을 수 없음 (QUIZ_003)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "세션 완료 처리 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "sessionId": 12,
+                                        "completed": true,
+                                        "completedAt": "2025-01-15T14:23:10"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_013)"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션을 찾을 수 없음 (QUIZ_003)"
+            )
+    })
     public ApiResponse<QuizCompletionResponse> complete(
             @PathVariable Long sessionId
     ) {
@@ -121,19 +161,32 @@ public class QuizSessionController {
                     | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "답변 저장/수정 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "검증 실패 (QUIZ_004, QUIZ_007, QUIZ_009, QUIZ_012, QUIZ_013)"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_006)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "답변 저장/수정 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "questionId": 1,
+                                        "selectedOptions": ["clean"]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "검증 실패 (QUIZ_004, QUIZ_007, QUIZ_009, QUIZ_012, QUIZ_013)"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_006)"
+            )
+    })
     public ApiResponse<QuizAnswerResponse> saveAnswer(
             @PathVariable Long sessionId,
             @RequestBody QuizAnswerRequest request
