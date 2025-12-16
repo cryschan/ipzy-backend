@@ -304,7 +304,7 @@ public class MusinsaCrawlerService {
                 .price(price)
                 .originalPrice(normalPrice)
                 .discountPercent(saleRate)
-                .thumbnailImageUrl(thumbnailUrl)  // 이미 검증됨
+                .imageUrl(thumbnailUrl)  // 이미 검증됨
                 .review(String.format("리뷰: %d개 (평점: %d점)",
                         item.getReviewCount() != null ? item.getReviewCount() : 0,
                         item.getReviewScore() != null ? item.getReviewScore() : 0))
@@ -496,7 +496,7 @@ public class MusinsaCrawlerService {
                             .price(price)
                             .originalPrice(normalPrice)
                             .discountPercent(discountRate)
-                            .thumbnailImageUrl(thumbnailUrl)
+                            .imageUrl(thumbnailUrl)
                             .review("")
                             .colors(colors)
                             .purchaseUrl(purchaseUrl)
@@ -696,7 +696,7 @@ public class MusinsaCrawlerService {
 
             // 썸네일 URL만 수집 (null 제외)
             List<String> thumbnailUrls = products.stream()
-                    .map(CrawledProductDto::getThumbnailImageUrl)
+                    .map(CrawledProductDto::getImageUrl)
                     .filter(Objects::nonNull)
                     .filter(url -> !url.isBlank())
                     .distinct() // 중복 제거
@@ -713,7 +713,7 @@ public class MusinsaCrawlerService {
             // 결과를 각 DTO에 설정
             int successCount = 0;
             for (CrawledProductDto product : products) {
-                String thumbnailUrl = product.getThumbnailImageUrl();
+                String thumbnailUrl = product.getImageUrl();
                 if (thumbnailUrl != null && urlMap.containsKey(thumbnailUrl)) {
                     product.setRemovedBackgroundImageUrl(urlMap.get(thumbnailUrl));
                     successCount++;
@@ -729,7 +729,7 @@ public class MusinsaCrawlerService {
         } catch (Exception e) {
             log.error("누끼 이미지 배치 처리 중 오류 발생: {}", e.getMessage(), e);
             // 실패 시 모든 상품에 원본 썸네일 설정
-            products.forEach(p -> p.setRemovedBackgroundImageUrl(p.getThumbnailImageUrl()));
+            products.forEach(p -> p.setRemovedBackgroundImageUrl(p.getImageUrl()));
         }
     }
 }

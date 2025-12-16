@@ -246,7 +246,7 @@ class BrandServiceTest {
                     .brand(brand)
                     .name("테스트 상품")
                     .price(10000)
-                    .thumbnailImageUrl("https://example.com/test.jpg")
+                    .imageUrl("https://example.com/test.jpg")
                     .removedBackgroundImageUrl("https://example.com/test_nobg.jpg")
                     .build();
             given(brandRepository.findById(brandId)).willReturn(Optional.of(brand));

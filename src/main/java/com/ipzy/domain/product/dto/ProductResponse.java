@@ -43,8 +43,8 @@ public class ProductResponse {
     @Schema(description = "할인율", example = "18")
     private final Integer discountPercent;
 
-    @Schema(description = "썸네일 이미지 URL", example = "https://image.musinsa.com/...")
-    private final String thumbnailImageUrl;
+    @Schema(description = "이미지 URL", example = "https://image.musinsa.com/...")
+    private final String imageUrl;
 
     @Schema(description = "리뷰 정보", example = "리뷰: 100개 (평점: 5점)")
     private final String review;
@@ -73,7 +73,7 @@ public class ProductResponse {
                 .price(product.getPrice())
                 .originalPrice(product.getOriginalPrice())
                 .discountPercent(product.getDiscountPercent())
-                .thumbnailImageUrl(product.getThumbnailImageUrl())
+                .imageUrl(product.getImageUrl())
                 .review(product.getReview())
                 .colors(product.getColors() != null ? List.of(product.getColors()) : List.of())
                 .seasons(product.getSeasons() != null ? List.of(product.getSeasons()) : List.of())

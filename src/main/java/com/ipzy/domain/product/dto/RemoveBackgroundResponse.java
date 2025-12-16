@@ -36,7 +36,7 @@ public class RemoveBackgroundResponse {
         /**
          * 처리 성공 여부
          */
-        private Boolean success;
+        private boolean success;
 
         /**
          * 실패 시 에러 메시지

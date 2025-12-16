@@ -24,7 +24,7 @@ class CrawledProductDtoTest {
                 .price(119000)
                 .originalPrice(119000)
                 .discountPercent(0)
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .review("클래식한 스니커즈")
                 .colors(List.of("white", "black"))
                 .purchaseUrl("https://example.com/product")
@@ -38,7 +38,7 @@ class CrawledProductDtoTest {
         assertThat(dto.getPrice()).isEqualTo(119000);
         assertThat(dto.getOriginalPrice()).isEqualTo(119000);
         assertThat(dto.getDiscountPercent()).isEqualTo(0);
-        assertThat(dto.getThumbnailImageUrl()).isNotBlank();
+        assertThat(dto.getImageUrl()).isNotBlank();
         assertThat(dto.getReview()).isNotBlank();
         assertThat(dto.getColors()).hasSize(2);
         assertThat(dto.getPurchaseUrl()).isNotBlank();
@@ -56,7 +56,7 @@ class CrawledProductDtoTest {
                 .price(99000)
                 .originalPrice(null) // null
                 .discountPercent(0)
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -75,7 +75,7 @@ class CrawledProductDtoTest {
                 .price(14900)
                 .originalPrice(14900)
                 .discountPercent(null) // null
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -94,7 +94,7 @@ class CrawledProductDtoTest {
                 .price(39000)
                 .originalPrice(39000)
                 .discountPercent(0)
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -113,7 +113,7 @@ class CrawledProductDtoTest {
                 .price(295200)
                 .originalPrice(369000)
                 .discountPercent(20)
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -135,7 +135,7 @@ class CrawledProductDtoTest {
                 .category("TOP")
                 .price(50000)
                 .colors(null) // null
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -152,7 +152,7 @@ class CrawledProductDtoTest {
                 .category("TOP")
                 .price(50000)
                 .review(null) // null
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then
@@ -169,7 +169,7 @@ class CrawledProductDtoTest {
                 .category("TOP")
                 .price(50000)
                 .purchaseUrl(null) // null
-                .thumbnailImageUrl("https://example.com/image.jpg")
+                .imageUrl("https://example.com/image.jpg")
                 .build();
 
         // then

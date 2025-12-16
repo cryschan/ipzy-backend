@@ -130,7 +130,7 @@ class ProductCrawlingServiceTest {
                             .category("TOP")
                             .subCategory("반팔티")
                             .price(19000)
-                            .thumbnailImageUrl("https://example.com/p1.jpg")
+                            .imageUrl("https://example.com/p1.jpg")
                             .build()
             );
             given(musinsaCrawlerService.crawlBrandProducts(eq(clothingBrand.getName()), eq(clothingBrand.getPrimaryStyle()), anyInt()))
@@ -164,7 +164,7 @@ class ProductCrawlingServiceTest {
                             .category("SHOES")
                             .subCategory("스니커즈")
                             .price(129000)
-                            .thumbnailImageUrl("https://example.com/p1.jpg")
+                            .imageUrl("https://example.com/p1.jpg")
                             .build()
             );
             given(musinsaCrawlerService.crawlShoeProducts(eq(shoesBrand.getName()), eq(shoesBrand.getPrimaryStyle()), anyInt()))
@@ -198,7 +198,7 @@ class ProductCrawlingServiceTest {
                             .category("TOP")
                             .subCategory("반팔티")
                             .price(19000)
-                            .thumbnailImageUrl("https://example.com/dup.jpg")
+                            .imageUrl("https://example.com/dup.jpg")
                             .build(),
                     CrawledProductDto.builder()
                             .brandName(clothingBrand.getName())
@@ -206,7 +206,7 @@ class ProductCrawlingServiceTest {
                             .category("TOP")
                             .subCategory("반팔티")
                             .price(20000)
-                            .thumbnailImageUrl("https://example.com/new.jpg")
+                            .imageUrl("https://example.com/new.jpg")
                             .build()
             );
             given(musinsaCrawlerService.crawlBrandProducts(eq(clothingBrand.getName()), eq(clothingBrand.getPrimaryStyle()), anyInt()))
@@ -241,7 +241,7 @@ class ProductCrawlingServiceTest {
                     .price(15000)
                     .originalPrice(null)
                     .discountPercent(null)
-                    .thumbnailImageUrl("https://example.com/thumb.jpg")
+                    .imageUrl("https://example.com/thumb.jpg")
                     .removedBackgroundImageUrl(null)
                     .build();
 
@@ -267,8 +267,8 @@ class ProductCrawlingServiceTest {
             assertThat(saved.getCategory()).isEqualTo(ClothingCategory.TOP);
             assertThat(saved.getOriginalPrice()).isEqualTo(dto.getPrice());
             assertThat(saved.getDiscountPercent()).isEqualTo(0);
-            assertThat(saved.getThumbnailImageUrl()).isEqualTo(dto.getThumbnailImageUrl());
-            assertThat(saved.getRemovedBackgroundImageUrl()).isEqualTo(dto.getThumbnailImageUrl());
+            assertThat(saved.getImageUrl()).isEqualTo(dto.getImageUrl());
+            assertThat(saved.getRemovedBackgroundImageUrl()).isEqualTo(dto.getImageUrl());
             assertThat(saved.getSeasons()).containsExactly("2025_SS");
         }
 
@@ -285,7 +285,7 @@ class ProductCrawlingServiceTest {
                     .category("TOP")
                     .subCategory("반팔티")
                     .price(0)
-                    .thumbnailImageUrl("https://example.com/invalid.jpg")
+                    .imageUrl("https://example.com/invalid.jpg")
                     .build();
 
             given(musinsaCrawlerService.crawlBrandProducts(eq(clothingBrand.getName()), eq(clothingBrand.getPrimaryStyle()), anyInt()))

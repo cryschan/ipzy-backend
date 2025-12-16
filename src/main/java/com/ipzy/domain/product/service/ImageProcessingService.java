@@ -2,7 +2,6 @@ package com.ipzy.domain.product.service;
 
 import com.ipzy.domain.product.dto.RemoveBackgroundRequest;
 import com.ipzy.domain.product.dto.RemoveBackgroundResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -10,18 +9,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 이미지 처리 서비스 (파이썬 AI 서버 연동)
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ImageProcessingService {
 
-    @Qualifier("pythonAiRestClient")
     private final RestClient pythonAiRestClient;
+
+    public ImageProcessingService(@Qualifier("pythonAiRestClient") RestClient pythonAiRestClient) {
+        this.pythonAiRestClient = pythonAiRestClient;
+    }
 
     private static final int CHUNK_SIZE = 20; // 배치당 처리할 이미지 개수
     private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/image/remove-background";
@@ -110,7 +110,7 @@ public class ImageProcessingService {
                 String originalUrl = imageUrls.get(i);
                 RemoveBackgroundResponse.ImageResult result = response.getResults().get(i);
 
-                if (Boolean.TRUE.equals(result.getSuccess()) && result.getRemovedBackgroundUrl() != null) {
+                if (result.isSuccess() && result.getRemovedBackgroundUrl() != null) {
                     resultMap.put(originalUrl, result.getRemovedBackgroundUrl());
                 } else {
                     log.warn("이미지 처리 실패: url={}, error={}",

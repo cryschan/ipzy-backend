@@ -51,7 +51,7 @@ class ProductServiceTest {
                 .price(129000)
                 .originalPrice(159000)
                 .discountPercent(18)
-                .thumbnailImageUrl("https://example.com/image1.jpg")
+                .imageUrl("https://example.com/image1.jpg")
                 .removedBackgroundImageUrl("https://example.com/image1_nobg.jpg")
                 .review("리뷰: 100개")
                 .colors(new String[]{"블랙", "화이트"})
@@ -67,7 +67,7 @@ class ProductServiceTest {
                 .subCategory("스니커즈")
                 .primaryStyle("sneakers")
                 .price(159000)
-                .thumbnailImageUrl("https://example.com/image2.jpg")
+                .imageUrl("https://example.com/image2.jpg")
                 .removedBackgroundImageUrl("https://example.com/image2_nobg.jpg")
                 .seasons(new String[]{"2024_FW"})
                 .isActive(false)
@@ -78,7 +78,7 @@ class ProductServiceTest {
                 .name("삭제된 상품")
                 .category(ClothingCategory.SHOES)
                 .price(100000)
-                .thumbnailImageUrl("https://example.com/deleted.jpg")
+                .imageUrl("https://example.com/deleted.jpg")
                 .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                 .isActive(false)
                 .build();
@@ -163,7 +163,7 @@ class ProductServiceTest {
                     .name("삭제된 활성 상품")
                     .category(ClothingCategory.SHOES)
                     .price(100000)
-                    .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .imageUrl("https://example.com/deleted.jpg")
                     .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                     .isActive(true)
                     .build();
@@ -213,7 +213,7 @@ class ProductServiceTest {
             assertThat(response.getPrice()).isEqualTo(activeProduct.getPrice());
             assertThat(response.getOriginalPrice()).isEqualTo(activeProduct.getOriginalPrice());
             assertThat(response.getDiscountPercent()).isEqualTo(activeProduct.getDiscountPercent());
-            assertThat(response.getThumbnailImageUrl()).isEqualTo(activeProduct.getThumbnailImageUrl());
+            assertThat(response.getImageUrl()).isEqualTo(activeProduct.getImageUrl());
             assertThat(response.getColors()).containsExactly("블랙", "화이트");
             assertThat(response.getSeasons()).containsExactly("ALL");
             assertThat(response.getIsActive()).isTrue();
@@ -228,7 +228,7 @@ class ProductServiceTest {
                     .name("테스트 상품")
                     .category(ClothingCategory.SHOES)
                     .price(100000)
-                    .thumbnailImageUrl("https://example.com/test.jpg")
+                    .imageUrl("https://example.com/test.jpg")
                     .removedBackgroundImageUrl("https://example.com/test_nobg.jpg")
                     .colors(null)
                     .seasons(null)
@@ -286,7 +286,7 @@ class ProductServiceTest {
                     .name("이미 삭제된 상품")
                     .category(ClothingCategory.SHOES)
                     .price(100000)
-                    .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .imageUrl("https://example.com/deleted.jpg")
                     .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
                     .isActive(true)
                     .build();
