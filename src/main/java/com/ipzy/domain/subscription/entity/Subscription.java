@@ -79,6 +79,20 @@ public class Subscription extends BaseEntity {
         this.status = SubscriptionStatus.ACTIVE;
     }
 
+    /**
+     * 플랜 업데이트 (플랜 변경 시 사용)
+     */
+    public void updatePlan(SubscriptionPlan newPlan, SubscriptionStatus newStatus,
+                          LocalDateTime startDate, LocalDateTime endDate, Boolean autoRenew) {
+        this.plan = newPlan;
+        this.status = newStatus;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.autoRenew = autoRenew != null ? autoRenew : this.autoRenew;
+        this.cancelledAt = null;
+        this.cancelReason = null;
+    }
+
     public boolean isActive() {
         return this.status == SubscriptionStatus.ACTIVE &&
                LocalDateTime.now().isBefore(this.endDate);

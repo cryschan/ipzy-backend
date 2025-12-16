@@ -56,4 +56,15 @@ public class SubscriptionPlanService {
         return subscriptionPlanRepository.findById(planId)
                 .orElseThrow(() -> SubscriptionException.planNotFound(planId));
     }
+
+    /**
+     * 플랜 이름으로 Entity 조회 (내부용)
+     * @param name 플랜 이름
+     * @return SubscriptionPlan 엔티티
+     * @throws SubscriptionException 플랜을 찾을 수 없을 경우
+     */
+    public SubscriptionPlan findByNameEntity(String name) {
+        return subscriptionPlanRepository.findByName(name)
+                .orElseThrow(() -> SubscriptionException.planNotFoundByName(name));
+    }
 }

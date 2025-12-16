@@ -71,6 +71,13 @@ public class SubscriptionException extends BusinessException {
         return new SubscriptionException(SubscriptionErrorCode.SUBSCRIPTION_CANCELLED);
     }
 
+    public static SubscriptionException paymentPending(String message) {
+        return new SubscriptionException(
+                SubscriptionErrorCode.PAYMENT_REQUIRED,
+                message
+        );
+    }
+
     // ========== 결제 관련 예외 ==========
 
     public static SubscriptionException paymentRequired() {
