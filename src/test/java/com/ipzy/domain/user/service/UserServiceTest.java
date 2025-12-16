@@ -3,6 +3,7 @@ package com.ipzy.domain.user.service;
 import com.ipzy._global.common.enums.Gender;
 import com.ipzy._global.common.enums.UserRole;
 import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.user.dto.UserProfileResponse;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.exception.UserException;
 import com.ipzy.domain.user.repository.UserRepository;
@@ -66,12 +67,12 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.getMyProfile(userId);
+            UserProfileResponse result = userService.getMyProfile(userId);
 
             // then
             assertThat(result).isNotNull();
-            assertThat(result.getEmail()).isEqualTo("test@kakao.com");
-            assertThat(result.getName()).isEqualTo("tester");
+            assertThat(result.email()).isEqualTo("test@kakao.com");
+            assertThat(result.name()).isEqualTo("tester");
         }
 
         @Test
@@ -104,12 +105,12 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updateProfile(userId, newName, newPhone, newProfileImageUrl);
+            UserProfileResponse result = userService.updateProfile(userId, newName, newPhone, newProfileImageUrl);
 
             // then
-            assertThat(result.getName()).isEqualTo(newName);
-            assertThat(result.getPhone()).isEqualTo(newPhone);
-            assertThat(result.getProfileImageUrl()).isEqualTo(newProfileImageUrl);
+            assertThat(result.name()).isEqualTo(newName);
+            assertThat(result.phone()).isEqualTo(newPhone);
+            assertThat(result.profileImageUrl()).isEqualTo(newProfileImageUrl);
         }
 
         @Test
@@ -142,11 +143,11 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updatePreferences(userId, newPreferences);
+            UserProfileResponse result = userService.updatePreferences(userId, newPreferences);
 
             // then
-            assertThat(result.getPreferences()).containsEntry("theme", "dark");
-            assertThat(result.getPreferences()).containsEntry("language", "ko");
+            assertThat(result.preferences()).containsEntry("theme", "dark");
+            assertThat(result.preferences()).containsEntry("language", "ko");
         }
 
         @Test
@@ -217,14 +218,14 @@ class UserServiceTest {
             given(userRepository.findByIdAndStatusNot(userId, UserStatus.DELETED)).willReturn(Optional.of(user));
 
             // when
-            User result = userService.updateStylePreference(userId, stylePreference);
+            UserProfileResponse result = userService.updateStylePreference(userId, stylePreference);
 
             // then
-            assertThat(result.getStylePreference()).isNotNull();
-            assertThat(result.getStylePreference().getColors()).containsExactly("black", "white", "navy");
-            assertThat(result.getStylePreference().getAge()).isEqualTo(25);
-            assertThat(result.getStylePreference().getGender()).isEqualTo(Gender.MALE);
-            assertThat(result.getStylePreference().getStyles()).containsExactly("casual", "minimal");
+            assertThat(result.stylePreference()).isNotNull();
+            assertThat(result.stylePreference().colors()).containsExactly("black", "white", "navy");
+            assertThat(result.stylePreference().age()).isEqualTo(25);
+            assertThat(result.stylePreference().gender()).isEqualTo(Gender.MALE);
+            assertThat(result.stylePreference().styles()).containsExactly("casual", "minimal");
         }
 
         @Test

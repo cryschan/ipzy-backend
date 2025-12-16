@@ -239,11 +239,16 @@ public class ProductCrawlingService {
 
         // 카테고리에 따라 시즌 자동 설정
         String[] seasons = productSeasonService.determineSeasons(dto.getCategory(), currentSeason);
-        String thumbnailImageUrl = dto.getThumbnailImageUrl() != null ? dto.getThumbnailImageUrl() : "";
+        String imageUrl = dto.getImageUrl() != null ? dto.getImageUrl() : "";
 
         // null 기본값 처리
         int originalPrice = dto.getOriginalPrice() != null ? dto.getOriginalPrice() : dto.getPrice();
         int discountPercent = dto.getDiscountPercent() != null ? dto.getDiscountPercent() : 0;
+
+        // TODO: 파이썬 서버에서 누끼 이미지를 받아와야 함 (현재는 임시로 imageUrl 사용)
+        String removedBackgroundImageUrl = dto.getRemovedBackgroundImageUrl() != null
+                ? dto.getRemovedBackgroundImageUrl()
+                : imageUrl; // 임시: 파이썬 API 구현 전까지 썸네일 사용
 
         return Product.builder()
                 .brand(brand)
@@ -254,8 +259,9 @@ public class ProductCrawlingService {
                 .price(dto.getPrice())
                 .originalPrice(originalPrice)
                 .discountPercent(discountPercent)
-                .thumbnailImageUrl(thumbnailImageUrl)
-                .description(dto.getDescription())
+                .imageUrl(imageUrl)
+                .removedBackgroundImageUrl(removedBackgroundImageUrl)
+                .review(dto.getReview())
                 .colors(dto.getColors() != null ? dto.getColors().toArray(new String[0]) : null)
                 .seasons(seasons) // 시즌 정보 추가
                 .isActive(true)

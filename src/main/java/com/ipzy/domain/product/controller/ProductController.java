@@ -4,6 +4,7 @@ import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.product.dto.ProductResponse;
 import com.ipzy.domain.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -62,8 +63,8 @@ public class ProductController {
                                           "price": 129000,
                                           "originalPrice": 159000,
                                           "discountPercent": 18,
-                                          "thumbnailImageUrl": "https://image.musinsa.com/...",
-                                          "description": "리뷰: 100개 (평점: 5점)",
+                                          "imageUrl": "https://image.musinsa.com/...",
+                                          "review": "리뷰: 100개 (평점: 5점)",
                                           "colors": ["블랙", "화이트"],
                                           "seasons": ["ALL"],
                                           "isActive": true,
@@ -80,8 +81,8 @@ public class ProductController {
                                           "price": 29900,
                                           "originalPrice": 29900,
                                           "discountPercent": 0,
-                                          "thumbnailImageUrl": "https://image.musinsa.com/...",
-                                          "description": "리뷰: 50개 (평점: 4점)",
+                                          "imageUrl": "https://image.musinsa.com/...",
+                                          "review": "리뷰: 50개 (평점: 4점)",
                                           "colors": ["블랙"],
                                           "seasons": ["2025_FW"],
                                           "isActive": true,
@@ -111,6 +112,7 @@ public class ProductController {
     })
     @GetMapping
     public ApiResponse<List<ProductResponse>> getProducts(
+            @Parameter(description = "활성 상품만 조회 여부 (true: 현재 시즌 상품만, false: 모든 상품)", example = "false")
             @RequestParam(defaultValue = "false") boolean activeOnly
     ) {
         log.info("상품 조회 API 호출: activeOnly={}", activeOnly);
