@@ -6,23 +6,52 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
- * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_0010)
+ * 퀴즈 관련 에러 코드 (QUIZ_001 ~ QUIZ_018)
+ *
+ * 에러 코드 분류:
+ * - 퀴즈 관련: QUIZ_001, QUIZ_002
+ * - 세션 관련: QUIZ_003, QUIZ_004, QUIZ_005
+ * - 질문 관련: QUIZ_006, QUIZ_007
+ * - 답변 관련: QUIZ_008, QUIZ_009, QUIZ_010, QUIZ_011
+ * - 옵션 관련: QUIZ_012
+ * - 검증 관련: QUIZ_013
+ * - 초기화 관련: QUIZ_014, QUIZ_015, QUIZ_016, QUIZ_017, QUIZ_018
  */
 @Getter
 @RequiredArgsConstructor
 public enum QuizErrorCode implements ErrorCode {
 
+    // ========== 퀴즈 관련 ==========
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_001", "퀴즈를 찾을 수 없습니다"),
-    INVALID_QUIZ_RESPONSE(HttpStatus.BAD_REQUEST, "QUIZ_002", "유효하지 않은 퀴즈 응답입니다"),
+    QUIZ_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "QUIZ_002", "퀴즈가 완료되지 않았습니다"),
+
+    // ========== 세션 관련 ==========
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_003", "퀴즈 세션을 찾을 수 없습니다"),
     SESSION_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "QUIZ_004", "이미 완료된 퀴즈 세션입니다"),
-    QUIZ_REQUIRED_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "QUIZ_005", "필수 질문에 답변하지 않았습니다"),
-    QUIZ_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "QUIZ_006", "퀴즈가 완료되지 않았습니다"),
-    QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_007", "퀴즈 질문을 찾을 수 없습니다"),
-    QUIZ_QUESTION_NOT_IN_SESSION(HttpStatus.BAD_REQUEST, "QUIZ_008", "해당 질문이 세션의 퀴즈에 속하지 않습니다"),
-    QUIZ_OPTION_INVALID(HttpStatus.BAD_REQUEST, "QUIZ_009", "유효하지 않은 옵션입니다"),
-    QUIZ_ANSWER_TOO_MANY_OPTIONS(HttpStatus.BAD_REQUEST, "QUIZ_010", "단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다"),
-    QUIZ_CLEANUP_EXPIRATION_NULL(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_011", "세션 정리 만료 시간이 설정되지 않았습니다");
+    SESSION_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "QUIZ_005", "이미 사용자가 연결된 세션입니다"),
+
+    // ========== 질문 관련 ==========
+    QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QUIZ_006", "퀴즈 질문을 찾을 수 없습니다"),
+    QUIZ_QUESTION_NOT_IN_SESSION(HttpStatus.BAD_REQUEST, "QUIZ_007", "해당 질문이 세션의 퀴즈에 속하지 않습니다"),
+
+    // ========== 답변 관련 ==========
+    QUIZ_REQUIRED_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "QUIZ_008", "필수 질문에 답변하지 않았습니다"),
+    QUIZ_ANSWER_TOO_MANY_OPTIONS(HttpStatus.BAD_REQUEST, "QUIZ_009", "단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다"),
+    QUIZ_ANSWER_NULL(HttpStatus.BAD_REQUEST, "QUIZ_010", "답변이 저장되지 않았습니다"),
+    QUIZ_ANSWER_QUESTION_NULL(HttpStatus.BAD_REQUEST, "QUIZ_011", "답변에 해당하는 질문이 없습니다"),
+
+    // ========== 옵션 관련 ==========
+    QUIZ_OPTION_INVALID(HttpStatus.BAD_REQUEST, "QUIZ_012", "유효하지 않은 옵션입니다"),
+
+    // ========== 검증 관련 ==========
+    INVALID_QUIZ_RESPONSE(HttpStatus.BAD_REQUEST, "QUIZ_013", "유효하지 않은 퀴즈 응답입니다"),
+
+    // ========== 초기화 관련 ==========
+    QUIZ_CLEANUP_EXPIRATION_NULL(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_014", "세션 정리 만료 시간이 설정되지 않았습니다"),
+    QUIZ_SESSION_INIT_QUIZ_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_015", "퀴즈 세션 초기화 실패: 퀴즈 데이터가 없습니다"),
+    QUIZ_SESSION_INIT_QUESTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_016", "퀴즈 세션 초기화 실패: 퀴즈에 질문이 없습니다"),
+    QUIZ_SESSION_INIT_MODE_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_017", "퀴즈 세션 초기화 모드가 유효하지 않습니다"),
+    QUIZ_SESSION_INIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "QUIZ_018", "퀴즈 세션 초기화 중 예상치 못한 오류가 발생했습니다");
 
     private final HttpStatus status;
     private final String code;

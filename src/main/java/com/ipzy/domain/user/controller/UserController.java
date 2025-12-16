@@ -12,6 +12,7 @@ import com.ipzy.domain.user.dto.UserProfileResponse;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.service.UserService;
 import com.ipzy.domain.user.service.WithdrawalService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -97,6 +98,7 @@ public class UserController {
         return ApiResponse.success(UserProfileResponse.from(user));
     }
 
+    @Hidden
     @Operation(
             summary = "환경설정 수정",
             description = "다크모드, 알림 등 앱 환경설정을 수정합니다."
@@ -122,6 +124,7 @@ public class UserController {
         return ApiResponse.success(UserProfileResponse.from(user));
     }
 
+    @Hidden
     @Operation(
             summary = "스타일 선호도 수정",
             description = "추천에 사용되는 스타일 선호도(색상, 나이, 성별, 스타일)를 수정합니다."
