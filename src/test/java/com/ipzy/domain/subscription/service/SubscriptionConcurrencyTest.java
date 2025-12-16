@@ -121,7 +121,7 @@ class SubscriptionConcurrencyTest {
 
     @Test
     @DisplayName("구독이 이미 있는 경우 동시 요청해도 같은 구독을 반환한다")
-    void 구독이_이미_있는_경우_동시_요청해도_같은_구독을_반환한다() throws Exception {
+    void concurrentCreate_createsSingleSubscription() throws Exception {
         // given
         User user = userRepository.save(
             User.builder()
@@ -181,6 +181,6 @@ class SubscriptionConcurrencyTest {
             .count();
 
         assertThat(validCount).isEqualTo(1);
-        assertThat(subscriptions.get(0).getId()).isEqualTo(existingSubscriptionId);
+        assertThat(subscriptions.getFirst().getId()).isEqualTo(existingSubscriptionId);
     }
 }
