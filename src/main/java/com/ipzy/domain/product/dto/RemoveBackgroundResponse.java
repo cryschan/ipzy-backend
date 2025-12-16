@@ -1,5 +1,6 @@
 package com.ipzy.domain.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,13 +28,9 @@ public class RemoveBackgroundResponse {
     @AllArgsConstructor
     public static class ImageResult {
         /**
-         * 원본 이미지 URL
-         */
-        private String originalUrl;
-
-        /**
          * 누끼 제거된 이미지 URL
          */
+        @JsonProperty("removed_background_url")
         private String removedBackgroundUrl;
 
         /**
@@ -44,6 +41,7 @@ public class RemoveBackgroundResponse {
         /**
          * 실패 시 에러 메시지
          */
+        @JsonProperty("error_message")
         private String errorMessage;
     }
 }

@@ -24,7 +24,7 @@ public class ImageProcessingService {
     private final RestClient pythonAiRestClient;
 
     private static final int CHUNK_SIZE = 20; // 배치당 처리할 이미지 개수
-    private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/v1/image/remove-background";
+    private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/image/remove-background";
 
     /**
      * 여러 이미지의 누끼를 배치로 제거
@@ -74,6 +74,9 @@ public class ImageProcessingService {
 
     /**
      * 하나의 청크(최대 CHUNK_SIZE개)를 파이썬 서버로 전송하여 처리
+     *
+     * @param imageUrls 처리할 이미지 URL 리스트
+     * @return 원본 URL -> 누끼 제거된 URL 매핑 (성공한 것만)
      */
     private Map<String, String> processChunk(List<String> imageUrls) {
         RemoveBackgroundRequest request = RemoveBackgroundRequest.builder()
@@ -93,15 +96,29 @@ public class ImageProcessingService {
                 return Collections.emptyMap();
             }
 
-            // 성공한 결과만 Map으로 변환
-            return response.getResults().stream()
-                    .filter(result -> Boolean.TRUE.equals(result.getSuccess()))
-                    .filter(result -> result.getOriginalUrl() != null && result.getRemovedBackgroundUrl() != null)
-                    .collect(Collectors.toMap(
-                            RemoveBackgroundResponse.ImageResult::getOriginalUrl,
-                            RemoveBackgroundResponse.ImageResult::getRemovedBackgroundUrl,
-                            (existing, replacement) -> replacement // 중복 시 최신 값 사용
-                    ));
+            // 응답 크기가 요청과 다르면 경고
+            if (response.getResults().size() != imageUrls.size()) {
+                log.warn("응답 크기가 요청 크기와 다릅니다: 요청={}, 응답={}",
+                         imageUrls.size(), response.getResults().size());
+            }
+
+            // 인덱스 기반으로 요청 URL과 응답 매칭
+            Map<String, String> resultMap = new HashMap<>();
+            int minSize = Math.min(imageUrls.size(), response.getResults().size());
+
+            for (int i = 0; i < minSize; i++) {
+                String originalUrl = imageUrls.get(i);
+                RemoveBackgroundResponse.ImageResult result = response.getResults().get(i);
+
+                if (Boolean.TRUE.equals(result.getSuccess()) && result.getRemovedBackgroundUrl() != null) {
+                    resultMap.put(originalUrl, result.getRemovedBackgroundUrl());
+                } else {
+                    log.warn("이미지 처리 실패: url={}, error={}",
+                             originalUrl, result.getErrorMessage());
+                }
+            }
+
+            return resultMap;
 
         } catch (Exception e) {
             log.error("파이썬 서버 호출 실패: {}", e.getMessage(), e);
