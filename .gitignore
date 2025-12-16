@@ -1,5 +1,6 @@
 HELP.md
 .gradle
+.gradle-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -47,6 +48,10 @@ application-local.properties
 *.log
 logs/
 
+### Python ###
+__pycache__/
+*.pyc
+
 ### macOS ###
 .DS_Store
 .AppleDouble
@@ -60,7 +65,3 @@ secrets/
 
 ### 학습 문서 ###
 docs/user/learning/
-docs/learning/
-
-### Claude Code ###
-.claude/
