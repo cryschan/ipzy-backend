@@ -65,3 +65,14 @@ secrets/
 
 ### 학습 문서 ###
 docs/user/learning/
+
+### Claude 설정 (개인용) ###
+.claude/commands/
+.claude/skills/
+.mcp.json
+
+### AI 참조 문서 ###
+docs/ai/
+
+### 작업 기록 (개인용) ###
+docs/workthrough/
