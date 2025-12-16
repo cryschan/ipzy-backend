@@ -1,5 +1,6 @@
 HELP.md
 .gradle
+.gradle-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -46,6 +47,10 @@ application-local.properties
 ### 로그 ###
 *.log
 logs/
+
+### Python ###
+__pycache__/
+*.pyc
 
 ### macOS ###
 .DS_Store

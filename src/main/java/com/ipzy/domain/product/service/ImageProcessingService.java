@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImageProcessingService {
 
-    @Qualifier("pythonRestClient")
-    private final RestClient pythonRestClient;
+    @Qualifier("pythonAiRestClient")
+    private final RestClient pythonAiRestClient;
 
     private static final int CHUNK_SIZE = 20; // 배치당 처리할 이미지 개수
     private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/v1/image/remove-background";
@@ -81,7 +81,7 @@ public class ImageProcessingService {
                 .build();
 
         try {
-            RemoveBackgroundResponse response = pythonRestClient.post()
+            RemoveBackgroundResponse response = pythonAiRestClient.post()
                     .uri(REMOVE_BACKGROUND_ENDPOINT)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)

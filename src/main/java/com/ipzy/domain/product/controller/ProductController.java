@@ -4,6 +4,7 @@ import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.product.dto.ProductResponse;
 import com.ipzy.domain.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -111,6 +112,7 @@ public class ProductController {
     })
     @GetMapping
     public ApiResponse<List<ProductResponse>> getProducts(
+            @Parameter(description = "활성 상품만 조회 여부 (true: 현재 시즌 상품만, false: 모든 상품)", example = "false")
             @RequestParam(defaultValue = "false") boolean activeOnly
     ) {
         log.info("상품 조회 API 호출: activeOnly={}", activeOnly);

@@ -11,13 +11,13 @@ import java.time.Duration;
 @Configuration
 public class RestClientConfig {
 
-    @Value("${ai.python.base-url}")
+    @Value("${ai.python.base-url:http://localhost:8000}")
     private String pythonBaseUrl;
 
-    @Value("${ai.python.connect-timeout}")
+    @Value("${ai.python.connect-timeout:5000}")
     private int pythonConnectTimeout;
 
-    @Value("${ai.python.read-timeout}")
+    @Value("${ai.python.read-timeout:10000}")
     private int pythonReadTimeout;
 
     /**
@@ -38,17 +38,22 @@ public class RestClientConfig {
 
     /**
      * 파이썬 AI 서버 호출용 RestClient
+     * - AI 추천 서비스 (PythonAiClient)
+     * - 이미지 처리 서비스 (ImageProcessingService)
      */
     @Bean
-    public RestClient pythonRestClient() {
+    public RestClient pythonAiRestClient() {
+        return RestClient.builder()
+                .baseUrl(pythonBaseUrl)
+                .requestFactory(pythonAiClientHttpRequestFactory())
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
+
+    private SimpleClientHttpRequestFactory pythonAiClientHttpRequestFactory() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofMillis(pythonConnectTimeout));
         factory.setReadTimeout(Duration.ofMillis(pythonReadTimeout));
-
-        return RestClient.builder()
-                .baseUrl(pythonBaseUrl)
-                .requestFactory(factory)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+        return factory;
     }
 }

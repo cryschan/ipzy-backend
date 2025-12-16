@@ -61,8 +61,6 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getOriginalPrice()).isNull();
-        System.out.println("⚠️ DTO의 originalPrice가 null입니다.");
-        System.out.println("→ ProductCrawlingService.convertToProduct()에서 price로 대체됩니다 (241번 라인)");
     }
 
     @Test
@@ -82,8 +80,6 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getDiscountPercent()).isNull();
-        System.out.println("⚠️ DTO의 discountPercent가 null입니다.");
-        System.out.println("→ ProductCrawlingService.convertToProduct()에서 0으로 대체됩니다 (242번 라인)");
     }
 
     @Test
@@ -103,9 +99,6 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getSubCategory()).isEmpty();
-        System.out.println("⚠️ 의류 상품의 subCategory가 빈 문자열입니다.");
-        System.out.println("→ MusinsaCrawlerService 249번 라인에서 빈 문자열로 하드코딩되어 있습니다.");
-        System.out.println("→ 실제 서브카테고리 정보(반팔티, 청바지, 패딩 등)를 파싱하도록 개선 필요!");
     }
 
     @Test
@@ -130,11 +123,6 @@ class CrawledProductDtoTest {
         // 할인율 계산 검증
         int expectedPrice = dto.getOriginalPrice() * (100 - dto.getDiscountPercent()) / 100;
         assertThat(dto.getPrice()).isEqualTo(expectedPrice);
-
-        System.out.println("할인 상품 정보:");
-        System.out.println("- 원가: " + dto.getOriginalPrice() + "원");
-        System.out.println("- 할인가: " + dto.getPrice() + "원");
-        System.out.println("- 할인율: " + dto.getDiscountPercent() + "%");
     }
 
     @Test
@@ -152,9 +140,6 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getColors()).isNull();
-        System.out.println("⚠️ DTO의 colors가 null입니다.");
-        System.out.println("→ ProductCrawlingService.convertToProduct()에서 null로 그대로 전달됩니다 (255번 라인)");
-        System.out.println("→ Product 엔티티는 colors가 null 가능합니다.");
     }
 
     @Test
@@ -172,8 +157,6 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getReview()).isNull();
-        System.out.println("⚠️ DTO의 review가 null입니다.");
-        System.out.println("→ Product 엔티티의 review가 null 가능합니다.");
     }
 
     @Test
@@ -191,7 +174,5 @@ class CrawledProductDtoTest {
 
         // then
         assertThat(dto.getPurchaseUrl()).isNull();
-        System.out.println("⚠️ DTO의 purchaseUrl이 null입니다.");
-        System.out.println("→ Product 엔티티는 purchaseUrl이 null 가능합니다.");
     }
 }

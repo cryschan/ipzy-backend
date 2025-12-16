@@ -5,6 +5,7 @@ import com.ipzy.domain.product.service.ProductCrawlingService;
 import com.ipzy.domain.product.service.ProductService;
 import com.ipzy._global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -113,6 +114,7 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/all")
     public ApiResponse<CrawlingResponse> crawlAllProducts(
+            @Parameter(description = "브랜드당 크롤링할 상품 개수 (의류: 카테고리별 개수, 신발: 총 개수)", example = "3")
             @RequestParam(defaultValue = "3") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("전체 상품 크롤링 API 호출: 브랜드당 {}개", limit);
@@ -223,8 +225,11 @@ public class ProductCrawlingController {
     })
     @PostMapping("/products/brand")
     public ApiResponse<CrawlingResponse> crawlBrandProducts(
+            @Parameter(description = "크롤링할 브랜드명 (예: Nike, Adidas)", example = "Nike")
             @RequestParam @NotBlank(message = "브랜드명은 필수입니다") String brandName,
+            @Parameter(description = "브랜드 타입 (CLOTHING 또는 SHOES)", example = "SHOES")
             @RequestParam @NotBlank(message = "브랜드 타입은 필수입니다") String brandType,
+            @Parameter(description = "크롤링할 상품 개수", example = "5")
             @RequestParam(defaultValue = "1") @Positive(message = "limit은 양수여야 합니다") int limit
     ) {
         log.info("브랜드 상품 크롤링 API 호출: brandName={}, brandType={}, limit={}",
@@ -302,7 +307,9 @@ public class ProductCrawlingController {
             )
     })
     @DeleteMapping("/products/{productId}")
-    public ApiResponse<String> deleteProduct(@PathVariable Long productId) {
+    public ApiResponse<String> deleteProduct(
+            @Parameter(description = "삭제할 상품 ID", example = "1")
+            @PathVariable Long productId) {
         log.info("상품 삭제 API 호출: productId={}", productId);
 
         productService.deleteProduct(productId);

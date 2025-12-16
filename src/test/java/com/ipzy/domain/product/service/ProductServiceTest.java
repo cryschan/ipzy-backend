@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -240,6 +241,63 @@ class ProductServiceTest {
             // then
             assertThat(response.getColors()).isEmpty();
             assertThat(response.getSeasons()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("상품 삭제")
+    class DeleteProduct {
+
+        @Test
+        @DisplayName("성공 - 상품을 soft delete 처리한다")
+        void success() {
+            // given
+            Long productId = 1L;
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.of(activeProduct));
+
+            // when
+            productService.deleteProduct(productId);
+
+            // then
+            assertThat(activeProduct.isDeleted()).isTrue();
+            assertThat(activeProduct.getIsActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("실패 - 상품이 존재하지 않으면 예외를 던진다")
+        void fail_whenNotFound() {
+            // given
+            Long productId = 999L;
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> productService.deleteProduct(productId))
+                    .isInstanceOf(com.ipzy.domain.product.exception.ProductException.class)
+                    .hasMessageContaining(com.ipzy.domain.product.exception.ProductErrorCode.PRODUCT_NOT_FOUND.getMessage());
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 삭제된 상품이면 예외를 던진다")
+        void fail_whenAlreadyDeleted() {
+            // given
+            Long productId = 1L;
+            Product alreadyDeleted = Product.builder()
+                    .brand(brand)
+                    .name("이미 삭제된 상품")
+                    .category(ClothingCategory.SHOES)
+                    .price(100000)
+                    .thumbnailImageUrl("https://example.com/deleted.jpg")
+                    .removedBackgroundImageUrl("https://example.com/deleted_nobg.jpg")
+                    .isActive(true)
+                    .build();
+            alreadyDeleted.softDelete();
+
+            given(productRepository.findById(productId)).willReturn(java.util.Optional.of(alreadyDeleted));
+
+            // when & then
+            assertThatThrownBy(() -> productService.deleteProduct(productId))
+                    .isInstanceOf(com.ipzy.domain.product.exception.ProductException.class)
+                    .hasMessageContaining(com.ipzy.domain.product.exception.ProductErrorCode.PRODUCT_ALREADY_DELETED.getMessage());
         }
     }
 }

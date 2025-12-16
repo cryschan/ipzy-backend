@@ -96,8 +96,8 @@ public class MusinsaCrawlerService {
         log.info("의류 브랜드 상품 크롤링 완료: {} ({}개 - 상의/아우터/하의 각 {}개)",
                  brandName, allProducts.size(), limit);
 
-        // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
-        // processRemoveBackgroundBatch(allProducts);
+        // 누끼 이미지 배치 처리
+        processRemoveBackgroundBatch(allProducts);
 
         return allProducts;
     }
@@ -121,8 +121,8 @@ public class MusinsaCrawlerService {
 
         log.info("신발 브랜드 상품 크롤링 완료: {} ({}개)", brandName, products.size());
 
-        // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
-        // processRemoveBackgroundBatch(products);
+        // 누끼 이미지 배치 처리
+        processRemoveBackgroundBatch(products);
 
         return products;
     }
@@ -509,8 +509,8 @@ public class MusinsaCrawlerService {
 
             log.info("신발 랭킹 크롤링 완료: {}개 상품 수집", products.size());
 
-            // 누끼 이미지 배치 처리 (파이썬 서버 연결 전까지 임시 비활성화)
-            // processRemoveBackgroundBatch(products);
+            // 누끼 이미지 배치 처리
+            processRemoveBackgroundBatch(products);
 
         } catch (Exception e) {
             log.error("신발 랭킹 크롤링 실패: category={}, error={}", shoeCategory, e.getMessage(), e);
