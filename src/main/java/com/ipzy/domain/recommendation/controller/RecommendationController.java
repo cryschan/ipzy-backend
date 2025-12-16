@@ -1,8 +1,7 @@
 package com.ipzy.domain.recommendation.controller;
 
 import com.ipzy._global.common.ApiResponse;
-import com.ipzy.domain.auth.dto.CustomUserPrincipal;
-import com.ipzy.domain.auth.exception.AuthException;
+import com.ipzy._global.util.SecurityUtil;
 import com.ipzy.domain.recommendation.dto.request.RecommendationRequest;
 import com.ipzy.domain.recommendation.dto.response.RecommendationSummaryResponse;
 import com.ipzy.domain.recommendation.entity.Recommendation;
@@ -14,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -144,10 +142,9 @@ public class RecommendationController {
     })
     @GetMapping("/sessions/{sessionId}/preview-request")
     public ApiResponse<RecommendationRequest> previewRequest(
-            @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId,
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
+            @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId) {
 
-        Long currentUserId = CustomUserPrincipal.getUserIdOrNull(principal);
+        Long currentUserId = SecurityUtil.getCurrentUserIdOrNull();
         RecommendationRequest request = recommendationService.previewRequest(sessionId, currentUserId);
         return ApiResponse.success(request);
     }
@@ -176,27 +173,35 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 1,
                                           "displayOrder": 1,
                                           "occasion": "데이트",
                                           "season": "봄",
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
-                                          "totalPrice": 237000,
-                                          "styleBoardUrl": "https://example.com/style1.jpg",
-                                          "items": [
-                                            {
-                                              "itemId": 1,
-                                              "productId": 101,
-                                              "category": "TOP",
-                                              "displayOrder": 1,
-                                              "productName": "오버핏 셔츠",
-                                              "brand": "무신사 스탠다드",
-                                              "price": 59000,
-                                              "imageUrl": "https://example.com/img1.jpg",
-                                              "linkUrl": "https://example.com/product1"
-                                            }
-                                          ]
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14.341658Z",
+                                          "completed_at": "2025-12-15T08:32:17.377304Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Composite image created successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [
+                                              {
+                                                "product_id": 118,
+                                                "category": "TOP",
+                                                "name": "오버핏 옥스포드 셔츠",
+                                                "brand": "무신사 스탠다드",
+                                                "price": 59000,
+                                                "link_url": "https://example.com/product1",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }
@@ -368,16 +373,247 @@ public class RecommendationController {
     })
     @PostMapping("/sessions/{sessionId}/generate")
     public ApiResponse<List<RecommendationSummaryResponse>> generateRecommendation(
-            @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId,
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
+            @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId) {
 
-        // 추천 생성은 로그인 필수
-        if (principal == null) {
-            throw AuthException.unauthorized();
-        }
-
-        Long currentUserId = principal.getUserId();
+        Long currentUserId = SecurityUtil.getCurrentUserIdOrThrow();
         List<Recommendation> recommendations = recommendationService.generateRecommendation(sessionId, currentUserId);
+
+        return ApiResponse.success(
+                recommendations.stream()
+                        .map(RecommendationSummaryResponse::from)
+                        .toList()
+        );
+    }
+
+    @Operation(
+            summary = "코디 추천 재생성",
+            description = """
+                    이미 추천이 생성된 세션에서 새로운 추천을 다시 생성합니다.
+
+                    **인증:** 필수 (로그인 필요)
+
+                    **동작 흐름:**
+                    1. 퀴즈 세션 완료 여부 검증
+                    2. 세션 소유권 확인
+                    3. Python AI 서비스에 추천 요청
+                    4. 새로운 추천 결과 저장 및 반환
+
+                    **참고:** 기존 추천과 별개로 새로운 추천이 추가됩니다.
+                    """)
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "추천 재생성 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "displayOrder": 1,
+                                          "occasion": "출근",
+                                          "season": "봄",
+                                          "style": "미니멀",
+                                          "reason": "깔끔한 오피스 룩입니다.",
+                                          "status": "completed",
+                                          "job_id": "rec-2",
+                                          "created_at": "2025-12-15T09:00:00Z",
+                                          "completed_at": "2025-12-15T09:00:03Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Composite image created successfully",
+                                            "composite_image_url": "https://example.com/composite2.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 189000,
+                                            "items": [...]
+                                          },
+                                          "error": null
+                                        }
+                                      ]
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "퀴즈 미완료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "REC302",
+                                        "message": "퀴즈가 완료되지 않았습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "인증이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "접근 권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "REC401",
+                                        "message": "해당 세션에 접근 권한이 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "REC301",
+                                        "message": "퀴즈 세션을 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "503",
+                    description = "AI 서비스 연결 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "REC101",
+                                        "message": "AI 서비스에 연결할 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "504",
+                    description = "AI 서비스 타임아웃",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "REC102",
+                                        "message": "AI 서비스 응답 시간이 초과되었습니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            )
+    })
+    @PostMapping("/sessions/{sessionId}/regenerate")
+    public ApiResponse<List<RecommendationSummaryResponse>> regenerateRecommendation(
+            @Parameter(description = "완료된 퀴즈 세션 ID") @PathVariable Long sessionId) {
+
+        Long currentUserId = SecurityUtil.getCurrentUserIdOrThrow();
+        List<Recommendation> recommendations = recommendationService.regenerateRecommendation(sessionId, currentUserId);
+
+        return ApiResponse.success(
+                recommendations.stream()
+                        .map(RecommendationSummaryResponse::from)
+                        .toList()
+        );
+    }
+
+    @Operation(
+            summary = "내 추천 히스토리 조회",
+            description = """
+                    현재 로그인한 사용자의 모든 추천 히스토리를 조회합니다.
+
+                    **인증:** 필수 (로그인 필요)
+
+                    **반환:** 최신순 정렬된 추천 목록
+                    """)
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "추천 히스토리 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "displayOrder": 1,
+                                          "occasion": "데이트",
+                                          "season": "봄",
+                                          "style": "캐주얼",
+                                          "reason": "밝은 색감의 캐주얼 룩입니다.",
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14Z",
+                                          "completed_at": "2025-12-15T08:32:14Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Recommendation loaded successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [...]
+                                          },
+                                          "error": null
+                                        }
+                                      ]
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "AUTH_001",
+                                        "message": "인증이 필요합니다"
+                                      }
+                                    }
+                                    """)
+                    )
+            )
+    })
+    @GetMapping("/me")
+    public ApiResponse<List<RecommendationSummaryResponse>> getMyRecommendations() {
+
+        Long currentUserId = SecurityUtil.getCurrentUserIdOrThrow();
+        List<Recommendation> recommendations = recommendationService.getRecommendationsByUser(currentUserId);
 
         return ApiResponse.success(
                 recommendations.stream()
@@ -406,27 +642,35 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 1,
                                           "displayOrder": 1,
                                           "occasion": "데이트",
                                           "season": "봄",
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
-                                          "totalPrice": 237000,
-                                          "styleBoardUrl": "https://example.com/style1.jpg",
-                                          "items": [
-                                            {
-                                              "itemId": 1,
-                                              "productId": 101,
-                                              "category": "TOP",
-                                              "displayOrder": 1,
-                                              "productName": "오버핏 셔츠",
-                                              "brand": "무신사 스탠다드",
-                                              "price": 59000,
-                                              "imageUrl": "https://example.com/img1.jpg",
-                                              "linkUrl": "https://example.com/product1"
-                                            }
-                                          ]
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14Z",
+                                          "completed_at": "2025-12-15T08:32:14Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Recommendation loaded successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [
+                                              {
+                                                "product_id": 118,
+                                                "category": "TOP",
+                                                "name": "오버핏 옥스포드 셔츠",
+                                                "brand": "무신사 스탠다드",
+                                                "price": 59000,
+                                                "link_url": "https://example.com/product1",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }
@@ -468,10 +712,9 @@ public class RecommendationController {
     })
     @GetMapping("/sessions/{sessionId}")
     public ApiResponse<List<RecommendationSummaryResponse>> getRecommendationsBySession(
-            @Parameter(description = "퀴즈 세션 ID") @PathVariable Long sessionId,
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
+            @Parameter(description = "퀴즈 세션 ID") @PathVariable Long sessionId) {
 
-        Long currentUserId = CustomUserPrincipal.getUserIdOrNull(principal);
+        Long currentUserId = SecurityUtil.getCurrentUserIdOrNull();
         List<Recommendation> recommendations = recommendationService.getRecommendationsBySession(sessionId, currentUserId);
 
         return ApiResponse.success(
