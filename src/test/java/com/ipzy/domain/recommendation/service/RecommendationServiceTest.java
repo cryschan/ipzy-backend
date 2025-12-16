@@ -5,6 +5,7 @@ import com.ipzy.domain.quiz.entity.QuizSession;
 import com.ipzy.domain.quiz.repository.QuizSessionRepository;
 import com.ipzy.domain.recommendation.client.AiRecommendationClient;
 import com.ipzy.domain.recommendation.dto.response.OutfitRecommendationDto;
+import com.ipzy.domain.recommendation.dto.response.OutfitResultDto;
 import com.ipzy.domain.recommendation.dto.response.RecommendationResponse;
 import com.ipzy.domain.recommendation.dto.response.RecommendedItemDto;
 import com.ipzy.domain.recommendation.entity.Recommendation;
@@ -84,9 +85,14 @@ class RecommendationServiceTest {
             Long sessionId = 100L;
 
             List<RecommendedItemDto> items = List.of(
-                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1"),
-                    new RecommendedItemDto(2L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2"),
-                    new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3")
+                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1", null),
+                    new RecommendedItemDto(2L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2", null),
+                    new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3", null)
+            );
+
+            OutfitResultDto outfitResult = new OutfitResultDto(
+                    true, "Composite image created successfully",
+                    "https://example.com/style_board1.jpg", 1200, 1600, 237000, items
             );
 
             RecommendationResponse aiResponse = new RecommendationResponse(
@@ -94,7 +100,8 @@ class RecommendationServiceTest {
                             new OutfitRecommendationDto(
                                     1, "데이트", "봄", "캐주얼",
                                     "밝은 색감의 캐주얼 룩입니다.",
-                                    237000, "https://example.com/style_board1.jpg", items
+                                    "completed", "job-123", "2025-12-15T08:32:14Z", "2025-12-15T08:32:17Z",
+                                    outfitResult, null
                             )
                     )
             );
@@ -113,12 +120,12 @@ class RecommendationServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
 
             // When
-            List<Recommendation> result = recommendationService.generateRecommendation(sessionId, currentUserId);
+            List<Recommendation> recommendations = recommendationService.generateRecommendation(sessionId, currentUserId);
 
             // Then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getOccasion()).isEqualTo("데이트");
-            assertThat(result.get(0).getStyle()).isEqualTo("캐주얼");
+            assertThat(recommendations).hasSize(1);
+            assertThat(recommendations.get(0).getOccasion()).isEqualTo("데이트");
+            assertThat(recommendations.get(0).getStyle()).isEqualTo("캐주얼");
             verify(recommendationRepository).saveAll(anyList());
         }
 
@@ -190,7 +197,12 @@ class RecommendationServiceTest {
             Long sessionId = 100L;
 
             List<RecommendedItemDto> items = List.of(
-                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1")
+                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1", null)
+            );
+
+            OutfitResultDto outfitResult = new OutfitResultDto(
+                    true, "Composite image created successfully",
+                    "https://example.com/style_board2.jpg", 1200, 1600, 59000, items
             );
 
             RecommendationResponse aiResponse = new RecommendationResponse(
@@ -198,7 +210,8 @@ class RecommendationServiceTest {
                             new OutfitRecommendationDto(
                                     1, "출근", "봄", "미니멀",
                                     "깔끔한 오피스 룩입니다.",
-                                    59000, "https://example.com/style_board2.jpg", items
+                                    "completed", "job-456", "2025-12-15T08:32:14Z", "2025-12-15T08:32:17Z",
+                                    outfitResult, null
                             )
                     )
             );
@@ -216,12 +229,12 @@ class RecommendationServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
 
             // When
-            List<Recommendation> result = recommendationService.regenerateRecommendation(sessionId, currentUserId);
+            List<Recommendation> recommendations = recommendationService.regenerateRecommendation(sessionId, currentUserId);
 
             // Then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getOccasion()).isEqualTo("출근");
-            assertThat(result.get(0).getStyle()).isEqualTo("미니멀");
+            assertThat(recommendations).hasSize(1);
+            assertThat(recommendations.get(0).getOccasion()).isEqualTo("출근");
+            assertThat(recommendations.get(0).getStyle()).isEqualTo("미니멀");
             verify(recommendationRepository).saveAll(anyList());
             // 중복 체크하지 않음 확인
             verify(recommendationRepository, never()).existsBySessionId(anyLong());

@@ -48,12 +48,27 @@ public class RecommendationItem extends BaseEntity {
     @Column(name = "link_url_snapshot", length = 500)
     private String linkUrlSnapshot;
 
+    // Position 필드 (스타일보드 이미지 내 위치)
+    @Column(name = "position_x")
+    private Integer positionX;
+
+    @Column(name = "position_y")
+    private Integer positionY;
+
+    @Column(name = "position_width")
+    private Integer positionWidth;
+
+    @Column(name = "position_height")
+    private Integer positionHeight;
+
     @Builder
     public RecommendationItem(Recommendation recommendation, Long productId,
                               ClothingCategory category, Integer displayOrder,
                               String productNameSnapshot, String brandSnapshot,
                               Integer priceSnapshot, String imageUrlSnapshot,
-                              String linkUrlSnapshot) {
+                              String linkUrlSnapshot,
+                              Integer positionX, Integer positionY,
+                              Integer positionWidth, Integer positionHeight) {
         this.recommendation = recommendation;
         this.productId = productId;
         this.category = category;
@@ -63,6 +78,10 @@ public class RecommendationItem extends BaseEntity {
         this.priceSnapshot = priceSnapshot != null ? priceSnapshot : 0;
         this.imageUrlSnapshot = imageUrlSnapshot;
         this.linkUrlSnapshot = linkUrlSnapshot;
+        this.positionX = positionX;
+        this.positionY = positionY;
+        this.positionWidth = positionWidth;
+        this.positionHeight = positionHeight;
     }
 
     void setRecommendation(Recommendation recommendation) {

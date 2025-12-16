@@ -173,27 +173,35 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 1,
                                           "displayOrder": 1,
                                           "occasion": "데이트",
                                           "season": "봄",
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
-                                          "totalPrice": 237000,
-                                          "styleBoardUrl": "https://example.com/style1.jpg",
-                                          "items": [
-                                            {
-                                              "itemId": 1,
-                                              "productId": 101,
-                                              "category": "TOP",
-                                              "displayOrder": 1,
-                                              "productName": "오버핏 셔츠",
-                                              "brand": "무신사 스탠다드",
-                                              "price": 59000,
-                                              "imageUrl": "https://example.com/img1.jpg",
-                                              "linkUrl": "https://example.com/product1"
-                                            }
-                                          ]
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14.341658Z",
+                                          "completed_at": "2025-12-15T08:32:17.377304Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Composite image created successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [
+                                              {
+                                                "product_id": 118,
+                                                "category": "TOP",
+                                                "name": "오버핏 옥스포드 셔츠",
+                                                "brand": "무신사 스탠다드",
+                                                "price": 59000,
+                                                "link_url": "https://example.com/product1",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }
@@ -353,14 +361,25 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 2,
                                           "displayOrder": 1,
                                           "occasion": "출근",
                                           "season": "봄",
                                           "style": "미니멀",
                                           "reason": "깔끔한 오피스 룩입니다.",
-                                          "totalPrice": 189000,
-                                          "items": [...]
+                                          "status": "completed",
+                                          "job_id": "rec-2",
+                                          "created_at": "2025-12-15T09:00:00Z",
+                                          "completed_at": "2025-12-15T09:00:03Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Composite image created successfully",
+                                            "composite_image_url": "https://example.com/composite2.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 189000,
+                                            "items": [...]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }
@@ -498,14 +517,25 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 1,
                                           "displayOrder": 1,
                                           "occasion": "데이트",
                                           "season": "봄",
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
-                                          "totalPrice": 237000,
-                                          "items": [...]
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14Z",
+                                          "completed_at": "2025-12-15T08:32:14Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Recommendation loaded successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [...]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }
@@ -562,14 +592,35 @@ public class RecommendationController {
                                       "success": true,
                                       "data": [
                                         {
-                                          "recommendationId": 1,
                                           "displayOrder": 1,
                                           "occasion": "데이트",
                                           "season": "봄",
                                           "style": "캐주얼",
                                           "reason": "밝은 색감의 캐주얼 룩입니다.",
-                                          "totalPrice": 237000,
-                                          "items": [...]
+                                          "status": "completed",
+                                          "job_id": "rec-1",
+                                          "created_at": "2025-12-15T08:32:14Z",
+                                          "completed_at": "2025-12-15T08:32:14Z",
+                                          "result": {
+                                            "success": true,
+                                            "message": "Recommendation loaded successfully",
+                                            "composite_image_url": "https://example.com/composite.png",
+                                            "image_width": 1200,
+                                            "image_height": 1600,
+                                            "total_price": 237000,
+                                            "items": [
+                                              {
+                                                "product_id": 118,
+                                                "category": "TOP",
+                                                "name": "오버핏 옥스포드 셔츠",
+                                                "brand": "무신사 스탠다드",
+                                                "price": 59000,
+                                                "link_url": "https://example.com/product1",
+                                                "position": { "x": 60, "y": 100, "width": 480, "height": 576 }
+                                              }
+                                            ]
+                                          },
+                                          "error": null
                                         }
                                       ]
                                     }

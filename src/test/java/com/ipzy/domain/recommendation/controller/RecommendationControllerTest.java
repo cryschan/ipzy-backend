@@ -144,9 +144,10 @@ class RecommendationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data").isArray())
-                    .andExpect(jsonPath("$.data[0].recommendationId").value(1))
+                    .andExpect(jsonPath("$.data[0].job_id").value("rec-1"))
                     .andExpect(jsonPath("$.data[0].occasion").value("데이트"))
-                    .andExpect(jsonPath("$.data[0].style").value("캐주얼"));
+                    .andExpect(jsonPath("$.data[0].style").value("캐주얼"))
+                    .andExpect(jsonPath("$.data[0].status").value("completed"));
         }
 
         @Test
@@ -210,9 +211,10 @@ class RecommendationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data").isArray())
-                    .andExpect(jsonPath("$.data[0].recommendationId").value(2))
+                    .andExpect(jsonPath("$.data[0].job_id").value("rec-2"))
                     .andExpect(jsonPath("$.data[0].occasion").value("출근"))
-                    .andExpect(jsonPath("$.data[0].style").value("미니멀"));
+                    .andExpect(jsonPath("$.data[0].style").value("미니멀"))
+                    .andExpect(jsonPath("$.data[0].status").value("completed"));
         }
 
         @Test
