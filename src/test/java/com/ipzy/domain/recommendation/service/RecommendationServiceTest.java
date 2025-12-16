@@ -83,18 +83,18 @@ class RecommendationServiceTest {
             // Given
             Long sessionId = 100L;
 
+            List<RecommendedItemDto> items = List.of(
+                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1"),
+                    new RecommendedItemDto(2L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2"),
+                    new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3")
+            );
+
             RecommendationResponse aiResponse = new RecommendationResponse(
                     List.of(
                             new OutfitRecommendationDto(
                                     1, "데이트", "봄", "캐주얼",
                                     "밝은 색감의 캐주얼 룩입니다.",
-                                    237000,
-                                    "https://example.com/style_board1.jpg",
-                                    List.of(
-                                            new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1"),
-                                            new RecommendedItemDto(2L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2"),
-                                            new RecommendedItemDto(3L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3")
-                                    )
+                                    237000, "https://example.com/style_board1.jpg", items
                             )
                     )
             );
@@ -180,15 +180,120 @@ class RecommendationServiceTest {
     }
 
     @Nested
-    @DisplayName("getRecommendationsBySession")
-    class GetRecommendationsBySession {
+    @DisplayName("regenerateRecommendation")
+    class RegenerateRecommendation {
 
         @Test
-        @DisplayName("성공 - 세션별 추천 조회")
-        void success() {
+        @DisplayName("성공 - 이미 추천이 있어도 새로운 추천 생성")
+        void success_evenIfRecommendationExists() {
+            // Given
+            Long sessionId = 100L;
+
+            List<RecommendedItemDto> items = List.of(
+                    new RecommendedItemDto(1L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1")
+            );
+
+            RecommendationResponse aiResponse = new RecommendationResponse(
+                    List.of(
+                            new OutfitRecommendationDto(
+                                    1, "출근", "봄", "미니멀",
+                                    "깔끔한 오피스 룩입니다.",
+                                    59000, "https://example.com/style_board2.jpg", items
+                            )
+                    )
+            );
+
+            Long currentUserId = 1L;
+
+            given(quizSessionRepository.findByIdWithAnswers(sessionId))
+                    .willReturn(Optional.of(completedSession));
+            given(userService.findActiveUser(currentUserId))
+                    .willReturn(user);
+            // existsBySessionId 호출하지 않음 - regenerate는 중복 체크 없음
+            given(aiClient.requestRecommendation(any()))
+                    .willReturn(aiResponse);
+            given(recommendationRepository.saveAll(anyList()))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // When
+            List<Recommendation> result = recommendationService.regenerateRecommendation(sessionId, currentUserId);
+
+            // Then
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getOccasion()).isEqualTo("출근");
+            assertThat(result.get(0).getStyle()).isEqualTo("미니멀");
+            verify(recommendationRepository).saveAll(anyList());
+            // 중복 체크하지 않음 확인
+            verify(recommendationRepository, never()).existsBySessionId(anyLong());
+        }
+
+        @Test
+        @DisplayName("실패 - 세션 없음")
+        void fail_sessionNotFound() {
+            // Given
+            Long sessionId = 999L;
+            Long currentUserId = 1L;
+            given(quizSessionRepository.findByIdWithAnswers(sessionId))
+                    .willReturn(Optional.empty());
+
+            // When & Then
+            assertThatThrownBy(() -> recommendationService.regenerateRecommendation(sessionId, currentUserId))
+                    .isInstanceOf(RecommendationException.class)
+                    .hasMessageContaining("세션");
+        }
+
+        @Test
+        @DisplayName("실패 - 세션 미완료")
+        void fail_sessionNotCompleted() {
             // Given
             Long sessionId = 100L;
             Long currentUserId = 1L;
+            QuizSession incompleteSession = QuizSession.builder()
+                    .user(user)
+                    .quiz(quiz)
+                    .build();
+            ReflectionTestUtils.setField(incompleteSession, "id", sessionId);
+
+            given(quizSessionRepository.findByIdWithAnswers(sessionId))
+                    .willReturn(Optional.of(incompleteSession));
+
+            // When & Then
+            assertThatThrownBy(() -> recommendationService.regenerateRecommendation(sessionId, currentUserId))
+                    .isInstanceOf(RecommendationException.class)
+                    .hasMessageContaining("세션");
+        }
+
+        @Test
+        @DisplayName("실패 - 다른 사용자 세션 접근")
+        void fail_accessDenied() {
+            // Given
+            Long sessionId = 100L;
+            Long currentUserId = 999L; // 다른 사용자
+
+            User otherUser = mock(User.class);
+            when(otherUser.getId()).thenReturn(currentUserId);
+
+            given(quizSessionRepository.findByIdWithAnswers(sessionId))
+                    .willReturn(Optional.of(completedSession));
+            given(userService.findActiveUser(currentUserId))
+                    .willReturn(otherUser);
+
+            // When & Then
+            assertThatThrownBy(() -> recommendationService.regenerateRecommendation(sessionId, currentUserId))
+                    .isInstanceOf(RecommendationException.class)
+                    .hasMessageContaining("권한");
+        }
+    }
+
+    @Nested
+    @DisplayName("getRecommendationsByUser")
+    class GetRecommendationsByUser {
+
+        @Test
+        @DisplayName("성공 - 사용자별 추천 조회")
+        void success() {
+            // Given
+            Long userId = 1L;
             Recommendation recommendation = Recommendation.builder()
                     .session(completedSession)
                     .user(user)
@@ -197,17 +302,30 @@ class RecommendationServiceTest {
                     .build();
             ReflectionTestUtils.setField(recommendation, "id", 1L);
 
-            given(quizSessionRepository.findById(sessionId))
-                    .willReturn(Optional.of(completedSession));
-            given(recommendationRepository.findBySessionIdWithItems(sessionId))
+            given(recommendationRepository.findByUserIdWithItems(userId))
                     .willReturn(List.of(recommendation));
 
             // When
-            List<Recommendation> result = recommendationService.getRecommendationsBySession(sessionId, currentUserId);
+            List<Recommendation> result = recommendationService.getRecommendationsByUser(userId);
 
             // Then
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getOccasion()).isEqualTo("데이트");
+        }
+
+        @Test
+        @DisplayName("성공 - 추천 없으면 빈 리스트 반환")
+        void success_emptyList() {
+            // Given
+            Long userId = 999L;
+            given(recommendationRepository.findByUserIdWithItems(userId))
+                    .willReturn(List.of());
+
+            // When
+            List<Recommendation> result = recommendationService.getRecommendationsByUser(userId);
+
+            // Then
+            assertThat(result).isEmpty();
         }
     }
 }

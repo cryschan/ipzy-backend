@@ -23,19 +23,16 @@ class OutfitRecommendationDtoTest {
         @DisplayName("성공 - DTO를 Recommendation 엔티티로 변환한다")
         void success() {
             // Given
+            List<RecommendedItemDto> items = List.of(
+                    new RecommendedItemDto(101L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1"),
+                    new RecommendedItemDto(102L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2"),
+                    new RecommendedItemDto(103L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3")
+            );
+
             OutfitRecommendationDto dto = new OutfitRecommendationDto(
-                    1,
-                    "데이트",
-                    "봄",
-                    "캐주얼",
+                    1, "데이트", "봄", "캐주얼",
                     "밝은 색감의 캐주얼 룩으로 데이트에 적합합니다.",
-                    237000,
-                    "https://example.com/style_board1.jpg",
-                    List.of(
-                            new RecommendedItemDto(101L, "TOP", "오버핏 셔츠", "무신사 스탠다드", 59000, "https://example.com/img1.jpg", "https://example.com/product1"),
-                            new RecommendedItemDto(102L, "BOTTOM", "와이드 팬츠", "커버낫", 79000, "https://example.com/img2.jpg", "https://example.com/product2"),
-                            new RecommendedItemDto(103L, "SHOES", "화이트 스니커즈", "나이키", 99000, "https://example.com/img3.jpg", "https://example.com/product3")
-                    )
+                    237000, "https://example.com/style_board1.jpg", items
             );
 
             QuizSession session = mock(QuizSession.class);
@@ -61,14 +58,9 @@ class OutfitRecommendationDtoTest {
         void success_anonymousUser() {
             // Given
             OutfitRecommendationDto dto = new OutfitRecommendationDto(
-                    2,
-                    "출근",
-                    "가을",
-                    "포멀",
+                    2, "출근", "가을", "포멀",
                     "깔끔한 포멀 룩입니다.",
-                    180000,
-                    "https://example.com/style_board2.jpg",
-                    List.of()
+                    180000, "https://example.com/style_board2.jpg", List.of()
             );
 
             QuizSession session = mock(QuizSession.class);
@@ -87,14 +79,9 @@ class OutfitRecommendationDtoTest {
         void success_emptyItems() {
             // Given
             OutfitRecommendationDto dto = new OutfitRecommendationDto(
-                    1,
-                    "일상",
-                    "여름",
-                    "미니멀",
+                    1, "일상", "여름", "미니멀",
                     "심플한 미니멀 룩입니다.",
-                    0,
-                    null,
-                    List.of()
+                    0, null, List.of()
             );
 
             QuizSession session = mock(QuizSession.class);
@@ -105,6 +92,26 @@ class OutfitRecommendationDtoTest {
 
             // Then
             assertThat(recommendation.getItems()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("성공 - totalPrice가 null이면 0으로 처리")
+        void success_nullTotalPrice() {
+            // Given
+            OutfitRecommendationDto dto = new OutfitRecommendationDto(
+                    1, "일상", "여름", "캐주얼",
+                    "캐주얼 룩입니다.",
+                    null, null, List.of()
+            );
+
+            QuizSession session = mock(QuizSession.class);
+            User user = mock(User.class);
+
+            // When
+            Recommendation recommendation = dto.toEntity(session, user);
+
+            // Then
+            assertThat(recommendation.getTotalPrice()).isEqualTo(0);
         }
     }
 }
