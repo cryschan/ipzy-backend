@@ -44,14 +44,6 @@ public class SubscriptionService {
         return subscriptionPlanService.findAll();
     }
 
-    /**
-     * 플랜 이름으로 조회
-     * @param name 플랜 이름 (예: "FREE", "BASIC", "PRO")
-     * @return 플랜 정보
-     */
-    public SubscriptionPlanResponse findPlanByName(String name) {
-        return subscriptionPlanService.findByName(name);
-    }
 
     /**
      * ⭐ 내 구독 조회 (순수 조회만)
