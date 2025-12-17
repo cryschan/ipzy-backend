@@ -36,7 +36,7 @@ public class Subscription extends BaseEntity {
     @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")  // nullable = true (FREE 플랜은 null)
     private LocalDateTime endDate;
 
     @Column(name = "auto_renew", nullable = false)
@@ -94,12 +94,28 @@ public class Subscription extends BaseEntity {
     }
 
     public boolean isActive() {
-        return this.status == SubscriptionStatus.ACTIVE &&
-               LocalDateTime.now().isBefore(this.endDate);
+        if (this.status != SubscriptionStatus.ACTIVE) {
+            return false;
+        }
+
+        // endDate가 null이면 영구 활성 (FREE 플랜)
+        if (this.endDate == null) {
+            return true;
+        }
+
+        return LocalDateTime.now().isBefore(this.endDate);
     }
 
     public boolean isExpired() {
-        return this.status == SubscriptionStatus.EXPIRED ||
-               LocalDateTime.now().isAfter(this.endDate);
+        if (this.status == SubscriptionStatus.EXPIRED) {
+            return true;
+        }
+
+        // endDate가 null이면 만료 안 됨 (FREE 플랜)
+        if (this.endDate == null) {
+            return false;
+        }
+
+        return LocalDateTime.now().isAfter(this.endDate);
     }
 }
