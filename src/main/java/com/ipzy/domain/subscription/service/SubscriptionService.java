@@ -155,44 +155,72 @@ public class SubscriptionService {
 
     /**
      * FREE 플랜으로 구독 시작 (내부용)
+     * FREE 플랜은 endDate = null (영구)
      */
     private Subscription startFreeSubscription(User user) {
         SubscriptionPlan freePlan = subscriptionPlanService
                 .findEntityByName(DEFAULT_FREE_PLAN_NAME);
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endDate = calculateEndDate(freePlan, now);
 
         Subscription subscription = Subscription.builder()
                 .user(user)
                 .plan(freePlan)
                 .status(SubscriptionStatus.ACTIVE)
                 .startDate(now)
-                .endDate(endDate)
-                .autoRenew(true)
+                .endDate(null)  // ⭐ FREE 플랜은 영구 (endDate = null)
+                .autoRenew(false)  // FREE는 자동 갱신 불필요
                 .build();
 
         return subscriptionRepository.save(subscription);
     }
 
     /**
-     * 구독 만료 확인 및 처리
+     * 구독 만료 확인 및 FREE로 다운그레이드
+     * 유료 플랜 만료 시 → FREE 플랜으로 자동 다운그레이드
+     * FREE 플랜은 endDate = null이므로 만료 안 됨
      */
     private void expireIfNeeded(Subscription subscription) {
+        // endDate가 null이면 FREE 플랜 (만료 없음)
+        if (subscription.getEndDate() == null) {
+            return;
+        }
+
+        // ACTIVE 상태이고 endDate가 지났으면 다운그레이드
         if (subscription.getStatus() == SubscriptionStatus.ACTIVE
             && LocalDateTime.now().isAfter(subscription.getEndDate())) {
-            log.info("구독 만료 처리: subscriptionId={}", subscription.getId());
-            subscription.expire();
+
+            log.info("유료 플랜 만료 → FREE로 다운그레이드: subscriptionId={}",
+                     subscription.getId());
+
+            // ⭐ FREE 플랜으로 다운그레이드
+            SubscriptionPlan freePlan = subscriptionPlanService
+                    .findEntityByName(DEFAULT_FREE_PLAN_NAME);
+
+            LocalDateTime now = LocalDateTime.now();
+            subscription.updatePlan(
+                    freePlan,
+                    SubscriptionStatus.ACTIVE,  // status는 ACTIVE 유지
+                    now,
+                    null,  // endDate = null (영구)
+                    false
+            );
         }
     }
 
     /**
      * 종료일 계산
+     * FREE 플랜: null (영구)
+     * BASIC/PRO: 결제 주기에 따라 계산
      */
     private LocalDateTime calculateEndDate(SubscriptionPlan plan, LocalDateTime startDate) {
+        // ⭐ FREE 플랜은 endDate = null (영구)
+        if (plan.getPrice() == 0) {
+            return null;
+        }
+
         if (plan.getBillingPeriod() == null) {
-            // 무료 플랜은 100년 (사실상 영구)
-            return startDate.plusYears(100);
+            return startDate.plusMonths(1);  // 기본 1개월
         }
 
         return switch (plan.getBillingPeriod()) {
