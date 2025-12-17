@@ -47,6 +47,11 @@ public class QuizController {
                     
                     **참고:**
                     - 질문과 옵션 정보가 필요한 경우 `GET /api/quizzes/{quizId}/questions` API를 사용하세요.
+                    
+                    **에러 코드:**
+                    | 코드 | HTTP | 설명 |
+                    |------|------|------|
+                    | QUIZ_019 | 500 | 퀴즈 목록을 조회할 수 없습니다 |
                     """
     )
     @ApiResponses({
@@ -75,13 +80,30 @@ public class QuizController {
                                     }
                                     """)
                     )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "퀴즈 목록 조회 실패 (QUIZ_019)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "QUIZ_019",
+                                        "message": "퀴즈 목록을 조회할 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     public ApiResponse<List<QuizListResponse>> getQuizzes() {
         return ApiResponse.success(quizService.getActiveQuizzes());
     }
 
-    // 퀴즈 세션 시작 API (비회원 가능)
+
+    // 퀴즈 세션 시작 API
     @PostMapping("/{quizId}/sessions")
     @Operation(
             summary = "퀴즈 세션 시작",
@@ -105,45 +127,35 @@ public class QuizController {
                     description = "세션 시작 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = {
-                                    @ExampleObject(
-                                            name = "로그인 사용자",
-                                            summary = "로그인한 사용자의 세션 생성",
-                                            value = """
-                                                    {
-                                                      "success": true,
-                                                      "data": {
-                                                        "sessionId": 1,
-                                                        "userId": 1,
-                                                        "quizId": 1,
-                                                        "completed": false,
-                                                        "createdAt": "2025-01-15T10:23:45"
-                                                      }
-                                                    }
-                                                    """
-                                    ),
-                                    @ExampleObject(
-                                            name = "비로그인 사용자",
-                                            summary = "비로그인 사용자의 익명 세션 생성",
-                                            value = """
-                                                    {
-                                                      "success": true,
-                                                      "data": {
-                                                        "sessionId": 2,
-                                                        "userId": null,
-                                                        "quizId": 1,
-                                                        "completed": false,
-                                                        "createdAt": "2025-01-15T10:23:45"
-                                                      }
-                                                    }
-                                                    """
-                                    )
-                            }
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "sessionId": 1,
+                                        "userId": 1,
+                                        "quizId": 1,
+                                        "completed": false,
+                                        "createdAt": "2025-01-15T10:23:45"
+                                      }
+                                    }
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
+                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "QUIZ_001",
+                                        "message": "퀴즈를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     public ApiResponse<QuizSessionStartResponse> startQuiz(
@@ -153,6 +165,7 @@ public class QuizController {
         Long userId = principal != null ? principal.getUserId() : null;
         return ApiResponse.success(quizService.startQuiz(quizId, userId));
     }
+
 
     // 특정 퀴즈의 전체 질문 조회 API
     @GetMapping("/{quizId}/questions")
@@ -241,7 +254,19 @@ public class QuizController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)"
+                    description = "퀴즈를 찾을 수 없음 (QUIZ_001)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "error": {
+                                        "code": "QUIZ_001",
+                                        "message": "퀴즈를 찾을 수 없습니다"
+                                      }
+                                    }
+                                    """)
+                    )
             )
     })
     public ApiResponse<List<QuizQuestionResponse>> getQuestions(
