@@ -1,6 +1,5 @@
 package com.ipzy.domain.subscription.service;
 
-import com.ipzy._global.common.enums.BillingPeriod;
 import com.ipzy._global.common.enums.SubscriptionStatus;
 import com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest;
 import com.ipzy.domain.subscription.dto.Response.SubscriptionPlanResponse;
@@ -77,7 +76,7 @@ public class SubscriptionService {
      */
     @Transactional
     public Subscription ensureDefaultSubscription(Long userId) {
-        User user = findUserById(userId);
+        User user = userRepository.findByIdForUpdate(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         Optional<Subscription> latest = subscriptionRepository
                 .findTopByUserOrderByCreatedAtDesc(user);

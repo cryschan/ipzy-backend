@@ -45,10 +45,10 @@ class SubscriptionConcurrencyTest {
         // given
         User user = userRepository.save(
             User.builder()
-                .email("test@test.com")
+                .email("test11@test.com")
                 .name("test")
                 .provider("GOOGLE")
-                .providerId("test-123")
+                .providerId("test-12311")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .build()
@@ -100,6 +100,9 @@ class SubscriptionConcurrencyTest {
         List<Subscription> validSubscriptions = subscriptionRepository
             .findAllByUserOrderByCreatedAtDesc(user);
 
+        System.out.println("validSubscriptions: " + validSubscriptions.size());
+        validSubscriptions.forEach(System.out::println);
+
         long activeOrPendingCount = validSubscriptions.stream()
             .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE
                       || s.getStatus() == SubscriptionStatus.PENDING)
@@ -120,8 +123,8 @@ class SubscriptionConcurrencyTest {
     }
 
     @Test
-    @DisplayName("구독이 이미 있는 경우 동시 요청해도 같은 구독을 반환한다")
-    void concurrentCreate_createsSingleSubscription() throws Exception {
+    @DisplayName("구독이 이미 있는 경우 ensureDefaultSubscription 동시 요청해도 같은 구독을 반환한다")
+    void concurrentEnsure_returnsSameSubscription() throws Exception {
         // given
         User user = userRepository.save(
             User.builder()
@@ -182,5 +185,115 @@ class SubscriptionConcurrencyTest {
 
         assertThat(validCount).isEqualTo(1);
         assertThat(subscriptions.getFirst().getId()).isEqualTo(existingSubscriptionId);
+    }
+
+    @Test
+    @DisplayName("⚠️ 구독이 이미 있는 상태에서 플랜 변경을 동시에 요청하면 race condition 발생")
+    void concurrentPlanChange_shouldHandleRaceCondition() throws Exception {
+        // given
+        User user = userRepository.save(
+            User.builder()
+                .email("planchange@test.com")
+                .name("planchange")
+                .provider("GOOGLE")
+                .providerId("planchange-789")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build()
+        );
+
+        // FREE 구독 생성
+        Subscription freeSubscription = subscriptionService.ensureDefaultSubscription(user.getId());
+        assertThat(freeSubscription.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
+        assertThat(freeSubscription.getPlan().getName()).isEqualTo("FREE");
+
+        // BASIC 플랜 조회
+        Long basicPlanId = subscriptionService.findAllPlans().stream()
+            .filter(p -> "BASIC".equals(p.name()))
+            .findFirst()
+            .orElseThrow()
+            .id();
+
+        int threadCount = 10;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+
+        CountDownLatch readyLatch = new CountDownLatch(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger pendingCount = new AtomicInteger(0);
+        AtomicInteger errorCount = new AtomicInteger(0);
+
+        // when: FREE → BASIC 플랜 변경을 동시에 요청
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    readyLatch.countDown();
+                    startLatch.await();
+
+                    // ⚠️ 실제 비즈니스 시나리오: 플랜 변경 신청
+                    com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest request =
+                        new com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest(basicPlanId);
+
+                    com.ipzy.domain.subscription.dto.Response.SubscriptionResponse response =
+                        subscriptionService.createSubscription(user.getId(), request);
+
+                    successCount.incrementAndGet();
+
+                    if (response.status() == SubscriptionStatus.PENDING) {
+                        pendingCount.incrementAndGet();
+                    }
+
+                } catch (Exception e) {
+                    errorCount.incrementAndGet();
+                    System.err.println("❌ Error in thread: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        readyLatch.await();
+        startLatch.countDown();  // ⭐ 동시에 플랜 변경 시작!
+        doneLatch.await();
+
+        executorService.shutdown();
+
+        // then: 결과 출력
+        System.out.println("\n=== 플랜 변경 동시성 테스트 결과 ===");
+        System.out.println("성공: " + successCount.get());
+        System.out.println("PENDING 상태: " + pendingCount.get());
+        System.out.println("에러: " + errorCount.get());
+
+        List<Subscription> subscriptions = subscriptionRepository
+            .findAllByUserOrderByCreatedAtDesc(user);
+
+        System.out.println("전체 구독 수: " + subscriptions.size());
+
+        // 구독 상태 출력
+        subscriptions.forEach(s -> {
+            System.out.println("  - ID: " + s.getId() +
+                             ", Plan: " + s.getPlan().getName() +
+                             ", Status: " + s.getStatus() +
+                             ", Created: " + s.getCreatedAt());
+        });
+
+        long pendingSubscriptions = subscriptions.stream()
+            .filter(s -> s.getStatus() == SubscriptionStatus.PENDING)
+            .count();
+
+        System.out.println("PENDING 상태 구독 수: " + pendingSubscriptions);
+
+        // ⭐ 핵심 검증: PENDING 상태는 1개만 있어야 함
+        assertThat(pendingSubscriptions)
+            .as("⚠️ Race condition 발생 시 여러 PENDING 구독이 생성될 수 있음")
+            .isLessThanOrEqualTo(1);
+
+        // ⚠️ 이 assertion이 실패하면 race condition이 발생한 것!
+        assertThat(subscriptions.size())
+            .as("⚠️ 동일한 구독이 수정되어야 하므로 구독은 1개만 존재해야 함")
+            .isEqualTo(1);
     }
 }
