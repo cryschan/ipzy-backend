@@ -7,6 +7,7 @@ import com.ipzy.domain.quiz.dto.QuizQuestionResponse;
 import com.ipzy.domain.quiz.dto.QuizSessionStartResponse;
 import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -160,7 +161,7 @@ public class QuizController {
     })
     public ApiResponse<QuizSessionStartResponse> startQuiz(
             @PathVariable Long quizId,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         Long userId = principal != null ? principal.getUserId() : null;
         return ApiResponse.success(quizService.startQuiz(quizId, userId));
