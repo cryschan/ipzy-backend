@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -176,7 +177,7 @@ public class QuizSessionController {
     )
     public ApiResponse<QuizAnswerResponse> saveAnswer(
             @PathVariable Long sessionId,
-            @RequestBody QuizAnswerRequest request
+            @Valid @RequestBody QuizAnswerRequest request
     ) {
         return ApiResponse.success(quizService.saveOrUpdateAnswer(sessionId, request));
     }
