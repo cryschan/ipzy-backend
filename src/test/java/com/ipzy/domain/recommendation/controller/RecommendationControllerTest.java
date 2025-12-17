@@ -144,9 +144,10 @@ class RecommendationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data").isArray())
-                    .andExpect(jsonPath("$.data[0].recommendationId").value(1))
+                    .andExpect(jsonPath("$.data[0].job_id").value("rec-1"))
                     .andExpect(jsonPath("$.data[0].occasion").value("데이트"))
-                    .andExpect(jsonPath("$.data[0].style").value("캐주얼"));
+                    .andExpect(jsonPath("$.data[0].style").value("캐주얼"))
+                    .andExpect(jsonPath("$.data[0].status").value("completed"));
         }
 
         @Test
@@ -181,14 +182,97 @@ class RecommendationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/recommendations/sessions/{sessionId}")
-    class GetRecommendationsBySession {
+    @DisplayName("POST /api/recommendations/sessions/{sessionId}/regenerate")
+    class RegenerateRecommendation {
 
         @Test
-        @DisplayName("성공 - 세션별 추천 조회")
+        @DisplayName("성공 - 추천 재생성")
         void success() throws Exception {
             // Given
             Long sessionId = 100L;
+            Recommendation recommendation = Recommendation.builder()
+                    .displayOrder(1)
+                    .occasion("출근")
+                    .season("봄")
+                    .style("미니멀")
+                    .reason("깔끔한 오피스 룩입니다.")
+                    .totalPrice(189000)
+                    .build();
+            ReflectionTestUtils.setField(recommendation, "id", 2L);
+
+            given(recommendationService.regenerateRecommendation(anyLong(), any()))
+                    .willReturn(List.of(recommendation));
+
+            // When & Then
+            mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/regenerate", sessionId)
+                            .with(oauth2Login().oauth2User(createTestPrincipal()))
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.data[0].job_id").value("rec-2"))
+                    .andExpect(jsonPath("$.data[0].occasion").value("출근"))
+                    .andExpect(jsonPath("$.data[0].style").value("미니멀"))
+                    .andExpect(jsonPath("$.data[0].status").value("completed"));
+        }
+
+        @Test
+        @DisplayName("실패 - 세션 없음")
+        void fail_sessionNotFound() throws Exception {
+            // Given
+            Long sessionId = 999L;
+            given(recommendationService.regenerateRecommendation(anyLong(), any()))
+                    .willThrow(RecommendationException.sessionNotFound(sessionId));
+
+            // When & Then
+            mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/regenerate", sessionId)
+                            .with(oauth2Login().oauth2User(createTestPrincipal()))
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+
+        @Test
+        @DisplayName("실패 - 비로그인 사용자 401")
+        void fail_unauthorized() throws Exception {
+            // Given
+            Long sessionId = 100L;
+
+            // When & Then - 인증 없이 요청
+            mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/regenerate", sessionId)
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("실패 - 다른 사용자 세션 접근")
+        void fail_accessDenied() throws Exception {
+            // Given
+            Long sessionId = 100L;
+            given(recommendationService.regenerateRecommendation(anyLong(), any()))
+                    .willThrow(RecommendationException.accessDenied(sessionId));
+
+            // When & Then
+            mockMvc.perform(post("/api/recommendations/sessions/{sessionId}/regenerate", sessionId)
+                            .with(oauth2Login().oauth2User(createTestPrincipal()))
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/recommendations/me")
+    class GetMyRecommendations {
+
+        @Test
+        @DisplayName("성공 - 내 추천 히스토리 조회")
+        void success() throws Exception {
+            // Given
             Recommendation recommendation = Recommendation.builder()
                     .displayOrder(1)
                     .occasion("데이트")
@@ -199,12 +283,12 @@ class RecommendationControllerTest {
                     .build();
             ReflectionTestUtils.setField(recommendation, "id", 1L);
 
-            given(recommendationService.getRecommendationsBySession(anyLong(), any()))
+            given(recommendationService.getRecommendationsByUser(anyLong()))
                     .willReturn(List.of(recommendation));
 
             // When & Then
-            mockMvc.perform(get("/api/recommendations/sessions/{sessionId}", sessionId)
-                            .with(user("testuser")))
+            mockMvc.perform(get("/api/recommendations/me")
+                            .with(oauth2Login().oauth2User(createTestPrincipal())))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
@@ -216,18 +300,27 @@ class RecommendationControllerTest {
         @DisplayName("성공 - 추천 없는 경우 빈 배열 반환")
         void success_emptyResult() throws Exception {
             // Given
-            Long sessionId = 100L;
-            given(recommendationService.getRecommendationsBySession(anyLong(), any()))
+            given(recommendationService.getRecommendationsByUser(anyLong()))
                     .willReturn(List.of());
 
             // When & Then
-            mockMvc.perform(get("/api/recommendations/sessions/{sessionId}", sessionId)
-                            .with(user("testuser")))
+            mockMvc.perform(get("/api/recommendations/me")
+                            .with(oauth2Login().oauth2User(createTestPrincipal())))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data").isArray())
                     .andExpect(jsonPath("$.data").isEmpty());
+        }
+
+        @Test
+        @DisplayName("실패 - 비로그인 사용자 401")
+        void fail_unauthorized() throws Exception {
+            // When & Then - 인증 없이 요청
+            mockMvc.perform(get("/api/recommendations/me")
+                            .with(csrf()))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
         }
     }
 }
