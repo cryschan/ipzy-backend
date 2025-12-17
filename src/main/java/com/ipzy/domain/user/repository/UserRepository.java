@@ -4,6 +4,7 @@ import com.ipzy._global.common.enums.UserStatus;
 import com.ipzy.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -18,4 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     Optional<User> findByProviderAndProviderId(String provider, String providerId);
+
+    // 통계용 메서드
+    long countByStatus(UserStatus status);
+
+    long countByCreatedAtAfter(LocalDateTime date);
 }

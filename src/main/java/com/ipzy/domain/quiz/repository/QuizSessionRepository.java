@@ -16,4 +16,7 @@ public interface QuizSessionRepository extends JpaRepository<QuizSession, Long> 
                 WHERE s.id = :sessionId
             """)
     Optional<QuizSession> findByIdWithAnswers(Long sessionId);
+
+    // 통계용 메서드
+    long countByCompleted(Boolean completed);
 }
