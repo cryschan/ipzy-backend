@@ -106,8 +106,6 @@ public class SubscriptionService {
      */
     @Transactional
     public SubscriptionResponse createSubscription(Long userId, CreateSubscriptionRequest request) {
-        User user = findUserById(userId);
-
         // 기존 구독 조회 또는 생성
         Subscription subscription = ensureDefaultSubscription(userId);
 
