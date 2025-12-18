@@ -68,6 +68,7 @@ class ImageProcessingServiceTest {
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
             given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class)).willReturn(response);
@@ -137,6 +138,7 @@ class ImageProcessingServiceTest {
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
             given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class)).willReturn(response);
@@ -151,9 +153,9 @@ class ImageProcessingServiceTest {
         }
 
         @Test
-        @DisplayName("20개 이상의 이미지는 청크로 나눠서 처리한다")
+        @DisplayName("15개 이상의 이미지는 청크로 나눠서 처리한다")
         void success_whenLargeList() {
-            // given - 25개 이미지 (20 + 5로 분할될 것)
+            // given - 25개 이미지 (15 + 10로 분할될 것)
             List<String> imageUrls = List.of(
                     "https://example.com/image1.jpg",
                     "https://example.com/image2.jpg",
@@ -182,8 +184,8 @@ class ImageProcessingServiceTest {
                     "https://example.com/image25.jpg"
             );
 
-            RemoveBackgroundResponse response1 = createMockResponseWithUrls(imageUrls.subList(0, 20));
-            RemoveBackgroundResponse response2 = createMockResponseWithUrls(imageUrls.subList(20, 25));
+            RemoveBackgroundResponse response1 = createMockResponseWithUrls(imageUrls.subList(0, 15));
+            RemoveBackgroundResponse response2 = createMockResponseWithUrls(imageUrls.subList(15, 25));
 
             RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
             RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
@@ -192,6 +194,7 @@ class ImageProcessingServiceTest {
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
             given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class))
