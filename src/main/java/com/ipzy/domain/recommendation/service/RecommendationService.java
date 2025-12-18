@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 추천 서비스
@@ -95,12 +95,24 @@ public class RecommendationService {
             validateSessionOwnership(session, currentUserId);
         }
 
-        // 4. AI 추천 요청
-        RecommendationRequest request = RecommendationRequest.of(session);
+        // 4. 같은 유저의 모든 기존 추천 조합 조회 (중복 회피용)
+        List<Recommendation> existingRecommendations = recommendationRepository.findByUserIdWithItems(currentUserId);
+        List<Set<Long>> existingCombinations = existingRecommendations.stream()
+                .map(this::extractProductIdSet)
+                .filter(set -> !set.isEmpty())
+                .toList();
+
+        log.info("기존 추천 조합: userId={}, count={}", currentUserId, existingCombinations.size());
+
+        // 5. AI 추천 요청 (기존 조합 전달)
+        RecommendationRequest request = RecommendationRequest.of(session, existingCombinations);
         RecommendationResponse response = aiClient.requestRecommendation(request);
 
-        // 5. Entity 변환 및 저장
+        // 6. Entity 변환
         List<Recommendation> recommendations = convertToEntities(session, response);
+
+        // 7. 저장
+        log.info("추천 생성: sessionId={}, 생성 개수={}", sessionId, recommendations.size());
         return recommendationRepository.saveAll(recommendations);
     }
 
@@ -272,5 +284,74 @@ public class RecommendationService {
             log.warn("알 수 없는 카테고리: {}, UNKNOWN 처리", category);
             return ClothingCategory.UNKNOWN;
         }
+    }
+
+    /**
+     * 중복 코디 제거
+     * - 같은 세션의 기존 추천과 완전히 동일한 상품 조합 제거
+     * - 현재 응답 내부에서도 중복 제거
+     *
+     * @param sessionId 세션 ID
+     * @param newRecommendations 새로운 추천 리스트
+     * @return 중복 제거된 추천 리스트
+     */
+    private List<Recommendation> removeDuplicates(Long sessionId, List<Recommendation> newRecommendations) {
+        if (newRecommendations == null || newRecommendations.isEmpty()) {
+            return newRecommendations;
+        }
+
+        // 1. 같은 세션의 기존 추천들 조회
+        List<Recommendation> existingRecommendations = recommendationRepository.findBySessionIdWithItems(sessionId);
+
+        // 2. 기존 추천들의 상품 조합 Set 생성
+        Set<Set<Long>> existingProductSets = existingRecommendations.stream()
+                .map(this::extractProductIdSet)
+                .collect(Collectors.toSet());
+
+        // 3. 중복 제거 (기존 추천과 비교 + 현재 응답 내부 중복)
+        List<Recommendation> deduplicatedRecommendations = new ArrayList<>();
+        Set<Set<Long>> seenProductSets = new HashSet<>(existingProductSets);
+
+        for (Recommendation recommendation : newRecommendations) {
+            Set<Long> productIdSet = extractProductIdSet(recommendation);
+
+            // 비어있는 코디는 제외
+            if (productIdSet.isEmpty()) {
+                log.warn("상품이 없는 코디 제외: displayOrder={}", recommendation.getDisplayOrder());
+                continue;
+            }
+
+            // 중복 체크
+            if (seenProductSets.contains(productIdSet)) {
+                log.info("중복 코디 제외: sessionId={}, displayOrder={}, products={}",
+                         sessionId, recommendation.getDisplayOrder(), productIdSet);
+                continue;
+            }
+
+            // 중복 아니면 추가
+            deduplicatedRecommendations.add(recommendation);
+            seenProductSets.add(productIdSet);
+        }
+
+        return deduplicatedRecommendations;
+    }
+
+    /**
+     * 코디의 상품 ID 집합 추출
+     * - 순서 무시 (Set 사용)
+     * - 정렬된 상태로 비교하기 위해 TreeSet 사용
+     *
+     * @param recommendation 추천 코디
+     * @return 상품 ID 집합
+     */
+    private Set<Long> extractProductIdSet(Recommendation recommendation) {
+        if (recommendation.getItems() == null || recommendation.getItems().isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        return recommendation.getItems().stream()
+                .map(RecommendationItem::getProductId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 }

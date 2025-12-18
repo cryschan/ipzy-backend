@@ -46,11 +46,13 @@ class ImageProcessingServiceTest {
             );
 
             RemoveBackgroundResponse.ImageResult result1 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image1.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg1.jpg")
                     .success(true)
                     .build();
 
             RemoveBackgroundResponse.ImageResult result2 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image2.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg2.jpg")
                     .success(true)
                     .build();
@@ -64,7 +66,7 @@ class ImageProcessingServiceTest {
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
@@ -112,14 +114,16 @@ class ImageProcessingServiceTest {
             );
 
             RemoveBackgroundResponse.ImageResult result1 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image1.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg1.jpg")
                     .success(true)
                     .build();
 
             RemoveBackgroundResponse.ImageResult result2 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image2.jpg")
                     .removedBackgroundUrl(null)
                     .success(false)
-                    .errorMessage("Processing failed")
+                    .error("Processing failed")
                     .build();
 
             RemoveBackgroundResponse response = RemoveBackgroundResponse.builder()
@@ -131,7 +135,7 @@ class ImageProcessingServiceTest {
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
@@ -186,7 +190,7 @@ class ImageProcessingServiceTest {
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
@@ -204,6 +208,7 @@ class ImageProcessingServiceTest {
             List<RemoveBackgroundResponse.ImageResult> results = new java.util.ArrayList<>(originalUrls.size());
             for (String originalUrl : originalUrls) {
                 results.add(RemoveBackgroundResponse.ImageResult.builder()
+                        .originalUrl(originalUrl)
                         .removedBackgroundUrl(originalUrl.replace("https://example.com/", "https://s3.amazonaws.com/nobg/"))
                         .success(true)
                         .build());
