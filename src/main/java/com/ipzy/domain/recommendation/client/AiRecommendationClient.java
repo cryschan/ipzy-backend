@@ -7,8 +7,9 @@ import com.ipzy.domain.recommendation.dto.response.RecommendationResponse;
  * AI 추천 서비스 클라이언트 인터페이스
  * <p>
  * 구현체:
- * - {@link PythonAiClient}: 실제 Python FastAPI 통신 (production)
- * - {@link MockAiClient}: Mock 응답 (local/dev)
+ * - {@link PythonAiClient}: Python FastAPI 통신 (기본 활성화)
+ * <p>
+ * 테스트 시 {@code @MockBean}으로 Mock 사용
  */
 public interface AiRecommendationClient {
 
