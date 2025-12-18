@@ -10,15 +10,15 @@ import java.util.Objects;
  * 추천 아이템 DTO - Python FastAPI 응답용
  */
 public record RecommendedItemDto(
-        @JsonProperty("product_id")
+        @JsonProperty("productId")
         Long productId,
         String category,
         String name,
         String brand,
         Integer price,
-        @JsonProperty("image_url")
+        @JsonProperty("imageUrl")
         String imageUrl,
-        @JsonProperty("link_url")
+        @JsonProperty("linkUrl")
         String linkUrl,
         ItemPositionDto position
 ) {
