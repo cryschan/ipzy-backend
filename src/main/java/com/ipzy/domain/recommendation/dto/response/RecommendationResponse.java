@@ -8,7 +8,7 @@ import java.util.List;
  * Python FastAPI 추천 응답 DTO (최상위)
  */
 public record RecommendationResponse(
-        @JsonProperty("recommended_outfits")
+        @JsonProperty("recommendedOutfits")
         List<OutfitRecommendationDto> recommendedOutfits
 ) {
 }

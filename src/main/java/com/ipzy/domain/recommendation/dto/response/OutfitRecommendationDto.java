@@ -17,11 +17,11 @@ public record OutfitRecommendationDto(
         String style,
         String reason,
         String status,
-        @JsonProperty("job_id")
+        @JsonProperty("jobId")
         String jobId,
-        @JsonProperty("created_at")
+        @JsonProperty("createdAt")
         String createdAt,
-        @JsonProperty("completed_at")
+        @JsonProperty("completedAt")
         String completedAt,
         OutfitResultDto result,
         String error

@@ -92,8 +92,8 @@ public record RecommendationItemResponse(
 ### 우선순위: 낮음
 
 ### 현재 상태
-- 단위 테스트만 작성됨
-- MockAiClient로 로컬 테스트 가능
+- 단위 테스트만 작성됨 (AiRecommendationClient @Mock 사용)
+- PythonAiClient 기본 활성화
 
 ### 필요 작업
 ```java
