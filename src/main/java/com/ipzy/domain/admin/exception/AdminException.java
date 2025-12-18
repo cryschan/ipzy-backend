@@ -34,4 +34,12 @@ public class AdminException extends BusinessException {
     public static AdminException sessionRequired() {
         return new AdminException(AdminErrorCode.SESSION_REQUIRED);
     }
+
+    public static AdminException userNotFound() {
+        return new AdminException(AdminErrorCode.USER_NOT_FOUND);
+    }
+
+    public static AdminException invalidStatusChange() {
+        return new AdminException(AdminErrorCode.INVALID_STATUS_CHANGE);
+    }
 }
