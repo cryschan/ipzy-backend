@@ -2,6 +2,7 @@ package com.ipzy.domain.user.service;
 
 import com.ipzy._global.common.enums.UserRole;
 import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.subscription.service.SubscriptionService;
 import com.ipzy.domain.user.dto.UserProfileResponse;
 import com.ipzy.domain.user.entity.User;
 import com.ipzy.domain.user.exception.UserException;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final SubscriptionService subscriptionService;
 
     // ========== 외부용 (API) - DTO 반환 ==========
 
@@ -143,14 +145,14 @@ public class UserService {
     }
 
     /**
-     * 새 사용자 생성
+     * 새 사용자 생성 + FREE 구독 자동 생성
      */
     private User createNewUser(String provider, String providerId,
                                String email, String name, String profileImage) {
 
         log.info("새 사용자 생성: provider={}, email={}", provider, email);
 
-        return userRepository.save(User.builder()
+        User user = userRepository.save(User.builder()
                 .email(email)
                 .name(name)
                 .profileImageUrl(profileImage)
@@ -159,5 +161,11 @@ public class UserService {
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .build());
+
+        // ⭐ 신규 사용자에게 FREE 구독 자동 생성
+        subscriptionService.ensureDefaultSubscription(user.getId());
+        log.info("FREE 구독 생성 완료: userId={}, email={}", user.getId(), email);
+
+        return user;
     }
 }
