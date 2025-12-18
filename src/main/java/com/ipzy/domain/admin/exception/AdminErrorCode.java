@@ -14,7 +14,11 @@ public enum AdminErrorCode implements ErrorCode {
     NOT_ADMIN_USER(HttpStatus.FORBIDDEN, "ADMIN_002", "관리자 권한이 없습니다"),
     ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_003", "관리자를 찾을 수 없습니다"),
     ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN, "ADMIN_004", "정지된 계정입니다"),
-    SESSION_REQUIRED(HttpStatus.UNAUTHORIZED, "ADMIN_005", "로그인이 필요합니다");
+    SESSION_REQUIRED(HttpStatus.UNAUTHORIZED, "ADMIN_005", "로그인이 필요합니다"),
+
+    // 회원 관리 관련
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_006", "회원을 찾을 수 없습니다"),
+    INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "ADMIN_007", "유효하지 않은 상태 변경입니다");
 
     private final HttpStatus status;
     private final String code;

@@ -75,4 +75,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         @Param("user") User user,
         @Param("statuses") Set<SubscriptionStatus> statuses
     );
+
+    /**
+     * 여러 사용자의 최신 구독을 한 번에 조회 (N+1 방지용)
+     */
+    @Query("SELECT s FROM Subscription s " +
+           "WHERE s.user.id IN :userIds " +
+           "AND s.createdAt = (SELECT MAX(s2.createdAt) FROM Subscription s2 WHERE s2.user = s.user)")
+    List<Subscription> findLatestByUserIds(@Param("userIds") List<Long> userIds);
 }
