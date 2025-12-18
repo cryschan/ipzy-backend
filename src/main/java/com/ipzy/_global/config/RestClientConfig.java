@@ -17,7 +17,7 @@ public class RestClientConfig {
     @Value("${ai.python.connect-timeout:5000}")
     private int pythonConnectTimeout;
 
-    @Value("${ai.python.read-timeout:10000}")
+    @Value("${ai.python.read-timeout:60000}")
     private int pythonReadTimeout;
 
     /**
@@ -47,6 +47,7 @@ public class RestClientConfig {
                 .baseUrl(pythonBaseUrl)
                 .requestFactory(pythonAiClientHttpRequestFactory())
                 .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("Accept", "application/json")
                 .build();
     }
 
