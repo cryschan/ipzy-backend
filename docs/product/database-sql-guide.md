@@ -170,9 +170,10 @@ DELETE FROM products WHERE category IN ('TOP', 'BOTTOM');
 DELETE FROM products;  -- 먼저 상품 삭제
 DELETE FROM brands;    -- 그 다음 브랜드 삭제
 
--- 방법 2: TRUNCATE (CASCADE 옵션)
-TRUNCATE TABLE products CASCADE;
-TRUNCATE TABLE brands CASCADE;
+-- 방법 2: TRUNCATE (순서 중요)
+-- 주의: CASCADE는 뷰 등 종속 객체만 삭제, FK 연결 행은 삭제 안 함
+TRUNCATE TABLE products;  -- FK 자식 테이블 먼저
+TRUNCATE TABLE brands;    -- FK 부모 테이블 나중에
 ```
 
 ### 비활성화된 상품만 삭제
@@ -303,9 +304,10 @@ HAVING COUNT(*) > 1;
 ### 데이터 무결성 체크
 
 ```sql
--- brand_id가 없는 고아 상품 체크
-SELECT * FROM products
-WHERE brand_id NOT IN (SELECT id FROM brands);
+-- brand_id가 없는 고아 상품 체크 (LEFT JOIN 사용 - NOT IN보다 성능 우수)
+SELECT p.* FROM products p
+LEFT JOIN brands b ON p.brand_id = b.id
+WHERE b.id IS NULL;
 
 -- 필수 필드 누락 체크
 SELECT * FROM products
@@ -315,6 +317,7 @@ WHERE name IS NULL
    OR category IS NULL;
 
 -- 비정상 가격 체크
+-- 주의: 한정판, 프리미엄 상품 등은 판매가가 정가를 초과할 수 있음
 SELECT * FROM products
 WHERE price > original_price;
 ```

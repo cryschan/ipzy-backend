@@ -4,8 +4,12 @@
 -- ==========================================
 
 -- 중복 방지: 이미 브랜드가 있으면 스킵
+-- Advisory Lock: 여러 인스턴스 동시 실행 방지 (Lock ID: 123456)
 DO $$
 BEGIN
+    -- Advisory Lock 획득 (동시성 제어)
+    PERFORM pg_advisory_lock(123456);
+
     IF (SELECT COUNT(*) FROM brands) = 0 THEN
         -- 의류 브랜드 (CLOTHING) 12개
         INSERT INTO brands (name, logo_url, primary_style, brand_type, created_at, modified_at) VALUES
@@ -38,4 +42,7 @@ BEGIN
     ELSE
         RAISE NOTICE '브랜드 데이터가 이미 존재합니다. 초기화를 건너뜁니다.';
     END IF;
+
+    -- Advisory Lock 해제
+    PERFORM pg_advisory_unlock(123456);
 END $$;
