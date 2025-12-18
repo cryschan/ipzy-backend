@@ -287,57 +287,8 @@ public class RecommendationService {
     }
 
     /**
-     * 중복 코디 제거
-     * - 같은 세션의 기존 추천과 완전히 동일한 상품 조합 제거
-     * - 현재 응답 내부에서도 중복 제거
-     *
-     * @param sessionId 세션 ID
-     * @param newRecommendations 새로운 추천 리스트
-     * @return 중복 제거된 추천 리스트
-     */
-    private List<Recommendation> removeDuplicates(Long sessionId, List<Recommendation> newRecommendations) {
-        if (newRecommendations == null || newRecommendations.isEmpty()) {
-            return newRecommendations;
-        }
-
-        // 1. 같은 세션의 기존 추천들 조회
-        List<Recommendation> existingRecommendations = recommendationRepository.findBySessionIdWithItems(sessionId);
-
-        // 2. 기존 추천들의 상품 조합 Set 생성
-        Set<Set<Long>> existingProductSets = existingRecommendations.stream()
-                .map(this::extractProductIdSet)
-                .collect(Collectors.toSet());
-
-        // 3. 중복 제거 (기존 추천과 비교 + 현재 응답 내부 중복)
-        List<Recommendation> deduplicatedRecommendations = new ArrayList<>();
-        Set<Set<Long>> seenProductSets = new HashSet<>(existingProductSets);
-
-        for (Recommendation recommendation : newRecommendations) {
-            Set<Long> productIdSet = extractProductIdSet(recommendation);
-
-            // 비어있는 코디는 제외
-            if (productIdSet.isEmpty()) {
-                log.warn("상품이 없는 코디 제외: displayOrder={}", recommendation.getDisplayOrder());
-                continue;
-            }
-
-            // 중복 체크
-            if (seenProductSets.contains(productIdSet)) {
-                log.info("중복 코디 제외: sessionId={}, displayOrder={}, products={}",
-                         sessionId, recommendation.getDisplayOrder(), productIdSet);
-                continue;
-            }
-
-            // 중복 아니면 추가
-            deduplicatedRecommendations.add(recommendation);
-            seenProductSets.add(productIdSet);
-        }
-
-        return deduplicatedRecommendations;
-    }
-
-    /**
      * 코디의 상품 ID 집합 추출
+     * - Python API 요청 시 exclude_combinations 생성용
      * - 순서 무시 (Set 사용)
      * - 정렬된 상태로 비교하기 위해 TreeSet 사용
      *
