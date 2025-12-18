@@ -49,6 +49,14 @@ public class User extends BaseEntity {
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
+    /**
+     * 관리자 비밀번호 (BCrypt 암호화)
+     * 일반 사용자는 OAuth2 로그인만 사용하므로 null
+     * ADMIN/SUPER_ADMIN 역할의 사용자만 비밀번호 설정
+     */
+    @Column(length = 100)
+    private String password;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role = UserRole.USER;
@@ -73,14 +81,15 @@ public class User extends BaseEntity {
 
     @Builder
     public User(String email, String name, String phone, String provider,
-                String providerId, String profileImageUrl, UserRole role,
-                UserStatus status, Map<String, Object> preferences) {
+                String providerId, String profileImageUrl, String password,
+                UserRole role, UserStatus status, Map<String, Object> preferences) {
         this.email = email;
         this.name = name;
         this.phone = phone;
         this.provider = provider;
         this.providerId = providerId;
         this.profileImageUrl = profileImageUrl;
+        this.password = password;
         this.role = role != null ? role : UserRole.USER;
         this.status = status != null ? status : UserStatus.ACTIVE;
         this.preferences = preferences != null ? preferences : new HashMap<>();
@@ -161,5 +170,20 @@ public class User extends BaseEntity {
 
     public boolean isDeleted() {
         return this.status == UserStatus.DELETED;
+    }
+
+    /**
+     * 관리자 비밀번호를 변경합니다.
+     * @param encodedPassword BCrypt로 암호화된 비밀번호
+     */
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    /**
+     * 관리자 여부를 확인합니다.
+     */
+    public boolean isAdmin() {
+        return this.role == UserRole.ADMIN || this.role == UserRole.SUPER_ADMIN;
     }
 }

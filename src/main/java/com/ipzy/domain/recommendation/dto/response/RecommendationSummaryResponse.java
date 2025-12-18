@@ -15,11 +15,11 @@ public record RecommendationSummaryResponse(
         String style,
         String reason,
         String status,
-        @JsonProperty("job_id")
+        @JsonProperty("jobId")
         String jobId,
-        @JsonProperty("created_at")
+        @JsonProperty("createdAt")
         String createdAt,
-        @JsonProperty("completed_at")
+        @JsonProperty("completedAt")
         String completedAt,
         ResultResponse result,
         String error
@@ -59,13 +59,13 @@ public record RecommendationSummaryResponse(
     public record ResultResponse(
             Boolean success,
             String message,
-            @JsonProperty("composite_image_url")
+            @JsonProperty("compositeImageUrl")
             String compositeImageUrl,
-            @JsonProperty("image_width")
+            @JsonProperty("imageWidth")
             Integer imageWidth,
-            @JsonProperty("image_height")
+            @JsonProperty("imageHeight")
             Integer imageHeight,
-            @JsonProperty("total_price")
+            @JsonProperty("totalPrice")
             Integer totalPrice,
             List<RecommendationItemResponse> items
     ) {}

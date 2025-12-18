@@ -10,6 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 기능
+ * 1. 플랜 정보 조회
+ * 2. 플랜 생성/수정 (관리자용)
+ * 3. 플랜 자체의 속성 관리
+ */
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,5 +62,13 @@ public class SubscriptionPlanService {
     public SubscriptionPlan findEntityById(Long planId) {
         return subscriptionPlanRepository.findById(planId)
                 .orElseThrow(() -> SubscriptionException.planNotFound(planId));
+    }
+
+    /**
+     * 플랜 이름으로 Entity 조회 (내부용)
+     */
+    public SubscriptionPlan findEntityByName(String name) {
+        return subscriptionPlanRepository.findByName(name)
+                .orElseThrow(() -> SubscriptionException.planNotFoundByName(name));
     }
 }

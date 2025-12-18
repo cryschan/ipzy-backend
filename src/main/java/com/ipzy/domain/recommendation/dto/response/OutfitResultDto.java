@@ -11,13 +11,13 @@ import java.util.List;
 public record OutfitResultDto(
         Boolean success,
         String message,
-        @JsonProperty("composite_image_url")
+        @JsonProperty("compositeImageUrl")
         String compositeImageUrl,
-        @JsonProperty("image_width")
+        @JsonProperty("imageWidth")
         Integer imageWidth,
-        @JsonProperty("image_height")
+        @JsonProperty("imageHeight")
         Integer imageHeight,
-        @JsonProperty("total_price")
+        @JsonProperty("totalPrice")
         Integer totalPrice,
         List<RecommendedItemDto> items
 ) {
