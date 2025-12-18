@@ -3,6 +3,7 @@ package com.ipzy.domain.subscription.service;
 import com.ipzy._global.common.enums.SubscriptionStatus;
 import com.ipzy._global.common.enums.UserRole;
 import com.ipzy._global.common.enums.UserStatus;
+import com.ipzy.domain.quiz.repository.QuizSessionRepository;
 import com.ipzy.domain.subscription.entity.Subscription;
 import com.ipzy.domain.subscription.repository.SubscriptionRepository;
 import com.ipzy.domain.user.entity.User;
@@ -33,8 +34,13 @@ class SubscriptionConcurrencyTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    QuizSessionRepository quizSessionRepository;
+
     @AfterEach
     void cleanup() {
+        // 외래키 순서: quiz_sessions → subscriptions → users
+        quizSessionRepository.deleteAll();  // 먼저 quiz_sessions 삭제
         subscriptionRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -43,15 +49,16 @@ class SubscriptionConcurrencyTest {
     @DisplayName("동시에 구독 생성을 요청해도 FREE 구독은 하나만 생성된다")
     void 동시에_구독_생성을_요청해도_FREE_구독은_하나만_생성된다() throws Exception {
         // given
+
         User user = userRepository.save(
-            User.builder()
-                .email("test11@test.com")
-                .name("test")
-                .provider("GOOGLE")
-                .providerId("test-12311")
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .build()
+                User.builder()
+                        .email("test11@test.com")
+                        .name("test")
+                        .provider("KAKAO")
+                        .providerId("test-12311")
+                        .role(UserRole.USER)
+                        .status(UserStatus.ACTIVE)
+                        .build()
         );
 
         int threadCount = 10;
@@ -98,28 +105,28 @@ class SubscriptionConcurrencyTest {
 
         // 유효한 구독 개수 확인 (ACTIVE 또는 PENDING)
         List<Subscription> validSubscriptions = subscriptionRepository
-            .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDesc(user);
 
         System.out.println("validSubscriptions: " + validSubscriptions.size());
         validSubscriptions.forEach(System.out::println);
 
         long activeOrPendingCount = validSubscriptions.stream()
-            .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE
-                      || s.getStatus() == SubscriptionStatus.PENDING)
-            .count();
+                .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE
+                        || s.getStatus() == SubscriptionStatus.PENDING)
+                .count();
 
         System.out.println("생성된 ACTIVE/PENDING 구독 수: " + activeOrPendingCount);
         System.out.println("전체 구독 수: " + validSubscriptions.size());
 
         // ⭐ 핵심 검증: 유효한 구독은 1개만 존재해야 함
         assertThat(activeOrPendingCount)
-            .as("동시 요청에도 불구하고 유효한 구독은 1개만 생성되어야 함")
-            .isEqualTo(1);
+                .as("동시 요청에도 불구하고 유효한 구독은 1개만 생성되어야 함")
+                .isEqualTo(1);
 
         // 모든 요청이 성공해야 함 (에러 없이)
         assertThat(successCount.get())
-            .as("모든 스레드가 성공적으로 구독을 조회/생성해야 함")
-            .isEqualTo(threadCount);
+                .as("모든 스레드가 성공적으로 구독을 조회/생성해야 함")
+                .isEqualTo(threadCount);
     }
 
     @Test
@@ -127,14 +134,14 @@ class SubscriptionConcurrencyTest {
     void concurrentEnsure_returnsSameSubscription() throws Exception {
         // given
         User user = userRepository.save(
-            User.builder()
-                .email("existing@test.com")
-                .name("existing")
-                .provider("KAKAO")
-                .providerId("existing-456")
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .build()
+                User.builder()
+                        .email("existing@test.com")
+                        .name("existing")
+                        .provider("KAKAO")
+                        .providerId("existing-456")
+                        .role(UserRole.USER)
+                        .status(UserStatus.ACTIVE)
+                        .build()
         );
 
         // 미리 구독 생성
@@ -176,12 +183,12 @@ class SubscriptionConcurrencyTest {
 
         // then: 여전히 구독은 1개만 존재
         List<Subscription> subscriptions = subscriptionRepository
-            .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDesc(user);
 
         long validCount = subscriptions.stream()
-            .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE
-                      || s.getStatus() == SubscriptionStatus.PENDING)
-            .count();
+                .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE
+                        || s.getStatus() == SubscriptionStatus.PENDING)
+                .count();
 
         assertThat(validCount).isEqualTo(1);
         assertThat(subscriptions.getFirst().getId()).isEqualTo(existingSubscriptionId);
@@ -192,14 +199,14 @@ class SubscriptionConcurrencyTest {
     void concurrentPlanChange_shouldHandleRaceCondition() throws Exception {
         // given
         User user = userRepository.save(
-            User.builder()
-                .email("planchange@test.com")
-                .name("planchange")
-                .provider("GOOGLE")
-                .providerId("planchange-789")
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .build()
+                User.builder()
+                        .email("planchange@test.com")
+                        .name("planchange")
+                        .provider("KAKAO")
+                        .providerId("planchange-789")
+                        .role(UserRole.USER)
+                        .status(UserStatus.ACTIVE)
+                        .build()
         );
 
         // FREE 구독 생성
@@ -209,10 +216,10 @@ class SubscriptionConcurrencyTest {
 
         // BASIC 플랜 조회
         Long basicPlanId = subscriptionService.findAllPlans().stream()
-            .filter(p -> "BASIC".equals(p.name()))
-            .findFirst()
-            .orElseThrow()
-            .id();
+                .filter(p -> "BASIC".equals(p.name()))
+                .findFirst()
+                .orElseThrow()
+                .id();
 
         int threadCount = 10;
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
@@ -234,10 +241,10 @@ class SubscriptionConcurrencyTest {
 
                     // ⚠️ 실제 비즈니스 시나리오: 플랜 변경 신청
                     com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest request =
-                        new com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest(basicPlanId);
+                            new com.ipzy.domain.subscription.dto.Request.CreateSubscriptionRequest(basicPlanId);
 
                     com.ipzy.domain.subscription.dto.Response.SubscriptionResponse response =
-                        subscriptionService.createSubscription(user.getId(), request);
+                            subscriptionService.createSubscription(user.getId(), request);
 
                     successCount.incrementAndGet();
 
@@ -268,32 +275,37 @@ class SubscriptionConcurrencyTest {
         System.out.println("에러: " + errorCount.get());
 
         List<Subscription> subscriptions = subscriptionRepository
-            .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDesc(user);
 
         System.out.println("전체 구독 수: " + subscriptions.size());
 
         // 구독 상태 출력
         subscriptions.forEach(s -> {
             System.out.println("  - ID: " + s.getId() +
-                             ", Plan: " + s.getPlan().getName() +
-                             ", Status: " + s.getStatus() +
-                             ", Created: " + s.getCreatedAt());
+                    ", Plan: " + s.getPlan().getName() +
+                    ", Status: " + s.getStatus() +
+                    ", Created: " + s.getCreatedAt());
         });
 
         long pendingSubscriptions = subscriptions.stream()
-            .filter(s -> s.getStatus() == SubscriptionStatus.PENDING)
-            .count();
+                .filter(s -> s.getStatus() == SubscriptionStatus.PENDING)
+                .count();
 
         System.out.println("PENDING 상태 구독 수: " + pendingSubscriptions);
 
-        // ⭐ 핵심 검증: PENDING 상태는 1개만 있어야 함
-        assertThat(pendingSubscriptions)
-            .as("⚠️ Race condition 발생 시 여러 PENDING 구독이 생성될 수 있음")
-            .isLessThanOrEqualTo(1);
-
-        // ⚠️ 이 assertion이 실패하면 race condition이 발생한 것!
+        // ⭐ 핵심 검증: 구독은 정확히 1개만 존재해야 함
         assertThat(subscriptions.size())
-            .as("⚠️ 동일한 구독이 수정되어야 하므로 구독은 1개만 존재해야 함")
-            .isEqualTo(1);
+                .as("⚠️ 동일한 구독이 수정되어야 하므로 구독은 1개만 존재해야 함")
+                .isEqualTo(1);
+
+        // PENDING 상태는 정확히 1개여야 함 (FREE → BASIC 변경이므로)
+        assertThat(pendingSubscriptions)
+                .as("⚠️ Race condition 발생 시 여러 PENDING 구독이 생성되거나 0개일 수 있음")
+                .isEqualTo(1);
+
+        // 모든 요청이 성공해야 함
+        assertThat(successCount.get())
+                .as("플랜 변경 요청이 모두 성공해야 함")
+                .isEqualTo(threadCount);
     }
 }
