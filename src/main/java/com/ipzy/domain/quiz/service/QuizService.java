@@ -295,9 +295,31 @@ public class QuizService {
                 .map(QuizOption::getValue)
                 .toList();
 
-        // 옵션이 유효한지 체크
+        // 중복 옵션 선택 검증
+        long distinctCount = selectedOptions.stream()
+                .filter(option -> option != null)
+                .distinct()
+                .count();
+        if (distinctCount != selectedOptions.size()) {
+            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                    "중복된 옵션을 선택할 수 없습니다");
+        }
+
+        // 옵션이 유효한지 체크 (공백 검증 포함)
         for (String option : selectedOptions) {
-            if (option == null || !available.contains(option)) {
+            if (option == null) {
+                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
+            }
+            
+            // 공백만 있는 옵션 검증
+            String trimmedOption = option.trim();
+            if (trimmedOption.isEmpty()) {
+                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID,
+                        "공백만 있는 옵션은 선택할 수 없습니다");
+            }
+            
+            // 유효한 옵션 값인지 확인 (trim된 값으로 비교)
+            if (!available.contains(trimmedOption) && !available.contains(option)) {
                 throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
             }
         }
