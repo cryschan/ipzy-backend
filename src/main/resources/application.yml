@@ -52,6 +52,7 @@ app:
     logout-redirect-uri: ${FRONTEND_URL:http://localhost:5173}
   swagger:
     server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
+
   quiz:
     session:
       # QuizSession 초기화 모드 설정
@@ -59,6 +60,14 @@ app:
       # APPEND: 기존 QuizSession 데이터를 유지하고 추가로 생성
       # SKIP: 기존 QuizSession 데이터가 있으면 초기화하지 않음 (기본값)
       init-mode: ${QUIZ_SESSION_INIT_MODE:SKIP}
+      cleanup:
+        # 스케줄러 활성화 여부
+        enabled: ${QUIZ_SESSION_CLEANUP_ENABLED:true}
+        # Cron 표현식 (매일 오전 4시 실행)
+        # 환경 변수 QUIZ_SESSION_CLEANUP_CRON이 설정되어 있으면 사용, 없으면 기본값 사용
+        cron: ${QUIZ_SESSION_CLEANUP_CRON:0 0 4 * * *}
+        # 만료 시간 (PT1H = 1시간, PT30M = 30분, PT24H = 24시간)
+        expiration: ${QUIZ_SESSION_CLEANUP_EXPIRATION:PT5M}
 
 # AI 서비스 설정
 ai:

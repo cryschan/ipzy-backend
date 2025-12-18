@@ -62,7 +62,7 @@ public class QuizSession extends BaseEntity {
      * 비로그인 상태에서 퀴즈를 풀고, 로그인 후 추천을 받을 때 사용됩니다.
      *
      * @param user 연결할 사용자
-     * @throws QuizException 이미 사용자가 연결된 세션인 경우 (QUIZ_011)
+     * @throws QuizException 이미 사용자가 연결된 세션인 경우 (QUIZ_005)
      */
     public void assignUser(User user) {
         if (this.user != null) {

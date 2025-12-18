@@ -4,6 +4,8 @@ import com.ipzy.domain.quiz.entity.QuizSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface QuizSessionRepository extends JpaRepository<QuizSession, Long> {
@@ -19,4 +21,6 @@ public interface QuizSessionRepository extends JpaRepository<QuizSession, Long> 
 
     // 통계용 메서드
     long countByCompleted(Boolean completed);
+
+    List<QuizSession> findByCompletedFalseAndCreatedAtBefore(LocalDateTime cutoff);
 }
