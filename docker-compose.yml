@@ -3,9 +3,9 @@ services:
     image: pgvector/pgvector:pg16
     container_name: ipzy-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-ipzy_db}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -34,9 +34,9 @@ services:
       # Database Configuration
       - DB_HOST=ipzy-postgres
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-ipzy_db}
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
 
       # JPA & Hibernate
       - DDL_AUTO=${DDL_AUTO:-validate}
