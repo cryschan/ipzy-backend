@@ -67,6 +67,15 @@ ai:
     connect-timeout: 5000
     read-timeout: 10000
 
+# 토스페이먼츠 설정
+toss:
+  payments:
+    client-key: ${TOSS_CLIENT_KEY:test_ck_default}
+    secret-key: ${TOSS_SECRET_KEY:test_sk_default}
+    api-url: ${TOSS_API_URL:https://api.tosspayments.com/v1}
+    success-url: ${TOSS_SUCCESS_URL:http://localhost:8080/api/payment/toss/success}
+    fail-url: ${TOSS_FAIL_URL:http://localhost:8080/api/payment/toss/fail}
+
 logging:
   level:
     root: INFO
