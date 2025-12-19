@@ -341,4 +341,5 @@ class RecommendationServiceTest {
             assertThat(result).isEmpty();
         }
     }
+
 }

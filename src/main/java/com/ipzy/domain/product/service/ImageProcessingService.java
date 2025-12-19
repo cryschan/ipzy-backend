@@ -23,7 +23,7 @@ public class ImageProcessingService {
         this.pythonAiRestClient = pythonAiRestClient;
     }
 
-    private static final int CHUNK_SIZE = 10; // 배치당 처리할 이미지 개수 (Python 제한)
+    private static final int CHUNK_SIZE = 15; // 배치당 처리할 이미지 개수
     private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/image/remove-background/batch";
 
     /**
