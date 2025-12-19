@@ -74,7 +74,7 @@ ai:
   python:
     base-url: ${AI_SERVICE_URL:http://localhost:8000}
     connect-timeout: 5000
-    read-timeout: 10000
+    read-timeout: 60000
 
 logging:
   level:

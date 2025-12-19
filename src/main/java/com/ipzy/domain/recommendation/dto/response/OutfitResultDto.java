@@ -1,7 +1,5 @@
 package com.ipzy.domain.recommendation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 /**
@@ -11,13 +9,9 @@ import java.util.List;
 public record OutfitResultDto(
         Boolean success,
         String message,
-        @JsonProperty("compositeImageUrl")
         String compositeImageUrl,
-        @JsonProperty("imageWidth")
         Integer imageWidth,
-        @JsonProperty("imageHeight")
         Integer imageHeight,
-        @JsonProperty("totalPrice")
         Integer totalPrice,
         List<RecommendedItemDto> items
 ) {

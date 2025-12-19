@@ -1,6 +1,5 @@
 package com.ipzy.domain.recommendation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ipzy._global.common.enums.ClothingCategory;
 import com.ipzy.domain.recommendation.entity.RecommendationItem;
 
@@ -10,15 +9,12 @@ import java.util.Objects;
  * 추천 아이템 DTO - Python FastAPI 응답용
  */
 public record RecommendedItemDto(
-        @JsonProperty("productId")
         Long productId,
         String category,
         String name,
         String brand,
         Integer price,
-        @JsonProperty("imageUrl")
         String imageUrl,
-        @JsonProperty("linkUrl")
         String linkUrl,
         ItemPositionDto position
 ) {

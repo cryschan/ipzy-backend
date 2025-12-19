@@ -1,6 +1,5 @@
 package com.ipzy.domain.recommendation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ipzy.domain.recommendation.entity.Recommendation;
 
 import java.util.List;
@@ -15,11 +14,8 @@ public record RecommendationSummaryResponse(
         String style,
         String reason,
         String status,
-        @JsonProperty("jobId")
         String jobId,
-        @JsonProperty("createdAt")
         String createdAt,
-        @JsonProperty("completedAt")
         String completedAt,
         ResultResponse result,
         String error
@@ -59,13 +55,9 @@ public record RecommendationSummaryResponse(
     public record ResultResponse(
             Boolean success,
             String message,
-            @JsonProperty("compositeImageUrl")
             String compositeImageUrl,
-            @JsonProperty("imageWidth")
             Integer imageWidth,
-            @JsonProperty("imageHeight")
             Integer imageHeight,
-            @JsonProperty("totalPrice")
             Integer totalPrice,
             List<RecommendationItemResponse> items
     ) {}
