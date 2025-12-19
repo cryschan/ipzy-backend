@@ -16,15 +16,12 @@ import org.springframework.web.client.RestClientResponseException;
 import java.net.SocketTimeoutException;
 
 /**
- * Python AI 서비스 통신 클라이언트 (Production)
+ * Python AI 서비스 통신 클라이언트
  * <p>
- * 실제 Python FastAPI와 HTTP 통신을 수행합니다.
- * <p>
- * 활성화 조건: spring.profiles.active=prod
+ * Python FastAPI와 HTTP 통신을 수행합니다.
  */
 @Slf4j
 @Component
-@Profile("prod")
 @RequiredArgsConstructor
 public class PythonAiClient implements AiRecommendationClient {
 

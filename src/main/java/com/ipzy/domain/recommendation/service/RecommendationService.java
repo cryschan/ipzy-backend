@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 추천 서비스
@@ -95,12 +95,24 @@ public class RecommendationService {
             validateSessionOwnership(session, currentUserId);
         }
 
-        // 4. AI 추천 요청
-        RecommendationRequest request = RecommendationRequest.of(session);
+        // 4. 같은 유저의 모든 기존 추천 조합 조회 (중복 회피용)
+        List<Recommendation> existingRecommendations = recommendationRepository.findByUserIdWithItems(currentUserId);
+        List<Set<Long>> existingCombinations = existingRecommendations.stream()
+                .map(this::extractProductIdSet)
+                .filter(set -> !set.isEmpty())
+                .toList();
+
+        log.info("기존 추천 조합: userId={}, count={}", currentUserId, existingCombinations.size());
+
+        // 5. AI 추천 요청 (기존 조합 전달)
+        RecommendationRequest request = RecommendationRequest.of(session, existingCombinations);
         RecommendationResponse response = aiClient.requestRecommendation(request);
 
-        // 5. Entity 변환 및 저장
+        // 6. Entity 변환
         List<Recommendation> recommendations = convertToEntities(session, response);
+
+        // 7. 저장
+        log.info("추천 생성: sessionId={}, 생성 개수={}", sessionId, recommendations.size());
         return recommendationRepository.saveAll(recommendations);
     }
 
@@ -272,5 +284,25 @@ public class RecommendationService {
             log.warn("알 수 없는 카테고리: {}, UNKNOWN 처리", category);
             return ClothingCategory.UNKNOWN;
         }
+    }
+
+    /**
+     * 코디의 상품 ID 집합 추출
+     * - Python API 요청 시 exclude_combinations 생성용
+     * - 순서 무시 (Set 사용)
+     * - 정렬된 상태로 비교하기 위해 TreeSet 사용
+     *
+     * @param recommendation 추천 코디
+     * @return 상품 ID 집합
+     */
+    private Set<Long> extractProductIdSet(Recommendation recommendation) {
+        if (recommendation.getItems() == null || recommendation.getItems().isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        return recommendation.getItems().stream()
+                .map(RecommendationItem::getProductId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 }

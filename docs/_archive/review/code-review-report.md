@@ -187,8 +187,8 @@ public static UserException notFound(Long userId) {
 domain/recommendation/
 ├── controller/RecommendationController.java
 ├── client/
-│   ├── PythonAiClient.java
-│   └── MockAiClient.java
+│   ├── AiRecommendationClient.java (인터페이스)
+│   └── PythonAiClient.java
 ├── entity/
 │   ├── Recommendation.java
 │   └── RecommendationItem.java
@@ -201,8 +201,8 @@ domain/recommendation/
 #### AI 클라이언트 통신
 
 **현황:** ✅ 양호
-- RestTemplate 기반 Python AI 서버 통신
-- MockAiClient로 테스트 환경 분리
+- RestClient 기반 Python AI 서버 통신
+- @MockBean으로 테스트 환경 분리
 - 타임아웃 설정 완비
 
 **강점:**

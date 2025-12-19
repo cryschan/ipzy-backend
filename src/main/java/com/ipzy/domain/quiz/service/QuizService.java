@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,15 @@ public class QuizService {
     private final UserRepository userRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
+
+    @Transactional(readOnly = true)
+    public List<QuizListResponse> getActiveQuizzes() {
+        return quizRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .filter(quiz -> quiz != null) // null 필터링 (방어적 코딩)
+                .map(QuizListResponse::from)
+                .toList();
+    }
 
     @Transactional
     public QuizSessionStartResponse startQuiz(Long quizId, Long userId) {
@@ -212,30 +223,6 @@ public class QuizService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public QuizQuestionResponse getQuestionByOrder(Long sessionId, Integer order) {
-        // 세션 조회
-        QuizSession session = quizSessionRepository
-                .findById(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
-
-        // 세션 완료 여부 검증
-        validateSessionNotCompleted(session);
-
-        // 질문 목록 조회
-        List<QuizQuestion> questions = getQuestionsBySession(session);
-
-        // displayOrder로 질문 찾기
-        QuizQuestion question = questions.stream()
-                .filter(q -> q != null && q.getDisplayOrder() != null && q.getDisplayOrder().equals(order))
-                .findFirst()
-                .orElseThrow(() -> new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
-                        "해당 순서의 질문을 찾을 수 없습니다: " + order));
-
-        // QuizQuestionResponse로 변환
-        return QuizQuestionResponse.from(question);
-    }
-
     @Transactional
     public QuizAnswerResponse saveOrUpdateAnswer(Long sessionId, QuizAnswerRequest request) {
         QuizSession session = quizSessionRepository.findById(sessionId)
@@ -308,9 +295,31 @@ public class QuizService {
                 .map(QuizOption::getValue)
                 .toList();
 
-        // 옵션이 유효한지 체크
+        // 중복 옵션 선택 검증
+        long distinctCount = selectedOptions.stream()
+                .filter(option -> option != null)
+                .distinct()
+                .count();
+        if (distinctCount != selectedOptions.size()) {
+            throw new QuizException(QuizErrorCode.INVALID_QUIZ_RESPONSE,
+                    "중복된 옵션을 선택할 수 없습니다");
+        }
+
+        // 옵션이 유효한지 체크 (공백 검증 포함)
         for (String option : selectedOptions) {
-            if (option == null || !available.contains(option)) {
+            if (option == null) {
+                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
+            }
+            
+            // 공백만 있는 옵션 검증
+            String trimmedOption = option.trim();
+            if (trimmedOption.isEmpty()) {
+                throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID,
+                        "공백만 있는 옵션은 선택할 수 없습니다");
+            }
+            
+            // 유효한 옵션 값인지 확인 (trim된 값으로 비교)
+            if (!available.contains(trimmedOption) && !available.contains(option)) {
                 throw new QuizException(QuizErrorCode.QUIZ_OPTION_INVALID);
             }
         }
@@ -356,6 +365,32 @@ public class QuizService {
         if (session.getCompleted()) {
             throw new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED);
         }
+    }
+
+    /**
+     * 만료된 미완료 세션을 삭제합니다.
+     *
+     * @param expiration 만료 시간 (null이면 안 됨)
+     * @return 삭제된 세션 수
+     */
+    @Transactional
+    public int cleanupExpiredSessions(Duration expiration) {
+        if (expiration == null) {
+            throw new QuizException(QuizErrorCode.QUIZ_CLEANUP_EXPIRATION_NULL);
+        }
+        LocalDateTime cutoff = LocalDateTime.now().minus(expiration);
+
+        List<QuizSession> expiredSessions =
+                quizSessionRepository.findByCompletedFalseAndCreatedAtBefore(cutoff);
+
+        if (expiredSessions.isEmpty()) {
+            return 0;
+        }
+
+        // CASCADE로 QuizAnswer도 자동 삭제됨 (QuizSession.cascade = CascadeType.ALL, orphanRemoval = true)
+        quizSessionRepository.deleteAll(expiredSessions);
+
+        return expiredSessions.size();
     }
 
 }

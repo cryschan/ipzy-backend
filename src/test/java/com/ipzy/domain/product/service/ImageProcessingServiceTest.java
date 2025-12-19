@@ -46,11 +46,13 @@ class ImageProcessingServiceTest {
             );
 
             RemoveBackgroundResponse.ImageResult result1 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image1.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg1.jpg")
                     .success(true)
                     .build();
 
             RemoveBackgroundResponse.ImageResult result2 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image2.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg2.jpg")
                     .success(true)
                     .build();
@@ -64,8 +66,9 @@ class ImageProcessingServiceTest {
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class)).willReturn(response);
@@ -112,14 +115,16 @@ class ImageProcessingServiceTest {
             );
 
             RemoveBackgroundResponse.ImageResult result1 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image1.jpg")
                     .removedBackgroundUrl("https://s3.amazonaws.com/nobg1.jpg")
                     .success(true)
                     .build();
 
             RemoveBackgroundResponse.ImageResult result2 = RemoveBackgroundResponse.ImageResult.builder()
+                    .originalUrl("https://example.com/image2.jpg")
                     .removedBackgroundUrl(null)
                     .success(false)
-                    .errorMessage("Processing failed")
+                    .error("Processing failed")
                     .build();
 
             RemoveBackgroundResponse response = RemoveBackgroundResponse.builder()
@@ -131,8 +136,9 @@ class ImageProcessingServiceTest {
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class)).willReturn(response);
@@ -147,9 +153,9 @@ class ImageProcessingServiceTest {
         }
 
         @Test
-        @DisplayName("20개 이상의 이미지는 청크로 나눠서 처리한다")
+        @DisplayName("15개 이상의 이미지는 청크로 나눠서 처리한다")
         void success_whenLargeList() {
-            // given - 25개 이미지 (20 + 5로 분할될 것)
+            // given - 25개 이미지 (15 + 10로 분할될 것)
             List<String> imageUrls = List.of(
                     "https://example.com/image1.jpg",
                     "https://example.com/image2.jpg",
@@ -178,16 +184,17 @@ class ImageProcessingServiceTest {
                     "https://example.com/image25.jpg"
             );
 
-            RemoveBackgroundResponse response1 = createMockResponseWithUrls(imageUrls.subList(0, 20));
-            RemoveBackgroundResponse response2 = createMockResponseWithUrls(imageUrls.subList(20, 25));
+            RemoveBackgroundResponse response1 = createMockResponseWithUrls(imageUrls.subList(0, 15));
+            RemoveBackgroundResponse response2 = createMockResponseWithUrls(imageUrls.subList(15, 25));
 
             RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
             RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
             given(pythonAiRestClient.post()).willReturn(requestBodyUriSpec);
-            given(requestBodyUriSpec.uri("/api/image/remove-background")).willReturn(requestBodySpec);
+            given(requestBodyUriSpec.uri("/api/image/remove-background/batch")).willReturn(requestBodySpec);
             given(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
+            given(requestBodySpec.accept(MediaType.APPLICATION_JSON)).willReturn(requestBodySpec);
             given(requestBodySpec.body(any(RemoveBackgroundRequest.class))).willReturn(requestBodySpec);
             given(requestBodySpec.retrieve()).willReturn(responseSpec);
             given(responseSpec.body(RemoveBackgroundResponse.class))
@@ -204,6 +211,7 @@ class ImageProcessingServiceTest {
             List<RemoveBackgroundResponse.ImageResult> results = new java.util.ArrayList<>(originalUrls.size());
             for (String originalUrl : originalUrls) {
                 results.add(RemoveBackgroundResponse.ImageResult.builder()
+                        .originalUrl(originalUrl)
                         .removedBackgroundUrl(originalUrl.replace("https://example.com/", "https://s3.amazonaws.com/nobg/"))
                         .success(true)
                         .build());

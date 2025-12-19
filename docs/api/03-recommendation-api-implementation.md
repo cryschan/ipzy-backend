@@ -38,28 +38,30 @@ Python FastAPI와 통신하여 AI 코디 추천을 생성하는 기능의 구현
 ┌─────────────────────────────────────────────────────────────────────┐
 │                   AiRecommendationClient (Interface)                │
 └──────────────┬──────────────────────────────────┬───────────────────┘
-               │                                  │
-               ▼                                  ▼
-┌──────────────────────────────┐    ┌──────────────────────────────┐
-│       MockAiClient           │    │       PythonAiClient         │
-│   @Profile("local", "dev")   │    │      @Profile("prod")        │
-│   - Mock 응답 반환           │    │   - 실제 HTTP 통신           │
-└──────────────────────────────┘    └──────────────────────────────┘
-                                                  │
-                                                  ▼
-                                    ┌──────────────────────────────┐
-                                    │     Python FastAPI           │
-                                    │   POST /api/v1/recommend     │
-                                    └──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│             PythonAiClient                       │
+│          (기본 활성화)                            │
+│        - 실제 HTTP 통신                          │
+│        - 테스트 시 @MockBean 사용                │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│           Python FastAPI                         │
+│         POST /api/recommend                      │
+└──────────────────────────────────────────────────┘
 ```
 
-### 1.2 프로파일별 클라이언트 선택
+### 1.2 클라이언트 구성
 
-| 프로파일 | 활성화 클라이언트 | 용도 |
-|---------|------------------|------|
-| `local` | MockAiClient | 로컬 개발 (Python 없이 테스트) |
-| `dev` | MockAiClient | 개발 환경 |
-| `prod` | PythonAiClient | 운영 환경 (실제 Python 통신) |
+| 환경 | 클라이언트 | 설명 |
+|------|-----------|------|
+| 모든 환경 | PythonAiClient | Python FastAPI와 실제 HTTP 통신 |
+| 테스트 환경 | @MockBean AiRecommendationClient | 단위 테스트 시 Mock 사용 |
+
+**참고**: 이전 버전의 MockAiClient는 제거되었습니다. Python 서버 없이 개발하려면 Python Docker Compose를 실행하세요.
 
 ---
 
@@ -402,8 +404,7 @@ public class RecommendationItem {
 src/main/java/com/ipzy/domain/recommendation/
 ├── client/
 │   ├── AiRecommendationClient.java      # 인터페이스
-│   ├── PythonAiClient.java              # Production (@Profile("prod"))
-│   └── MockAiClient.java                # Mock (@Profile("local", "dev"))
+│   └── PythonAiClient.java              # Python API 통신 (기본 활성화)
 ├── controller/
 │   └── RecommendationController.java
 ├── dto/
@@ -430,7 +431,7 @@ src/main/java/com/ipzy/domain/recommendation/
 
 src/test/java/com/ipzy/domain/recommendation/
 ├── client/
-│   └── MockAiClientTest.java
+│   └── PythonAiClientTest.java          # (선택적)
 ├── controller/
 │   └── RecommendationControllerTest.java
 ├── dto/

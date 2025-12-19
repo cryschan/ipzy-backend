@@ -1,6 +1,5 @@
 package com.ipzy.domain.recommendation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ipzy.domain.quiz.entity.QuizSession;
 import com.ipzy.domain.recommendation.entity.Recommendation;
 import com.ipzy.domain.user.entity.User;
@@ -17,11 +16,8 @@ public record OutfitRecommendationDto(
         String style,
         String reason,
         String status,
-        @JsonProperty("job_id")
         String jobId,
-        @JsonProperty("created_at")
         String createdAt,
-        @JsonProperty("completed_at")
         String completedAt,
         OutfitResultDto result,
         String error

@@ -4,13 +4,14 @@ import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
 import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizCompletionResponse;
-import com.ipzy.domain.quiz.dto.QuizQuestionResponse;
 import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
 import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,15 +42,40 @@ public class QuizSessionController {
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "진행 상태 조회 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션을 찾을 수 없음 (QUIZ_003)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "진행 상태 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "sessionId": 12,
+                                        "totalQuestions": 4,
+                                        "answeredCount": 2,
+                                        "completed": false,
+                                        "answers": [
+                                          {
+                                            "questionId": 1,
+                                            "selectedOptions": ["clean"]
+                                          },
+                                          {
+                                            "questionId": 2,
+                                            "selectedOptions": ["minimal", "casual"]
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션을 찾을 수 없음 (QUIZ_003)"
+            )
+    })
     public ApiResponse<QuizSessionProgressResponse> getProgress(
             @PathVariable Long sessionId
     ) {
@@ -72,69 +98,44 @@ public class QuizSessionController {
                     | 코드 | HTTP | 설명 |
                     |------|------|------|
                     | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
-                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
+                    | QUIZ_002 | 400 | 퀴즈가 완료되지 않았습니다 |
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
-                    | QUIZ_005 | 400 | 필수 질문에 답변하지 않았습니다 |
-                    | QUIZ_006 | 400 | 퀴즈가 완료되지 않았습니다 |
+                    | QUIZ_008 | 400 | 필수 질문에 답변하지 않았습니다 |
+                    | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "세션 완료 처리 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_005, QUIZ_006)"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션을 찾을 수 없음 (QUIZ_003)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "세션 완료 처리 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "sessionId": 12,
+                                        "completed": true,
+                                        "completedAt": "2025-01-15T14:23:10"
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_013)"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션을 찾을 수 없음 (QUIZ_003)"
+            )
+    })
     public ApiResponse<QuizCompletionResponse> complete(
             @PathVariable Long sessionId
     ) {
         return ApiResponse.success(quizService.completeSession(sessionId));
-    }
-
-    @GetMapping("/{sessionId}/questions/{order}")
-    @Operation(
-            summary = "세션별 단일 질문 조회",
-            description = """
-                    특정 세션의 특정 순서(displayOrder)의 질문을 조회합니다. 비로그인 사용자도 접근 가능합니다.
-                    
-                    **파라미터:**
-                    - `sessionId`: 세션 ID
-                    - `order`: 질문 순서 (displayOrder)
-                    
-                    **에러 코드:**
-                    | 코드 | HTTP | 설명 |
-                    |------|------|------|
-                    | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
-                    | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
-                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
-                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 (해당 순서의 질문 없음) |
-                    """
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "질문 조회 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004)"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션 또는 퀴즈를 찾을 수 없음 (QUIZ_001, QUIZ_003)"
-    )
-    public ApiResponse<QuizQuestionResponse> getSessionQuestion(
-            @PathVariable Long sessionId,
-            @PathVariable Integer order
-    ) {
-        return ApiResponse.success(quizService.getQuestionByOrder(sessionId, order));
     }
 
     @PostMapping("/{sessionId}/answers")
@@ -151,32 +152,45 @@ public class QuizSessionController {
                     **에러 코드:**
                     | 코드 | HTTP | 설명 |
                     |------|------|------|
+                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
                     | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
                     | QUIZ_004 | 400 | 이미 완료된 퀴즈 세션입니다 |
-                    | QUIZ_007 | 404 | 퀴즈 질문을 찾을 수 없습니다 |
-                    | QUIZ_001 | 404 | 퀴즈를 찾을 수 없습니다 |
-                    | QUIZ_008 | 400 | 해당 질문이 세션의 퀴즈에 속하지 않습니다 |
-                    | QUIZ_009 | 400 | 유효하지 않은 옵션입니다 |
-                    | QUIZ_010 | 400 | 단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다 |
-                    | QUIZ_002 | 400 | 유효하지 않은 퀴즈 응답입니다 |
+                    | QUIZ_006 | 404 | 퀴즈 질문을 찾을 수 없습니다 |
+                    | QUIZ_007 | 400 | 해당 질문이 세션의 퀴즈에 속하지 않습니다 |
+                    | QUIZ_009 | 400 | 단일 선택 질문에는 1개의 옵션만 선택할 수 있습니다 |
+                    | QUIZ_012 | 400 | 유효하지 않은 옵션입니다 |
+                    | QUIZ_013 | 400 | 유효하지 않은 퀴즈 응답입니다 |
                     """
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "답변 저장/수정 성공",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "검증 실패 (QUIZ_002, QUIZ_004, QUIZ_008, QUIZ_009, QUIZ_010)"
-    )
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_007)"
-    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "답변 저장/수정 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "questionId": 1,
+                                        "selectedOptions": ["clean"]
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "검증 실패 (QUIZ_004, QUIZ_007, QUIZ_009, QUIZ_012, QUIZ_013)"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세션, 퀴즈 또는 질문을 찾을 수 없음 (QUIZ_001, QUIZ_003, QUIZ_006)"
+            )
+    })
     public ApiResponse<QuizAnswerResponse> saveAnswer(
             @PathVariable Long sessionId,
-            @RequestBody QuizAnswerRequest request
+            @Valid @RequestBody QuizAnswerRequest request
     ) {
         return ApiResponse.success(quizService.saveOrUpdateAnswer(sessionId, request));
     }

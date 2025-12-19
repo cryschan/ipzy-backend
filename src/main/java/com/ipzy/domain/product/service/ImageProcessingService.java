@@ -23,8 +23,8 @@ public class ImageProcessingService {
         this.pythonAiRestClient = pythonAiRestClient;
     }
 
-    private static final int CHUNK_SIZE = 20; // 배치당 처리할 이미지 개수
-    private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/image/remove-background";
+    private static final int CHUNK_SIZE = 15; // 배치당 처리할 이미지 개수
+    private static final String REMOVE_BACKGROUND_ENDPOINT = "/api/image/remove-background/batch";
 
     /**
      * 여러 이미지의 누끼를 배치로 제거
@@ -87,6 +87,7 @@ public class ImageProcessingService {
             RemoveBackgroundResponse response = pythonAiRestClient.post()
                     .uri(REMOVE_BACKGROUND_ENDPOINT)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
                     .body(RemoveBackgroundResponse.class);
@@ -96,25 +97,20 @@ public class ImageProcessingService {
                 return Collections.emptyMap();
             }
 
-            // 응답 크기가 요청과 다르면 경고
-            if (response.getResults().size() != imageUrls.size()) {
-                log.warn("응답 크기가 요청 크기와 다릅니다: 요청={}, 응답={}",
-                         imageUrls.size(), response.getResults().size());
-            }
-
-            // 인덱스 기반으로 요청 URL과 응답 매칭
+            // URL 기반으로 요청과 응답 매칭 (original_url 활용)
             Map<String, String> resultMap = new HashMap<>();
-            int minSize = Math.min(imageUrls.size(), response.getResults().size());
 
-            for (int i = 0; i < minSize; i++) {
-                String originalUrl = imageUrls.get(i);
-                RemoveBackgroundResponse.ImageResult result = response.getResults().get(i);
+            for (RemoveBackgroundResponse.ImageResult result : response.getResults()) {
+                if (result.getOriginalUrl() == null) {
+                    log.warn("응답에 original_url이 없습니다: {}", result);
+                    continue;
+                }
 
                 if (result.isSuccess() && result.getRemovedBackgroundUrl() != null) {
-                    resultMap.put(originalUrl, result.getRemovedBackgroundUrl());
+                    resultMap.put(result.getOriginalUrl(), result.getRemovedBackgroundUrl());
                 } else {
                     log.warn("이미지 처리 실패: url={}, error={}",
-                             originalUrl, result.getErrorMessage());
+                             result.getOriginalUrl(), result.getError());
                 }
             }
 
