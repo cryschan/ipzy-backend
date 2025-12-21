@@ -53,14 +53,15 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
       # AI Server
-      - AI_SERVER_URL=${AI_SERVER_URL:-http://ipzy-ai:8000}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ipzy-ai:8000}
     networks:
       - ipzy-network
     restart: on-failure
 
 networks:
   ipzy-network:
-    external: true
+    driver: bridge
+    name: ipzy-network
 
 volumes:
   postgres_data:
