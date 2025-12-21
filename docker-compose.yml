@@ -50,6 +50,18 @@ services:
       # Frontend URL
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
 
+      # Payments (Toss)
+      - PAYMENTS_PROVIDER=${PAYMENTS_PROVIDER:-toss}
+
+      - TOSS_CLIENT_KEY=${TOSS_CLIENT_KEY}
+      - TOSS_SECRET_KEY=${TOSS_SECRET_KEY}
+
+      # Toss redirect URLs (must match controller paths)
+      - TOSS_SUCCESS_URL=${TOSS_SUCCESS_URL:-http://localhost:8080/api/payment/toss/success}
+      - TOSS_FAIL_URL=${TOSS_FAIL_URL:-http://localhost:8080/api/payment/toss/fail}
+
+      - TOSS_WEBHOOK_SECRET=${TOSS_WEBHOOK_SECRET}
+
   ai:
     build:
       context: ../ipzy-ai

@@ -1,7 +1,6 @@
 package com.ipzy.domain.payment.entity;
 
 import com.ipzy.domain.subscription.entity.Subscription;
-import com.ipzy.domain.user.entity.User;
 import com.ipzy._global.common.BaseEntity;
 import com.ipzy._global.common.enums.PaymentMethod;
 import com.ipzy._global.common.enums.PaymentStatus;
@@ -24,10 +23,6 @@ public class Payment extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 
@@ -48,7 +43,8 @@ public class Payment extends BaseEntity {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "transaction_id", length = 100)
+    //결제 중복 방지 코드 추가
+    @Column(name = "transaction_id", length = 100, unique = true)
     private String transactionId;
 
     @Column(name = "receipt_url", length = 500)
@@ -61,9 +57,8 @@ public class Payment extends BaseEntity {
     private LocalDateTime completedAt;
 
     @Builder
-    public Payment(User user, Subscription subscription, Integer amount, String currency,
+    public Payment(Subscription subscription, Integer amount, String currency,
                    PaymentMethod method, PaymentStatus status, String description) {
-        this.user = user;
         this.subscription = subscription;
         this.amount = amount;
         this.currency = currency != null ? currency : "KRW";
