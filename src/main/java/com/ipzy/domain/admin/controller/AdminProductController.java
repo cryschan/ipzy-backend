@@ -21,7 +21,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Admin Product", description = "관리자용 상품 관리 API")
@@ -83,14 +82,14 @@ public class AdminProductController {
         )
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AdminProductResponse>>> getProducts(
+    public ApiResponse<Page<AdminProductResponse>> getProducts(
             @ParameterObject @Valid AdminProductSearchRequest request,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpSession session
     ) {
         validateAdminSession(session);
         Page<AdminProductResponse> products = adminProductService.findProducts(request, pageable);
-        return ResponseEntity.ok(ApiResponse.success(products));
+        return ApiResponse.success(products);
     }
 
     @Operation(summary = "상품 상세 조회", description = "특정 상품의 상세 정보 조회")
@@ -127,6 +126,22 @@ public class AdminProductController {
             )
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "상품을 찾을 수 없음",
             content = @Content(
@@ -144,21 +159,48 @@ public class AdminProductController {
         )
     })
     @GetMapping("/{productId}")
-    public ResponseEntity<ApiResponse<AdminProductDetailResponse>> getProductDetail(
+    public ApiResponse<AdminProductDetailResponse> getProductDetail(
             @Parameter(description = "상품 ID", required = true, example = "1")
             @PathVariable Long productId,
             HttpSession session
     ) {
         validateAdminSession(session);
         AdminProductDetailResponse product = adminProductService.findProductDetail(productId);
-        return ResponseEntity.ok(ApiResponse.success(product));
+        return ApiResponse.success(product);
     }
 
     @Operation(summary = "상품 활성화", description = "비활성화된 상품을 활성화합니다")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
-            description = "활성화 성공"
+            description = "활성화 성공",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "brand": {
+                          "id": 1,
+                          "name": "MUSINSA_STANDARD",
+                          "displayName": "무신사 스탠다드"
+                        },
+                        "name": "릴렉스드 핏 크루넥 스웨터",
+                        "category": "TOP",
+                        "subCategory": "니트/스웨터",
+                        "primaryStyle": "캐주얼",
+                        "price": 39900,
+                        "originalPrice": 49900,
+                        "discountPercent": 20,
+                        "imageUrl": "https://example.com/image.jpg",
+                        "isActive": true,
+                        "purchaseUrl": "https://musinsa.com/product/123",
+                        "createdAt": "2024-01-15T10:30:00"
+                      }
+                    }
+                    """)
+            )
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
@@ -175,35 +217,142 @@ public class AdminProductController {
                     }
                     """)
             )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "상품을 찾을 수 없음",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_012",
+                        "message": "상품을 찾을 수 없습니다"
+                      }
+                    }
+                    """)
+            )
         )
     })
     @PatchMapping("/{productId}/activate")
-    public ResponseEntity<ApiResponse<AdminProductDetailResponse>> activateProduct(
+    public ApiResponse<AdminProductDetailResponse> activateProduct(
             @Parameter(description = "상품 ID", required = true, example = "1")
             @PathVariable Long productId,
             HttpSession session
     ) {
         Long adminId = validateAdminSession(session);
         AdminProductDetailResponse product = adminProductService.activateProduct(productId, adminId);
-        return ResponseEntity.ok(ApiResponse.success(product));
+        return ApiResponse.success(product);
     }
 
     @Operation(summary = "상품 비활성화", description = "활성화된 상품을 비활성화합니다")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
-            description = "비활성화 성공"
+            description = "비활성화 성공",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "brand": {
+                          "id": 1,
+                          "name": "MUSINSA_STANDARD",
+                          "displayName": "무신사 스탠다드"
+                        },
+                        "name": "릴렉스드 핏 크루넥 스웨터",
+                        "category": "TOP",
+                        "subCategory": "니트/스웨터",
+                        "primaryStyle": "캐주얼",
+                        "price": 39900,
+                        "originalPrice": 49900,
+                        "discountPercent": 20,
+                        "imageUrl": "https://example.com/image.jpg",
+                        "isActive": false,
+                        "purchaseUrl": "https://musinsa.com/product/123",
+                        "createdAt": "2024-01-15T10:30:00"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "삭제된 상품",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_013",
+                        "message": "삭제된 상품은 수정할 수 없습니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "상품을 찾을 수 없음",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_012",
+                        "message": "상품을 찾을 수 없습니다"
+                      }
+                    }
+                    """)
+            )
         )
     })
     @PatchMapping("/{productId}/deactivate")
-    public ResponseEntity<ApiResponse<AdminProductDetailResponse>> deactivateProduct(
+    public ApiResponse<AdminProductDetailResponse> deactivateProduct(
             @Parameter(description = "상품 ID", required = true, example = "1")
             @PathVariable Long productId,
             HttpSession session
     ) {
         Long adminId = validateAdminSession(session);
         AdminProductDetailResponse product = adminProductService.deactivateProduct(productId, adminId);
-        return ResponseEntity.ok(ApiResponse.success(product));
+        return ApiResponse.success(product);
     }
 
     @Operation(summary = "상품 삭제", description = "상품을 소프트 삭제합니다")
@@ -220,17 +369,65 @@ public class AdminProductController {
                     }
                     """)
             )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "이미 삭제된 상품",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_013",
+                        "message": "삭제된 상품은 수정할 수 없습니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "상품을 찾을 수 없음",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_012",
+                        "message": "상품을 찾을 수 없습니다"
+                      }
+                    }
+                    """)
+            )
         )
     })
     @DeleteMapping("/{productId}")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+    public ApiResponse<Void> deleteProduct(
             @Parameter(description = "상품 ID", required = true, example = "1")
             @PathVariable Long productId,
             HttpSession session
     ) {
         Long adminId = validateAdminSession(session);
         adminProductService.deleteProduct(productId, adminId);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ApiResponse.success(null);
     }
 
     private Long validateAdminSession(HttpSession session) {

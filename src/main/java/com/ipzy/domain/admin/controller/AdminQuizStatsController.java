@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Admin Quiz Stats", description = "관리자용 퀴즈 통계 API")
@@ -81,10 +80,10 @@ public class AdminQuizStatsController {
         )
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<AdminQuizStatsResponse>> getQuizStats(HttpSession session) {
+    public ApiResponse<AdminQuizStatsResponse> getQuizStats(HttpSession session) {
         validateAdminSession(session);
         AdminQuizStatsResponse stats = adminQuizStatsService.getQuizStats();
-        return ResponseEntity.ok(ApiResponse.success(stats));
+        return ApiResponse.success(stats);
     }
 
     @Operation(summary = "퀴즈 세션 목록 조회", description = "검색 조건에 따른 퀴즈 세션 목록 페이징 조회")
@@ -117,17 +116,33 @@ public class AdminQuizStatsController {
                     }
                     """)
             )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
         )
     })
     @GetMapping("/sessions")
-    public ResponseEntity<ApiResponse<Page<AdminQuizSessionResponse>>> getSessions(
+    public ApiResponse<Page<AdminQuizSessionResponse>> getSessions(
             @ParameterObject @Valid AdminQuizSessionSearchRequest request,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpSession session
     ) {
         validateAdminSession(session);
         Page<AdminQuizSessionResponse> sessions = adminQuizStatsService.findSessions(request, pageable);
-        return ResponseEntity.ok(ApiResponse.success(sessions));
+        return ApiResponse.success(sessions);
     }
 
     @Operation(summary = "퀴즈 세션 상세 조회", description = "특정 세션의 상세 정보 및 답변 조회")
@@ -170,6 +185,22 @@ public class AdminQuizStatsController {
             )
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "세션을 찾을 수 없음",
             content = @Content(
@@ -187,14 +218,14 @@ public class AdminQuizStatsController {
         )
     })
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<ApiResponse<AdminQuizSessionDetailResponse>> getSessionDetail(
+    public ApiResponse<AdminQuizSessionDetailResponse> getSessionDetail(
             @Parameter(description = "세션 ID", required = true, example = "1")
             @PathVariable Long sessionId,
             HttpSession session
     ) {
         validateAdminSession(session);
         AdminQuizSessionDetailResponse sessionDetail = adminQuizStatsService.findSessionDetail(sessionId);
-        return ResponseEntity.ok(ApiResponse.success(sessionDetail));
+        return ApiResponse.success(sessionDetail);
     }
 
     private Long validateAdminSession(HttpSession session) {

@@ -14,6 +14,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +37,7 @@ public class BrandController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "브랜드 등록 성공",
                     content = @Content(
                             mediaType = "application/json",
@@ -105,10 +107,10 @@ public class BrandController {
             )
     })
     @PostMapping
-    public ApiResponse<BrandResponse> createBrand(@Valid @RequestBody BrandRequest request) {
+    public ResponseEntity<ApiResponse<BrandResponse>> createBrand(@Valid @RequestBody BrandRequest request) {
         log.info("브랜드 등록 API 호출: name={}, validateMusinsa={}", request.getName(), request.isValidateMusinsa());
         BrandResponse response = brandService.createBrand(request);
-        return ApiResponse.success(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     @Operation(

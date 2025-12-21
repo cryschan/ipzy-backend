@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -89,14 +88,14 @@ public class AdminUserController {
         )
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getUsers(
+    public ApiResponse<Page<AdminUserResponse>> getUsers(
             @ParameterObject @Valid AdminUserSearchRequest request,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpSession session
     ) {
         validateAdminSession(session);
         Page<AdminUserResponse> users = adminUserService.findUsers(request, pageable);
-        return ResponseEntity.ok(ApiResponse.success(users));
+        return ApiResponse.success(users);
     }
 
     @Operation(summary = "회원 상세 조회", description = "특정 회원의 상세 정보 조회")
@@ -168,14 +167,14 @@ public class AdminUserController {
         )
     })
     @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<AdminUserDetailResponse>> getUserDetail(
+    public ApiResponse<AdminUserDetailResponse> getUserDetail(
             @Parameter(description = "회원 ID", required = true, example = "1")
             @PathVariable Long userId,
             HttpSession session
     ) {
         validateAdminSession(session);
         AdminUserDetailResponse user = adminUserService.findUserDetail(userId);
-        return ResponseEntity.ok(ApiResponse.success(user));
+        return ApiResponse.success(user);
     }
 
     @Operation(summary = "회원 상태 변경", description = "회원 상태를 변경합니다 (정지, 활성화, 삭제 등)")
@@ -254,7 +253,7 @@ public class AdminUserController {
         )
     })
     @PatchMapping("/{userId}/status")
-    public ResponseEntity<ApiResponse<AdminUserDetailResponse>> changeUserStatus(
+    public ApiResponse<AdminUserDetailResponse> changeUserStatus(
             @Parameter(description = "회원 ID", required = true, example = "1")
             @PathVariable Long userId,
             @Valid @RequestBody AdminUserStatusChangeRequest request,
@@ -262,7 +261,7 @@ public class AdminUserController {
     ) {
         Long adminId = validateAdminSession(session);
         AdminUserDetailResponse user = adminUserService.changeUserStatus(userId, request, adminId);
-        return ResponseEntity.ok(ApiResponse.success(user));
+        return ApiResponse.success(user);
     }
 
     /**

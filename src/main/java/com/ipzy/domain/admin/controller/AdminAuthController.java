@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -113,12 +112,12 @@ public class AdminAuthController {
         )
     })
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AdminLoginResponse>> login(
+    public ApiResponse<AdminLoginResponse> login(
         @Valid @RequestBody AdminLoginRequest request,
         HttpSession session
     ) {
         AdminLoginResponse response = adminAuthService.login(request, session);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ApiResponse.success(response);
     }
 
     @Operation(summary = "관리자 로그아웃", description = "현재 세션 종료")
@@ -138,9 +137,9 @@ public class AdminAuthController {
         )
     })
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpSession session) {
+    public ApiResponse<Void> logout(HttpSession session) {
         adminAuthService.logout(session);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ApiResponse.success(null);
     }
 
     @Operation(summary = "현재 관리자 정보", description = "로그인된 관리자 정보 조회")
@@ -213,8 +212,8 @@ public class AdminAuthController {
         )
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<AdminLoginResponse>> getCurrentAdmin(HttpSession session) {
+    public ApiResponse<AdminLoginResponse> getCurrentAdmin(HttpSession session) {
         AdminLoginResponse response = adminAuthService.getCurrentAdmin(session);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ApiResponse.success(response);
     }
 }

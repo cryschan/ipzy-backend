@@ -21,7 +21,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Admin Subscription", description = "관리자용 구독 관리 API")
@@ -84,14 +83,14 @@ public class AdminSubscriptionController {
         )
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AdminSubscriptionResponse>>> getSubscriptions(
+    public ApiResponse<Page<AdminSubscriptionResponse>> getSubscriptions(
             @ParameterObject @Valid AdminSubscriptionSearchRequest request,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpSession session
     ) {
         validateAdminSession(session);
         Page<AdminSubscriptionResponse> subscriptions = adminSubscriptionService.findSubscriptions(request, pageable);
-        return ResponseEntity.ok(ApiResponse.success(subscriptions));
+        return ApiResponse.success(subscriptions);
     }
 
     @Operation(summary = "구독 상세 조회", description = "특정 구독의 상세 정보 조회")
@@ -129,6 +128,22 @@ public class AdminSubscriptionController {
             )
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "404",
             description = "구독을 찾을 수 없음",
             content = @Content(
@@ -146,14 +161,14 @@ public class AdminSubscriptionController {
         )
     })
     @GetMapping("/{subscriptionId}")
-    public ResponseEntity<ApiResponse<AdminSubscriptionDetailResponse>> getSubscriptionDetail(
+    public ApiResponse<AdminSubscriptionDetailResponse> getSubscriptionDetail(
             @Parameter(description = "구독 ID", required = true, example = "1")
             @PathVariable Long subscriptionId,
             HttpSession session
     ) {
         validateAdminSession(session);
         AdminSubscriptionDetailResponse subscription = adminSubscriptionService.findSubscriptionDetail(subscriptionId);
-        return ResponseEntity.ok(ApiResponse.success(subscription));
+        return ApiResponse.success(subscription);
     }
 
     @Operation(summary = "구독 취소", description = "활성화된 구독을 취소합니다")
@@ -191,10 +206,42 @@ public class AdminSubscriptionController {
                     }
                     """)
             )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "로그인 필요",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_005",
+                        "message": "로그인이 필요합니다"
+                      }
+                    }
+                    """)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "구독을 찾을 수 없음",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = """
+                    {
+                      "success": false,
+                      "error": {
+                        "code": "ADMIN_010",
+                        "message": "구독을 찾을 수 없습니다"
+                      }
+                    }
+                    """)
+            )
         )
     })
     @PatchMapping("/{subscriptionId}/cancel")
-    public ResponseEntity<ApiResponse<AdminSubscriptionDetailResponse>> cancelSubscription(
+    public ApiResponse<AdminSubscriptionDetailResponse> cancelSubscription(
             @Parameter(description = "구독 ID", required = true, example = "1")
             @PathVariable Long subscriptionId,
             @Parameter(description = "취소 사유")
@@ -203,7 +250,7 @@ public class AdminSubscriptionController {
     ) {
         Long adminId = validateAdminSession(session);
         AdminSubscriptionDetailResponse subscription = adminSubscriptionService.cancelSubscription(subscriptionId, reason, adminId);
-        return ResponseEntity.ok(ApiResponse.success(subscription));
+        return ApiResponse.success(subscription);
     }
 
     private Long validateAdminSession(HttpSession session) {
