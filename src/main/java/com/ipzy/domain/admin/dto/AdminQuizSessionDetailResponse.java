@@ -72,16 +72,20 @@ public record AdminQuizSessionDetailResponse(
             )
             : new UserSummary(null, null, "익명");
 
-        return new AdminQuizSessionDetailResponse(
-            session.getId(),
-            userSummary,
-            new QuizSummary(
+        QuizSummary quizSummary = session.getQuiz() != null
+            ? new QuizSummary(
                 session.getQuiz().getId(),
                 session.getQuiz().getTitle(),
                 session.getQuiz().getDescription()
-            ),
+            )
+            : new QuizSummary(null, null, null);
+
+        return new AdminQuizSessionDetailResponse(
+            session.getId(),
+            userSummary,
+            quizSummary,
             session.getCompleted(),
-            session.getAnswers().stream()
+            (session.getAnswers() != null ? session.getAnswers() : Collections.<QuizAnswer>emptyList()).stream()
                 .map(AnswerSummary::from)
                 .toList(),
             session.getCreatedAt()

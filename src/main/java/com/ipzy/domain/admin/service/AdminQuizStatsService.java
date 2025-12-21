@@ -49,8 +49,8 @@ public class AdminQuizStatsService {
                 .put(optionValue, count);
         }
 
-        // 모든 질문과 옵션 조회 (첫 번째 퀴즈 기준 - 실제로는 모든 퀴즈 통합)
-        List<QuizQuestion> allQuestions = quizQuestionRepository.findAll();
+        // 모든 질문과 옵션 조회 (N+1 방지를 위해 fetch join 사용)
+        List<QuizQuestion> allQuestions = quizQuestionRepository.findAllWithOptions();
 
         List<AdminQuizStatsResponse.QuestionStat> questionStats = allQuestions.stream()
             .sorted(Comparator.comparing(QuizQuestion::getDisplayOrder))

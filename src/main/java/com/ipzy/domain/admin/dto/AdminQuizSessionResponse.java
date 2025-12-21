@@ -35,15 +35,24 @@ public record AdminQuizSessionResponse(
     LocalDateTime createdAt
 ) {
     public static AdminQuizSessionResponse from(QuizSession session) {
+        var user = session.getUser();
+        var quiz = session.getQuiz();
+        var answers = session.getAnswers();
+
+        String userName = "익명";
+        if (user != null && user.getName() != null) {
+            userName = user.getName();
+        }
+
         return new AdminQuizSessionResponse(
             session.getId(),
-            session.getUser() != null ? session.getUser().getId() : null,
-            session.getUser() != null ? session.getUser().getEmail() : null,
-            session.getUser() != null ? session.getUser().getName() : "익명",
-            session.getQuiz().getId(),
-            session.getQuiz().getTitle(),
+            user != null ? user.getId() : null,
+            user != null ? user.getEmail() : null,
+            userName,
+            quiz != null ? quiz.getId() : null,
+            quiz != null ? quiz.getTitle() : null,
             session.getCompleted(),
-            session.getAnswers().size(),
+            answers != null ? answers.size() : 0,
             session.getCreatedAt()
         );
     }

@@ -72,6 +72,9 @@ public record AdminProductDetailResponse(
         String brandType
     ) {
         public static BrandSummary from(Brand brand) {
+            if (brand == null) {
+                return null;
+            }
             return new BrandSummary(
                 brand.getId(),
                 brand.getName(),

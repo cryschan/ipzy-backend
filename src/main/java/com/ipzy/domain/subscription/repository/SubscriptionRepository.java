@@ -4,6 +4,10 @@ import com.ipzy._global.common.enums.SubscriptionStatus;
 import com.ipzy.domain.subscription.entity.Subscription;
 import com.ipzy.domain.user.entity.User;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -15,6 +19,13 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long>, JpaSpecificationExecutor<Subscription> {
+
+    /**
+     * N+1 방지를 위해 user, plan을 함께 조회
+     */
+    @Override
+    @EntityGraph(attributePaths = {"user", "plan"})
+    Page<Subscription> findAll(Specification<Subscription> spec, Pageable pageable);
 
     /**
      * 사용자의 활성 구독 조회
