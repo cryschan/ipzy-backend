@@ -7,32 +7,27 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web MVC 설정 - CORS 정책 설정
- * 배포 환경에서 모든 origin 허용
+ *
+ * SECURITY NOTE:
+ * - allowedOriginPatterns("*") + allowCredentials(true)는 CSRF 취약점
+ * - 반드시 환경변수로 명시적인 origin 목록을 설정해야 함
+ * - 예: CORS_ALLOWED_ORIGINS=http://localhost:5173,https://ipzy.com
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${CORS_ALLOWED_ORIGINS:*}")
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}")
     private String allowedOrigins;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // 모든 origin 허용하는 경우
-        if ("*".equals(allowedOrigins)) {
-            registry.addMapping("/**")
-                    .allowedOriginPatterns("*")
-                    .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600);
-        } else {
-            // 특정 origin만 허용하는 경우
-            registry.addMapping("/**")
-                    .allowedOrigins(allowedOrigins.split(","))
-                    .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600);
-        }
+        String[] origins = allowedOrigins.split(",");
+
+        registry.addMapping("/**")
+                .allowedOrigins(origins)
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }
