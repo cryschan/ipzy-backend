@@ -11,6 +11,7 @@ public record RecommendationItemResponse(
         String name,
         String brand,
         Integer price,
+        String imageUrl,
         String linkUrl,
         PositionResponse position
 ) {
@@ -31,6 +32,7 @@ public record RecommendationItemResponse(
                 item.getProductNameSnapshot(),
                 item.getBrandSnapshot(),
                 item.getPriceSnapshot(),
+                item.getImageUrlSnapshot(),
                 item.getLinkUrlSnapshot(),
                 position
         );
