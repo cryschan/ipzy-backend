@@ -160,7 +160,7 @@ public class QuizController {
             )
     })
     public ApiResponse<QuizSessionStartResponse> startQuiz(
-            @PathVariable Long quizId,
+            @PathVariable("quizId") Long quizId,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         Long userId = principal != null ? principal.getUserId() : null;
@@ -271,7 +271,7 @@ public class QuizController {
             )
     })
     public ApiResponse<List<QuizQuestionResponse>> getQuestions(
-            @PathVariable Long quizId
+            @PathVariable("quizId") Long quizId
     ) {
         return ApiResponse.success(quizService.getQuestions(quizId));
     }
