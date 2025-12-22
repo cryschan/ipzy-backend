@@ -77,7 +77,7 @@ public class QuizSessionController {
             )
     })
     public ApiResponse<QuizSessionProgressResponse> getProgress(
-            @PathVariable Long sessionId
+            @PathVariable("sessionId") Long sessionId
     ) {
         return ApiResponse.success(quizService.getProgress(sessionId));
     }
@@ -133,7 +133,7 @@ public class QuizSessionController {
             )
     })
     public ApiResponse<QuizCompletionResponse> complete(
-            @PathVariable Long sessionId
+            @PathVariable("sessionId") Long sessionId
     ) {
         return ApiResponse.success(quizService.completeSession(sessionId));
     }
@@ -189,7 +189,7 @@ public class QuizSessionController {
             )
     })
     public ApiResponse<QuizAnswerResponse> saveAnswer(
-            @PathVariable Long sessionId,
+            @PathVariable("sessionId") Long sessionId,
             @Valid @RequestBody QuizAnswerRequest request
     ) {
         return ApiResponse.success(quizService.saveOrUpdateAnswer(sessionId, request));
