@@ -75,6 +75,8 @@ public class SecurityConfig {
 
                 // ========== URL별 접근 권한 설정 ==========
                 .authorizeHttpRequests(auth -> auth
+                        // Health check: 로드밸런서 및 모니터링용 (배포 환경)
+                        .requestMatchers("/health").permitAll()
                         // /api/auth/me: 로그인한 사용자만 접근 가능
                         .requestMatchers("/api/auth/me").authenticated()
                         // /api/auth/**: 로그인, 로그아웃 등 인증 관련 API는 누구나 접근
