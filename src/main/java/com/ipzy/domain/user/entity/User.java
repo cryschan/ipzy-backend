@@ -164,6 +164,19 @@ public class User extends BaseEntity {
         this.deletedAt = null;
     }
 
+    /**
+     * 관리자에 의해 회원 상태를 변경합니다.
+     * @param newStatus 변경할 상태
+     */
+    public void changeStatus(UserStatus newStatus) {
+        if (newStatus == UserStatus.DELETED) {
+            this.deletedAt = LocalDateTime.now();
+        } else if (this.status == UserStatus.DELETED && newStatus != UserStatus.DELETED) {
+            this.deletedAt = null;
+        }
+        this.status = newStatus;
+    }
+
     public boolean isActive() {
         return this.status == UserStatus.ACTIVE;
     }

@@ -4,7 +4,12 @@ import com.ipzy._global.common.enums.SubscriptionStatus;
 import com.ipzy.domain.subscription.entity.Subscription;
 import com.ipzy.domain.user.entity.User;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +18,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
+public interface SubscriptionRepository extends JpaRepository<Subscription, Long>, JpaSpecificationExecutor<Subscription> {
+
+    /**
+     * N+1 방지를 위해 user, plan을 함께 조회
+     */
+    @Override
+    @EntityGraph(attributePaths = {"user", "plan"})
+    Page<Subscription> findAll(Specification<Subscription> spec, Pageable pageable);
 
     /**
      * 사용자의 활성 구독 조회
@@ -75,4 +87,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         @Param("user") User user,
         @Param("statuses") Set<SubscriptionStatus> statuses
     );
+
+    /**
+     * 여러 사용자의 최신 구독을 한 번에 조회 (N+1 방지용)
+     */
+    @Query("SELECT s FROM Subscription s " +
+           "WHERE s.user.id IN :userIds " +
+           "AND s.createdAt = (SELECT MAX(s2.createdAt) FROM Subscription s2 WHERE s2.user = s.user)")
+    List<Subscription> findLatestByUserIds(@Param("userIds") List<Long> userIds);
 }

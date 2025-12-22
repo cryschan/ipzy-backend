@@ -7,13 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
  * 사용자 저장소 - JPA CRUD + 커스텀 쿼리
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     Optional<User> findByIdAndStatusNot(Long id, UserStatus status);
 
