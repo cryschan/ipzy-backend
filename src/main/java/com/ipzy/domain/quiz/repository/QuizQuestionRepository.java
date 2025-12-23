@@ -16,4 +16,9 @@ public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long
             """)
     List<QuizQuestion> findAllByQuizIdWithOptions(Long quizId);
 
+    @Query("""
+                SELECT DISTINCT q FROM QuizQuestion q
+                LEFT JOIN FETCH q.options
+            """)
+    List<QuizQuestion> findAllWithOptions();
 }

@@ -34,4 +34,35 @@ public class AdminException extends BusinessException {
     public static AdminException sessionRequired() {
         return new AdminException(AdminErrorCode.SESSION_REQUIRED);
     }
+
+    public static AdminException userNotFound() {
+        return new AdminException(AdminErrorCode.USER_NOT_FOUND);
+    }
+
+    public static AdminException invalidStatusChange() {
+        return new AdminException(AdminErrorCode.INVALID_STATUS_CHANGE);
+    }
+
+    // 구독 관련
+    public static AdminException subscriptionNotFound() {
+        return new AdminException(AdminErrorCode.SUBSCRIPTION_NOT_FOUND);
+    }
+
+    public static AdminException invalidSubscriptionCancel() {
+        return new AdminException(AdminErrorCode.INVALID_SUBSCRIPTION_CANCEL);
+    }
+
+    // 상품 관련
+    public static AdminException productNotFound() {
+        return new AdminException(AdminErrorCode.PRODUCT_NOT_FOUND);
+    }
+
+    public static AdminException productAlreadyDeleted() {
+        return new AdminException(AdminErrorCode.PRODUCT_ALREADY_DELETED);
+    }
+
+    // 퀴즈 관련
+    public static AdminException quizSessionNotFound() {
+        return new AdminException(AdminErrorCode.QUIZ_SESSION_NOT_FOUND);
+    }
 }
