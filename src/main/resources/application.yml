@@ -89,6 +89,7 @@ logging:
 
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework  # 프록시(Vercel 등) X-Forwarded-* 헤더 처리
   servlet:
     session:
       timeout: ${SESSION_TIMEOUT:30m}
