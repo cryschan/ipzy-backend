@@ -120,6 +120,7 @@ server:
     session:
       cookie:
         secure: true # 프로덕션 HTTPS 필수
+        same-site: none # Cross-Origin 쿠키 허용
 
 logging:
   level:
