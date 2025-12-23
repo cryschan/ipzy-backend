@@ -85,39 +85,6 @@ public class QuizService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public QuizSessionProgressResponse getProgress(Long sessionId) {
-        // 세션 조회 (퀴즈, 답변을 JOIN FETCH로 조회)
-        QuizSession session = quizSessionRepository
-                .findByIdWithAnswers(sessionId)
-                .orElseThrow(() -> new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
-
-        // 질문 목록 조회
-        List<QuizQuestion> questions = getQuestionsBySession(session);
-
-        // 전체 질문 수
-        int totalQuestions = questions.size();
-        // 답변한 질문 수
-        int answeredCount = session.getAnswers().size();
-
-        // 답변 목록 매핑
-        List<QuizAnswerProgressResponse> answerList = session.getAnswers().stream()
-                .filter(a -> a != null && a.getQuestion() != null)
-                .map(a -> new QuizAnswerProgressResponse(
-                        a.getQuestion().getId(),
-                        a.getSelectedOptions()
-                ))
-                .toList();
-
-        return new QuizSessionProgressResponse(
-                session.getId(),
-                totalQuestions,
-                answeredCount,
-                session.getCompleted(),
-                answerList
-        );
-    }
-
     @Transactional
     public QuizCompletionResponse completeSession(Long sessionId) {
         // 세션 조회 (퀴즈, 답변을 JOIN FETCH로 조회)

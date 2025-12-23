@@ -4,7 +4,6 @@ import com.ipzy._global.common.ApiResponse;
 import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
 import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizCompletionResponse;
-import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
 import com.ipzy.domain.quiz.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,65 +21,6 @@ import org.springframework.web.bind.annotation.*;
 public class QuizSessionController {
 
     private final QuizService quizService;
-
-    @GetMapping("/{sessionId}/progress")
-    @Operation(
-            summary = "세션 진행 상태 조회",
-            description = """
-                    퀴즈 세션의 진행 상태를 조회합니다. 비로그인 사용자도 접근 가능합니다.
-                    
-                    **응답 정보:**
-                    - `sessionId`: 세션 ID
-                    - `totalQuestions`: 전체 질문 수
-                    - `answeredCount`: 답변한 질문 수
-                    - `completed`: 완료 여부
-                    - `answers`: 답변 목록 (질문 ID와 선택한 옵션)
-                    
-                    **에러 코드:**
-                    | 코드 | HTTP | 설명 |
-                    |------|------|------|
-                    | QUIZ_003 | 404 | 퀴즈 세션을 찾을 수 없습니다 |
-                    """
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "진행 상태 조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": true,
-                                      "data": {
-                                        "sessionId": 12,
-                                        "totalQuestions": 4,
-                                        "answeredCount": 2,
-                                        "completed": false,
-                                        "answers": [
-                                          {
-                                            "questionId": 1,
-                                            "selectedOptions": ["clean"]
-                                          },
-                                          {
-                                            "questionId": 2,
-                                            "selectedOptions": ["minimal", "casual"]
-                                          }
-                                        ]
-                                      }
-                                    }
-                                    """)
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "세션을 찾을 수 없음 (QUIZ_003)"
-            )
-    })
-    public ApiResponse<QuizSessionProgressResponse> getProgress(
-            @PathVariable Long sessionId
-    ) {
-        return ApiResponse.success(quizService.getProgress(sessionId));
-    }
 
     @PostMapping("/{sessionId}/complete")
     @Operation(
