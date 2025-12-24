@@ -51,6 +51,7 @@ spring:
 
 # 앱 설정
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   oauth2:
     success-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback
     failure-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback?error=true
