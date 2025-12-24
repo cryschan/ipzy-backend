@@ -6,14 +6,13 @@ import com.ipzy.domain.auth.handler.OAuth2FailureHandler;
 import com.ipzy.domain.auth.handler.OAuth2LogoutSuccessHandler;
 import com.ipzy.domain.auth.handler.OAuth2SuccessHandler;
 import com.ipzy.domain.auth.service.CustomOAuth2UserService;
-import com.ipzy.domain.quiz.dto.QuizAnswerProgressResponse;
 import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
 import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizCompletionResponse;
-import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
 import com.ipzy.domain.quiz.exception.QuizErrorCode;
 import com.ipzy.domain.quiz.exception.QuizException;
 import com.ipzy.domain.quiz.service.QuizService;
+import com.ipzy.domain.recommendation.service.RecommendationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,8 +28,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,6 +55,9 @@ public class QuizSessionControllerTest {
     private QuizService quizService;
 
     @MockBean
+    private RecommendationService recommendationService;
+
+    @MockBean
     private CustomOAuth2UserService customOAuth2UserService;
 
     @MockBean
@@ -74,64 +76,6 @@ public class QuizSessionControllerTest {
     private org.springframework.security.oauth2.client.OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
     @Nested
-    @DisplayName("GET /api/quiz-sessions/{sessionId}/progress")
-    class GetProgress {
-
-        @Test
-        @DisplayName("성공 - 세션 진행 상태 조회 (비로그인 사용자)")
-        void success_withAnonymousUser() throws Exception {
-            // given
-            Long sessionId = 1L;
-            QuizSessionProgressResponse response = new QuizSessionProgressResponse(
-                    sessionId,
-                    4,  // totalQuestions
-                    2,  // answeredCount
-                    false,  // completed
-                    List.of(
-                            new QuizAnswerProgressResponse(1L, List.of("clean")),
-                            new QuizAnswerProgressResponse(2L, List.of("minimal", "casual"))
-                    )
-            );
-
-            given(quizService.getProgress(sessionId))
-                    .willReturn(response);
-
-            // when & then
-            mockMvc.perform(get("/api/quiz-sessions/{sessionId}/progress", sessionId)
-                            .with(csrf()))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.sessionId").value(sessionId))
-                    .andExpect(jsonPath("$.data.totalQuestions").value(4))
-                    .andExpect(jsonPath("$.data.answeredCount").value(2))
-                    .andExpect(jsonPath("$.data.completed").value(false))
-                    .andExpect(jsonPath("$.data.answers").isArray())
-                    .andExpect(jsonPath("$.data.answers[0].questionId").value(1))
-                    .andExpect(jsonPath("$.data.answers[0].selectedOptions").isArray())
-                    .andExpect(jsonPath("$.data.answers[0].selectedOptions[0]").value("clean"));
-        }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 세션이면 404 (QUIZ_003)")
-        void fail_sessionNotFound() throws Exception {
-            // given
-            Long sessionId = 999L;
-            given(quizService.getProgress(sessionId))
-                    .willThrow(new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
-
-            // when & then
-            mockMvc.perform(get("/api/quiz-sessions/{sessionId}/progress", sessionId)
-                            .with(csrf()))
-                    .andDo(print())
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.error.code").value("QUIZ_003"))
-                    .andExpect(jsonPath("$.error.message").value("퀴즈 세션을 찾을 수 없습니다"));
-        }
-    }
-
-    @Nested
     @DisplayName("POST /api/quiz-sessions/{sessionId}/complete")
     class Complete {
 
@@ -147,11 +91,13 @@ public class QuizSessionControllerTest {
                     completedAt
             );
 
-            given(quizService.completeSession(sessionId))
+            given(quizService.completeSession(org.mockito.ArgumentMatchers.eq(sessionId)))
                     .willReturn(response);
 
             // when & then
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/complete", sessionId)
+                            .param("autoGenerate", "false")
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -166,11 +112,13 @@ public class QuizSessionControllerTest {
         void fail_sessionNotFound() throws Exception {
             // given
             Long sessionId = 999L;
-            given(quizService.completeSession(sessionId))
+            given(quizService.completeSession(org.mockito.ArgumentMatchers.eq(sessionId)))
                     .willThrow(new QuizException(QuizErrorCode.SESSION_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/complete", sessionId)
+                            .param("autoGenerate", "false")
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isNotFound())
@@ -184,11 +132,13 @@ public class QuizSessionControllerTest {
         void fail_alreadyCompleted() throws Exception {
             // given
             Long sessionId = 1L;
-            given(quizService.completeSession(sessionId))
+            given(quizService.completeSession(org.mockito.ArgumentMatchers.eq(sessionId)))
                     .willThrow(new QuizException(QuizErrorCode.SESSION_ALREADY_COMPLETED));
 
             // when & then
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/complete", sessionId)
+                            .param("autoGenerate", "false")
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -202,11 +152,13 @@ public class QuizSessionControllerTest {
         void fail_requiredQuestionNotAnswered() throws Exception {
             // given
             Long sessionId = 1L;
-            given(quizService.completeSession(sessionId))
+            given(quizService.completeSession(org.mockito.ArgumentMatchers.eq(sessionId)))
                     .willThrow(new QuizException(QuizErrorCode.QUIZ_REQUIRED_NOT_ANSWERED));
 
             // when & then
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/complete", sessionId)
+                            .param("autoGenerate", "false")
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -235,6 +187,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -259,6 +212,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -281,6 +235,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isNotFound())
@@ -303,6 +258,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -325,6 +281,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isNotFound())
@@ -347,6 +304,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -369,6 +327,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -391,6 +350,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -411,6 +371,7 @@ public class QuizSessionControllerTest {
             mockMvc.perform(post("/api/quiz-sessions/{sessionId}/answers", sessionId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidJson)
+                            .with(anonymous())
                             .with(csrf()))
                     .andDo(print())
                     .andExpect(status().isBadRequest());

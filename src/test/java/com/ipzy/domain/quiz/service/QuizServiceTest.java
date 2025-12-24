@@ -4,7 +4,6 @@ import com.ipzy._global.common.enums.QuizType;
 import com.ipzy.domain.quiz.dto.QuizAnswerRequest;
 import com.ipzy.domain.quiz.dto.QuizAnswerResponse;
 import com.ipzy.domain.quiz.dto.QuizQuestionResponse;
-import com.ipzy.domain.quiz.dto.QuizSessionProgressResponse;
 import com.ipzy.domain.quiz.dto.QuizSessionStartResponse;
 import com.ipzy.domain.quiz.entity.Quiz;
 import com.ipzy.domain.quiz.entity.QuizAnswer;
@@ -325,66 +324,6 @@ class QuizServiceTest {
             assertThatThrownBy(() -> quizService.getQuestions(quizId))
                     .isInstanceOf(QuizException.class)
                     .hasMessageContaining(QuizErrorCode.QUIZ_NOT_FOUND.getMessage());
-        }
-    }
-
-    @Nested
-    @DisplayName("getProgress()")
-    class GetProgress {
-
-        @Test
-        @DisplayName("성공 - 세션 진행 상태를 정확히 반환한다")
-        void success() {
-            // given
-            Long sessionId = 1L;
-
-            QuizSession sessionWithAnswers = QuizSession.builder()
-                    .user(user)
-                    .quiz(activeQuiz)
-                    .build();
-            ReflectionTestUtils.setField(sessionWithAnswers, "id", sessionId);
-            
-            QuizAnswer answer1 = QuizAnswer.builder()
-                    .session(sessionWithAnswers)
-                    .question(requiredSingleQuestion)
-                    .selectedOptions(List.of("minimal"))
-                    .build();
-            QuizAnswer answer2 = QuizAnswer.builder()
-                    .session(sessionWithAnswers)
-                    .question(optionalMultipleQuestion)
-                    .selectedOptions(List.of("black", "white"))
-                    .build();
-            sessionWithAnswers.addAnswer(answer1);
-            sessionWithAnswers.addAnswer(answer2);
-
-            given(quizSessionRepository.findByIdWithAnswers(sessionId))
-                    .willReturn(Optional.of(sessionWithAnswers));
-            given(quizQuestionRepository.findAllByQuizIdWithOptions(activeQuiz.getId()))
-                    .willReturn(List.of(requiredSingleQuestion, optionalMultipleQuestion));
-
-            // when
-            QuizSessionProgressResponse result = quizService.getProgress(sessionId);
-
-            // then
-            assertThat(result.getSessionId()).isEqualTo(sessionId);
-            assertThat(result.getTotalQuestions()).isEqualTo(2);
-            assertThat(result.getAnsweredCount()).isEqualTo(2);
-            assertThat(result.isCompleted()).isFalse();
-            assertThat(result.getAnswers()).hasSize(2);
-        }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 세션이면 SESSION_NOT_FOUND 예외")
-        void fail_sessionNotFound() {
-            // given
-            Long sessionId = 999L;
-            given(quizSessionRepository.findByIdWithAnswers(sessionId))
-                    .willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> quizService.getProgress(sessionId))
-                    .isInstanceOf(QuizException.class)
-                    .hasMessageContaining(QuizErrorCode.SESSION_NOT_FOUND.getMessage());
         }
     }
 
