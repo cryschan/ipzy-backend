@@ -64,10 +64,15 @@ public class AuthController {
     @GetMapping("/login/kakao")
     public void kakaoLogin(HttpServletResponse response) throws IOException {
         // frontendUrl이 설정되어 있으면 절대 경로로 리다이렉트 (Vercel 프록시 환경)
-        String redirectUrl = frontendUrl.isEmpty()
-                ? "/oauth2/authorization/kakao"
-                : frontendUrl + "/oauth2/authorization/kakao";
-        response.sendRedirect(redirectUrl);
+        if (frontendUrl.isEmpty()) {
+            response.sendRedirect("/oauth2/authorization/kakao");
+            return;
+        }
+        // trailing slash 제거하여 이중 슬래시 방지
+        String baseUrl = frontendUrl.endsWith("/")
+                ? frontendUrl.substring(0, frontendUrl.length() - 1)
+                : frontendUrl;
+        response.sendRedirect(baseUrl + "/oauth2/authorization/kakao");
     }
 
     @Operation(
