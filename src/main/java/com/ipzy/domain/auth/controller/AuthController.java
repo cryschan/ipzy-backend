@@ -27,7 +27,7 @@ import java.io.IOException;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Value("${app.frontend-url:}")
+    @Value("${app.frontend-url}")
     private String frontendUrl;
 
     @Operation(
