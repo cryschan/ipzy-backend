@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,9 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    @Value("${app.frontend-url:}")
+    private String frontendUrl;
 
     @Operation(
             summary = "카카오 로그인",
@@ -59,7 +63,11 @@ public class AuthController {
     })
     @GetMapping("/login/kakao")
     public void kakaoLogin(HttpServletResponse response) throws IOException {
-        response.sendRedirect("/oauth2/authorization/kakao");
+        // frontendUrl이 설정되어 있으면 절대 경로로 리다이렉트 (Vercel 프록시 환경)
+        String redirectUrl = frontendUrl.isEmpty()
+                ? "/oauth2/authorization/kakao"
+                : frontendUrl + "/oauth2/authorization/kakao";
+        response.sendRedirect(redirectUrl);
     }
 
     @Operation(
