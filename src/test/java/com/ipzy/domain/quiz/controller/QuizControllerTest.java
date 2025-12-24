@@ -160,19 +160,6 @@ public class QuizControllerTest {
             mockMvc.perform(post("/api/quizzes/{quizId}/sessions", quizId)
                     .with(oauth2Login().oauth2User(createTestPrincipal()))
                     .with(csrf()))
-                    .andDo(result -> {
-                        // 에러 발생 시 상세 정보 출력
-                        if (result.getResponse().getStatus() != 200) {
-                            System.err.println("=== ERROR DETAILS ===");
-                            System.err.println("Status: " + result.getResponse().getStatus());
-                            System.err.println("Response Body: " + result.getResponse().getContentAsString());
-                            if (result.getResolvedException() != null) {
-                                System.err.println("Exception: " + result.getResolvedException().getClass().getName());
-                                System.err.println("Message: " + result.getResolvedException().getMessage());
-                                result.getResolvedException().printStackTrace();
-                            }
-                        }
-                    })
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
@@ -202,19 +189,6 @@ public class QuizControllerTest {
             // when & then
             mockMvc.perform(post("/api/quizzes/{quizId}/sessions", quizId)
                             .with(csrf()))
-                    .andDo(result -> {
-                        // 에러 발생 시 상세 정보 출력
-                        if (result.getResponse().getStatus() != 200) {
-                            System.err.println("=== ERROR DETAILS (Anonymous User) ===");
-                            System.err.println("Status: " + result.getResponse().getStatus());
-                            System.err.println("Response Body: " + result.getResponse().getContentAsString());
-                            if (result.getResolvedException() != null) {
-                                System.err.println("Exception: " + result.getResolvedException().getClass().getName());
-                                System.err.println("Message: " + result.getResolvedException().getMessage());
-                                result.getResolvedException().printStackTrace();
-                            }
-                        }
-                    })
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
