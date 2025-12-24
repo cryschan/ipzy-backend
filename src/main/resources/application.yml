@@ -51,6 +51,7 @@ spring:
 
 # 앱 설정
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   oauth2:
     success-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback
     failure-redirect-uri: ${FRONTEND_URL:http://localhost:5173}/auth/callback?error=true
@@ -89,6 +90,7 @@ logging:
 
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework  # 프록시(Vercel 등) X-Forwarded-* 헤더 처리
   servlet:
     session:
       timeout: ${SESSION_TIMEOUT:30m}
@@ -120,6 +122,7 @@ server:
     session:
       cookie:
         secure: true # 프로덕션 HTTPS 필수
+        same-site: none # Cross-Origin 쿠키 허용
 
 logging:
   level:
