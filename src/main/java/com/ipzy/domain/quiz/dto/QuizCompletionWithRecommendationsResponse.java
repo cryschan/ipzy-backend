@@ -38,16 +38,21 @@ public class QuizCompletionWithRecommendationsResponse {
      * QuizCompletionResponse와 추천 목록을 조합하여 생성
      *
      * @param completion      세션 완료 정보
-     * @param recommendations 추천 목록
+     * @param recommendations 추천 목록 (null 또는 빈 리스트 가능)
      * @return 완료 + 추천 응답
      */
     public static QuizCompletionWithRecommendationsResponse of(
             QuizCompletionResponse completion,
             List<Recommendation> recommendations
     ) {
-        List<RecommendationSummaryResponse> recommendationList = recommendations.stream()
-                .map(RecommendationSummaryResponse::from)
-                .toList();
+        List<RecommendationSummaryResponse> recommendationList = null;
+        
+        // null 또는 빈 리스트 체크 (RecommendationStatusResponse.of()와 일관성 유지)
+        if (recommendations != null && !recommendations.isEmpty()) {
+            recommendationList = recommendations.stream()
+                    .map(RecommendationSummaryResponse::from)
+                    .toList();
+        }
 
         return QuizCompletionWithRecommendationsResponse.builder()
                 .sessionId(completion.getSessionId())

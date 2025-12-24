@@ -137,14 +137,23 @@ public class QuizSessionController {
         String autoGenerateParam = request.getParameter("autoGenerate");
         boolean shouldAutoGenerate = "true".equalsIgnoreCase(autoGenerateParam);
         
+        // autoGenerate=true인 경우, 인증 확인을 먼저 수행 (세션 완료 전)
+        // 비로그인 사용자는 autoGenerate 파라미터를 무시하고 완료만 처리
+        Long currentUserId = null;
+        if (shouldAutoGenerate) {
+            currentUserId = SecurityUtil.getCurrentUserIdOrNull();
+            
+            // 비로그인 사용자는 autoGenerate 파라미터 무시
+            if (currentUserId == null) {
+                shouldAutoGenerate = false;
+            }
+        }
+        
         // 세션 완료 처리
         QuizCompletionResponse completion = quizService.completeSession(sessionId);
         
-        // 자동 추천 생성 옵션이 활성화된 경우
-        if (shouldAutoGenerate) {
-            // 로그인 사용자만 자동 생성 가능
-            Long currentUserId = SecurityUtil.getCurrentUserIdOrThrow();
-            
+        // 자동 추천 생성 옵션이 활성화된 경우 (로그인 사용자만)
+        if (shouldAutoGenerate && currentUserId != null) {
             // 동기로 추천 생성 (완료 후 추천까지 완료된 상태로 응답)
             List<Recommendation> recommendations = 
                     recommendationService.generateRecommendation(sessionId, currentUserId);
@@ -155,7 +164,7 @@ public class QuizSessionController {
             );
         }
         
-        // autoGenerate=false인 경우 기존 응답 반환
+        // autoGenerate=false이거나 비로그인 사용자인 경우 기존 응답 반환
         return ApiResponse.success(completion);
     }
 

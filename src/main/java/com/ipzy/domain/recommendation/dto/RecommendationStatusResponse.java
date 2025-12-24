@@ -26,7 +26,7 @@ public class RecommendationStatusResponse {
     @Schema(
             description = "추천 생성 상태",
             example = "completed",
-            allowableValues = {"not_started", "generating", "completed", "failed"}
+            allowableValues = {"not_started", "completed"}
     )
     private String status;
 
@@ -35,6 +35,8 @@ public class RecommendationStatusResponse {
 
     /**
      * 추천 생성 상태를 반환합니다.
+     * - recommendations가 null이거나 비어있으면 "not_started"
+     * - recommendations가 있으면 "completed"
      *
      * @param sessionId 세션 ID
      * @param recommendations 추천 목록 (없으면 null)
@@ -48,6 +50,35 @@ public class RecommendationStatusResponse {
             status = "not_started";
         } else {
             status = "completed";
+            recommendationList = recommendations.stream()
+                    .map(RecommendationSummaryResponse::from)
+                    .toList();
+        }
+
+        return RecommendationStatusResponse.builder()
+                .sessionId(sessionId)
+                .status(status)
+                .recommendations(recommendationList)
+                .build();
+    }
+
+    /**
+     * 특정 상태로 추천 생성 상태를 반환합니다.
+     * - "generating", "failed" 등 다른 상태가 필요한 경우 사용
+     *
+     * @param sessionId 세션 ID
+     * @param status 상태 값 ("not_started", "generating", "completed", "failed")
+     * @param recommendations 추천 목록 (status가 "completed"일 때만 포함, 없으면 null)
+     * @return 상태 응답
+     */
+    public static RecommendationStatusResponse withStatus(
+            Long sessionId,
+            String status,
+            List<Recommendation> recommendations
+    ) {
+        List<RecommendationSummaryResponse> recommendationList = null;
+
+        if (recommendations != null && !recommendations.isEmpty()) {
             recommendationList = recommendations.stream()
                     .map(RecommendationSummaryResponse::from)
                     .toList();
